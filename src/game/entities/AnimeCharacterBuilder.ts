@@ -618,7 +618,8 @@ export function updateCharacterRigAnimation(
   squashXZ: number,
   elapsedTime: number,
   isGreetingPlayer: boolean = false,
-  greetingAnim: NpcGreetingAnimationType = 'wave'
+  greetingAnim: NpcGreetingAnimationType = 'wave',
+  activityIntent: 'idle' | 'reading' | 'working' | 'sitting' | 'teaching' = 'idle'
 ): void {
   rig.bodyScaleGroup.scale.set(squashXZ, squashY, squashXZ);
 
@@ -708,6 +709,31 @@ export function updateCharacterRigAnimation(
       rig.leftArmPivot.rotation.x *= 0.85;
       rig.leftArmPivot.rotation.z = 0;
       rig.headGroup.rotation.set(0, 0, Math.sin(elapsedTime * 3.2) * 0.09);
+    }
+  } else if (activityIntent !== 'idle') {
+    // Small, readable task gestures make scheduled object use visible without a full mocap rig.
+    const cycle = Math.sin(elapsedTime * 2.1);
+    rig.leftLegPivot.rotation.x *= 0.82;
+    rig.rightLegPivot.rotation.x *= 0.82;
+    rig.bodyScaleGroup.position.y = activityIntent === 'sitting' ? -0.08 : Math.sin(elapsedTime * 1.8) * 0.008;
+    rig.bodyScaleGroup.rotation.x = THREE.MathUtils.lerp(rig.bodyScaleGroup.rotation.x, activityIntent === 'reading' ? 0.08 : 0, 0.12);
+    rig.headGroup.rotation.set(activityIntent === 'reading' ? 0.16 + cycle * 0.025 : 0, 0, cycle * 0.025);
+    if (activityIntent === 'reading') {
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, -0.92, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, -0.92, 0.12);
+      rig.leftArmPivot.rotation.z = 0.12;
+      rig.rightArmPivot.rotation.z = -0.12;
+    } else if (activityIntent === 'teaching') {
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, -0.35, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, -1.25 + cycle * 0.12, 0.12);
+      rig.leftArmPivot.rotation.z = 0.08;
+      rig.rightArmPivot.rotation.z = -0.18;
+    } else {
+      const workingMotion = activityIntent === 'sitting' ? -0.42 : -0.68;
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, workingMotion + cycle * 0.08, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, workingMotion - cycle * 0.08, 0.12);
+      rig.leftArmPivot.rotation.z = 0.08;
+      rig.rightArmPivot.rotation.z = -0.08;
     }
   } else {
     // Natural Breathing & Subtle Head Look-Around Idle
