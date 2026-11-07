@@ -10,6 +10,33 @@ export interface NpcActivityAnchor {
   kind: NpcActivityKind;
 }
 
+export interface NpcObjectActivity {
+  npcId: string;
+  period: TimeOfDayPreset;
+  objectId: string;
+  actionId: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
+  label: string;
+  target: Vector3Tuple;
+}
+
+export const NPC_OBJECT_ACTIVITIES: NpcObjectActivity[] = [
+  { npcId: 'npc_takeda', period: 'morning', objectId: 'class-a-teacher-desk', actionId: 'teach', label: 'Using the teacher desk to prepare the lesson', target: { x: -12.2, y: 0, z: -18.4 } },
+  { npcId: 'npc_takeda', period: 'twilight', objectId: 'east-library-shelf-1', actionId: 'read', label: 'Reading academy history at the library shelf', target: { x: 9.5, y: 0, z: -19.5 } },
+  { npcId: 'npc_akari', period: 'morning', objectId: 'east-library-shelf-2', actionId: 'read', label: 'Sorting and reading library books', target: { x: 14.2, y: 0, z: -19.5 } },
+  { npcId: 'npc_akari', period: 'twilight', objectId: 'east-library-shelf-3', actionId: 'read', label: 'Studying quietly beside the library shelves', target: { x: 18.6, y: 0, z: -19.5 } },
+  { npcId: 'npc_daichi', period: 'golden_hour', objectId: 'east-sports-court', actionId: 'practice', label: 'Practising drills on the sports court', target: { x: 25, y: 0, z: 8.5 } },
+  { npcId: 'npc_ren', period: 'golden_hour', objectId: 'east-sports-court', actionId: 'practice', label: 'Practising with the athletics club', target: { x: 25, y: 0, z: 8.5 } },
+  { npcId: 'npc_hana', period: 'twilight', objectId: 'courtyard-bench-east', actionId: 'sit', label: 'Sitting at the courtyard bench and reviewing notices', target: { x: 8, y: 0, z: 10 } },
+  { npcId: 'npc_kaito', period: 'twilight', objectId: 'courtyard-bench-south', actionId: 'sit', label: 'Sitting with classmates after club activities', target: { x: 0, y: 0, z: 17.8 } },
+];
+
+export function getNpcObjectActivity(
+  npcId: string,
+  period: TimeOfDayPreset
+): NpcObjectActivity | null {
+  return NPC_OBJECT_ACTIVITIES.find((activity) => activity.npcId === npcId && activity.period === period) ?? null;
+}
+
 export interface NpcDailyDirective {
   npcId: string;
   period: TimeOfDayPreset;
@@ -147,6 +174,8 @@ export function applyNpcDailySchedules<T extends {
   id: string;
   patrolWaypoints?: Vector3Tuple[];
   currentActivity?: string;
+  activityObjectId?: string;
+  activityActionId?: NpcObjectActivity['actionId'];
 }>(interactables: T[], period: TimeOfDayPreset): T[] {
   const directives = getNpcActivityDirectives(period);
   return interactables.map((item) => {
@@ -154,8 +183,10 @@ export function applyNpcDailySchedules<T extends {
     if (!directive) return item;
     return {
       ...item,
-      patrolWaypoints: [directive.anchor.position],
-      currentActivity: directive.activity,
+      patrolWaypoints: [getNpcObjectActivity(item.id, period)?.target ?? directive.anchor.position],
+      currentActivity: getNpcObjectActivity(item.id, period)?.label ?? directive.activity,
+      activityObjectId: getNpcObjectActivity(item.id, period)?.objectId,
+      activityActionId: getNpcObjectActivity(item.id, period)?.actionId,
     };
   });
 }
