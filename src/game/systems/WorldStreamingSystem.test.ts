@@ -25,6 +25,7 @@ test('world streaming toggles inferred station assets and tagged regions', () =>
   const medical = new Group();
   medical.userData.streamRegionId = 'medical-room';
   medical.userData.streamCenter = { x: 34, z: -27 };
+  medical.visible = false;
   world.add(medical);
 
   updateWorldStreaming([world], 0, 0);
