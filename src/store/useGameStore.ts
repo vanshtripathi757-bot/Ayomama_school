@@ -52,6 +52,7 @@ import {
 } from '../config/defaults';
 import { sharedInputBridge } from '../game/systems/InputBridge';
 import { LIBRARY_BOOKS, takeLibraryBook as addLibraryBook, returnLibraryBook as removeLibraryBook } from '../game/systems/LibraryBookSystem';
+import { appendNpcRelationshipMemory } from '../game/systems/NpcAutonomySystem';
 
 export interface ActiveDialogueSession {
   target: CampusInteractable;
@@ -925,10 +926,18 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       if (!target) return;
       audioManager.playDialogueBlip();
       const firstLine = target.dialogue[0];
-      const nextMission = advanceMissionProgress(get().missionProgress, {
+      const baseMission = advanceMissionProgress(get().missionProgress, {
         interactedId: target.id,
         rewardItemName: target.rewardItemName,
       });
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          target.id,
+          `First meeting with ${target.name} at Hoshino Academy.`
+        ),
+      };
       set({
         activeDialogue: {
           target,
@@ -956,10 +965,18 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const active = get().activeDialogue;
       if (!active) return;
       audioManager.playDialogueBlip();
-      const nextMission = advanceMissionProgress(get().missionProgress, {
+      const baseMission = advanceMissionProgress(get().missionProgress, {
         interactedId: active.target.id,
         reputationDelta: reputationBonus ?? 10,
       });
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          active.target.id,
+          `Student asked: ${choiceLabel}`
+        ),
+      };
 
       const targetLine =
         active.target.dialogue[nextLineIndex] ??
@@ -1043,6 +1060,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
             npcPersona: active.target.persona,
             playerMessage: trimmed,
             schoolPeriod: periodLabel,
+            npcMemories: get().missionProgress.npcRelationships?.[active.target.id]?.memories ?? [],
             history: historySnapshot.slice(-6).map((m) => ({
               sender: m.sender,
               text: m.text,
@@ -1074,7 +1092,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const currentActive = get().activeDialogue;
       if (!currentActive || currentActive.target.id !== active.target.id) return;
 
-      const nextMission = recordStoryObjectiveEvent(
+      const baseMission = recordStoryObjectiveEvent(
         advanceMissionProgress(get().missionProgress, {
           interactedId: active.target.id,
           reputationDelta: bonus,
@@ -1084,6 +1102,14 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         }),
         { interactedId: active.target.id, customMessageSent: true }
       );
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          active.target.id,
+          `Student: ${trimmed} | ${active.target.name}: ${replyText}`
+        ),
+      };
 
       set({
         activeDialogue: {
