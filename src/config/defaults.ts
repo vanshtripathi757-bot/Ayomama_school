@@ -2038,6 +2038,10 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'medical_room_east_wall', minX: 40.55, maxX: 41.1, minZ: -33.75, maxZ: -20.25 },
   { id: 'medical_room_front_left', minX: 27.0, maxX: 31.0, minZ: -20.55, maxZ: -20.0 },
   { id: 'medical_room_front_right', minX: 37.0, maxX: 41.0, minZ: -20.55, maxZ: -20.0 },
+  { id: 'medical_bed_west', minX: 30.1, maxX: 32.3, minZ: -30.35, maxZ: -27.25 },
+  { id: 'medical_bed_east', minX: 35.7, maxX: 37.9, minZ: -30.35, maxZ: -27.25 },
+  { id: 'medical_reception_counter', minX: 31.8, maxX: 36.2, minZ: -23.35, maxZ: -22.05 },
+  { id: 'medical_storage_cabinet', minX: 28.2, maxX: 29.0, minZ: -31.0, maxZ: -30.3 },
 ];
 
 export const CAMPUS_CIRCLE_COLLIDERS: CircleCollider2D[] = [
