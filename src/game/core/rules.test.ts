@@ -602,3 +602,31 @@ test('NPC fallback dialogue recalls saved shared memories when asked', () => {
   assert.match(reply.reply, /old library archive/i);
   assert.ok(reply.affinityBonus > 0);
 });
+
+test('NPC marks its scheduled world object as in use after reaching the activity anchor', () => {
+  const base = CAMPUS_INTERACTABLES.find((item) => item.id === 'npc_takeda');
+  assert.ok(base);
+  const target = { x: 120, y: 0, z: 120 };
+  const scheduled = {
+    ...base,
+    position: target,
+    patrolWaypoints: [target],
+    activityObjectId: 'class-a-teacher-desk',
+    activityActionId: 'teach' as const,
+    currentActivity: 'Using the teacher desk to prepare the lesson',
+  };
+  const runtime = [{
+    id: 'npc_takeda',
+    x: 120,
+    y: 0,
+    z: 120,
+    yaw: 0,
+    waypointIndex: 0,
+    pauseTimer: 0,
+    walkPhase: 0,
+    isMoving: false,
+  }];
+  const result = stepAutonomousNPCs(runtime, [scheduled], -120, -120, null, 0.016);
+  assert.equal(result[0].usingObjectId, 'class-a-teacher-desk');
+  assert.match(result[0].currentActivity ?? '', /teacher desk/i);
+});
