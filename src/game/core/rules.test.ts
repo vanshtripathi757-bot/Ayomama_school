@@ -24,6 +24,7 @@ import {
   getSkyWeatherDescription,
   getStoryCompletionPercentage,
   getStoryPhaseObjectiveStatus,
+  getStoryObjectiveHint,
   recordStoryObjectiveEvent,
   getStudentAcademicRank,
   isInsideSchoolBuilding,
@@ -517,11 +518,13 @@ test('sequential mission objectives require ordered gameplay events before the p
   assert.equal(status.completedCount, 0);
   assert.equal(status.quizUnlocked, false);
   assert.match(status.nextObjective ?? '', /Report to the Hoshino Academy Courtyard/i);
+  assert.match(getStoryObjectiveHint(progress), /central courtyard/i);
 
   progress = recordStoryObjectiveEvent(progress, { distanceDelta: 9 });
   status = getStoryPhaseObjectiveStatus(progress);
   assert.equal(status.completedCount, 1);
   assert.match(status.nextObjective ?? '', /Aiko Hoshino.*Sora Amamiya/i);
+  assert.match(getStoryObjectiveHint(progress), /Aiko Hoshino.*Sora Amamiya/i);
 
   const afterAiko = advanceMissionProgress(progress, { interactedId: 'npc_hana' });
   progress = recordStoryObjectiveEvent(afterAiko, { interactedId: 'npc_hana' });
@@ -532,6 +535,7 @@ test('sequential mission objectives require ordered gameplay events before the p
   status = getStoryPhaseObjectiveStatus(progress);
   assert.equal(status.completedCount, 2);
   assert.match(status.nextObjective ?? '', /Inspect the Faded Star-and-Chronicle Emblem/i);
+  assert.match(getStoryObjectiveHint(progress), /landmark or noticeboard/i);
 
   const afterLandmark = advanceMissionProgress(progress, { interactedId: 'landmark_notice_board' });
   progress = recordStoryObjectiveEvent(afterLandmark, { interactedId: 'landmark_notice_board' });
