@@ -175,7 +175,8 @@ export function appendNpcRelationshipMemory(
     memories: [],
   };
   const memories = [...(current.memories ?? [])];
-  if (memories[memories.length - 1] !== clean) memories.push(clean);
+  if (memories[memories.length - 1] === clean) return relationships ?? {};
+  memories.push(clean);
   return {
     ...(relationships ?? {}),
     [npcId]: {
