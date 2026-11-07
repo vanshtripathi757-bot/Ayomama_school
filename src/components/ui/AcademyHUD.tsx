@@ -38,6 +38,8 @@ export function AcademyHUD() {
   const muted = useGameStore((s) => s.settings.audio.muted);
   const showMobileControls = useGameStore((s) => s.settings.display.showMobileControls);
   const nearbyInteractable = useGameStore((s) => s.nearbyInteractable);
+  const nearbyWorldObject = useGameStore((s) => s.nearbyWorldObject);
+  const activeWorldInteraction = useGameStore((s) => s.activeWorldInteraction);
   const activeDialogue = useGameStore((s) => s.activeDialogue);
   const missionProgress = useGameStore((s) => s.missionProgress);
   const isSprintingUI = useGameStore((s) => s.isSprintingUI);
@@ -53,6 +55,8 @@ export function AcademyHUD() {
   const toggleMute = useGameStore((s) => s.toggleMute);
   const returnToMainMenu = useGameStore((s) => s.returnToMainMenu);
   const openInteractionDialogue = useGameStore((s) => s.openInteractionDialogue);
+  const beginWorldInteraction = useGameStore((s) => s.beginWorldInteraction);
+  const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
   const selectDialogueChoice = useGameStore((s) => s.selectDialogueChoice);
   const sendCustomDialogueMessage = useGameStore((s) => s.sendCustomDialogueMessage);
   const closeDialogue = useGameStore((s) => s.closeDialogue);
@@ -643,6 +647,55 @@ export function AcademyHUD() {
                   ? ` (${nearbyInteractable.academyClass})`
                   : ''}
               </span>
+            </button>
+          </div>
+        )}
+
+        {/* Contextual world-object action: shown only for a registered nearby target. */}
+        {phase === 'playing' && nearbyWorldObject && !nearbyInteractable && !activeDialogue && !activeWorldInteraction && (
+          <div
+            data-testid="world-object-interaction-prompt"
+            className="pointer-events-auto flex items-center gap-2 rounded-full border border-cyan-300/55 bg-[#081326]/90 px-3 py-1.5 shadow-lg backdrop-blur-sm"
+          >
+            <span className="text-[10px] font-mono font-bold text-cyan-200">OBJECT</span>
+            <span className="max-w-[150px] truncate text-[11px] font-semibold text-white">
+              {nearbyWorldObject.displayName}
+            </span>
+            <button
+              type="button"
+              data-testid="world-object-action-button"
+              onClick={() => {
+                const action = nearbyWorldObject.actions.find((item) => item.enabled !== false);
+                if (action) beginWorldInteraction(nearbyWorldObject.id, action.id);
+              }}
+              className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-bold text-white transition-colors hover:bg-cyan-500"
+            >
+              {nearbyWorldObject.actions.find((item) => item.enabled !== false)?.label ?? 'Interact'}
+            </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction && (
+          <div
+            data-testid="active-world-interaction"
+            role="status"
+            className="pointer-events-auto flex items-center gap-3 rounded-lg border border-cyan-300/45 bg-[#07111f]/95 px-3 py-2 shadow-xl backdrop-blur-md"
+          >
+            <div className="min-w-0">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-cyan-200">
+                Interaction mode
+              </div>
+              <div className="max-w-[210px] truncate text-xs font-semibold text-white">
+                {activeWorldInteraction.actionLabel} · {activeWorldInteraction.displayName}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="exit-world-interaction"
+              onClick={endWorldInteraction}
+              className="shrink-0 rounded-md border border-slate-400/40 bg-slate-800 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-700"
+            >
+              Exit
             </button>
           </div>
         )}
