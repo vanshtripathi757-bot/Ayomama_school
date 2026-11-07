@@ -28,6 +28,7 @@ import {
 import { useGameStore } from '../../store/useGameStore';
 import { CameraViewpointId } from '../../types/game';
 import { LIBRARY_BOOKS, getOwnedLibraryBookIds } from '../../game/systems/LibraryBookSystem';
+import { TRANSIT_DESTINATIONS } from '../../game/systems/TransitSystem';
 
 export function AcademyHUD() {
   const phase = useGameStore((s) => s.phase);
@@ -60,6 +61,7 @@ export function AcademyHUD() {
   const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
   const takeLibraryBook = useGameStore((s) => s.takeLibraryBook);
   const returnLibraryBook = useGameStore((s) => s.returnLibraryBook);
+  const teleportToZone = useGameStore((s) => s.teleportToZone);
   const selectDialogueChoice = useGameStore((s) => s.selectDialogueChoice);
   const sendCustomDialogueMessage = useGameStore((s) => s.sendCustomDialogueMessage);
   const closeDialogue = useGameStore((s) => s.closeDialogue);
@@ -717,6 +719,42 @@ export function AcademyHUD() {
             >
               Exit
             </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'station-ticket-terminal' && (
+          <div
+            data-testid="railway-destinations-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Hoshino railway destinations"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,520px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-cyan-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">Hoshino Electric Railway</div>
+                <h2 className="text-base font-bold text-white">Choose your destination</h2>
+                <p className="text-[11px] text-slate-300">Select a district to travel there instantly.</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {TRANSIT_DESTINATIONS.map((destination) => (
+                <button
+                  key={destination.id}
+                  type="button"
+                  data-testid={`transit-${destination.id}`}
+                  onClick={() => {
+                    teleportToZone(destination.position.x, destination.position.z, destination.yaw);
+                    endWorldInteraction();
+                  }}
+                  className="rounded-lg border border-slate-700 bg-slate-900/80 p-3 text-left transition-colors hover:border-cyan-400/70 hover:bg-slate-800"
+                >
+                  <span className="block text-xs font-bold text-white">{destination.label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">{destination.description}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
