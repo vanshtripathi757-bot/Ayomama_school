@@ -30,6 +30,7 @@ import { buildExpandedFacilities } from '../environment/ExpandedFacilityModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { createCampusWorldInteractionSystem } from '../systems/CampusWorldCatalog';
+import { updateWorldStreaming } from '../systems/WorldStreamingSystem';
 import { applyNpcDailySchedules, getNpcActivityDirectives } from '../systems/NpcAutonomySystem';
 import { sharedInputBridge } from '../systems/InputBridge';
 
@@ -382,6 +383,8 @@ export function AcademyCanvas() {
     let isDisposed = false;
     let lastTime = performance.now();
     let elapsedTotal = 0;
+    let lastStreamCheckX = Number.NaN;
+    let lastStreamCheckZ = Number.NaN;
     let scheduledPeriod = stateRef.current.timeOfDay;
     let scheduledInteractables = applyNpcDailySchedules(CAMPUS_INTERACTABLES, scheduledPeriod);
     let npcActivityDirectives = getNpcActivityDirectives(scheduledPeriod);
@@ -927,6 +930,20 @@ export function AcademyCanvas() {
         elapsedTotal,
         dt
       );
+
+      // Region streaming runs only after meaningful player movement, not every rendered frame.
+      if (
+        !Number.isFinite(lastStreamCheckX) ||
+        Math.hypot(playerState.x - lastStreamCheckX, playerState.z - lastStreamCheckZ) >= 2.5
+      ) {
+        updateWorldStreaming(
+          [academyEnv.rootGroup, expandedFacilities.rootGroup],
+          playerState.x,
+          playerState.z
+        );
+        lastStreamCheckX = playerState.x;
+        lastStreamCheckZ = playerState.z;
+      }
 
       // Render frame
       renderer.render(scene, camera);
