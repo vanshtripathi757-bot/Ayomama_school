@@ -12,6 +12,7 @@ import {
   getCurrentStoryChapter,
   getSkyWeatherDescription,
   getStudentAcademicRank,
+  getStoryPhaseObjectiveStatus,
 } from '../../game/core/rules';
 import { audioManager } from '../../game/systems/AudioManager';
 import {
@@ -191,6 +192,7 @@ export function AcademyHUD() {
 
   // Hoshino Academy Story Chapter & Active Sequential Phase
   const activeChapter = getCurrentStoryChapter(missionProgress.reputationPoints);
+  const phaseObjectiveStatus = getStoryPhaseObjectiveStatus(missionProgress);
   const { story: activeStoryObj, phase: activePhaseObj } =
     getActiveStoryAndPhase(missionProgress);
   const playerClass =
@@ -974,8 +976,35 @@ export function AcademyHUD() {
                 {activeStoryPack.storyText}
               </p>
 
+              <div data-testid="phase-objective-tracker" className="rounded-lg bg-[#071426] border border-emerald-400/30 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Phase Mission Objectives</span>
+                  <span className="text-[10px] font-mono text-slate-300">{phaseObjectiveStatus.completedCount}/{phaseObjectiveStatus.total} complete</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-emerald-400 transition-all" style={{ width: `${phaseObjectiveStatus.total ? (phaseObjectiveStatus.completedCount / phaseObjectiveStatus.total) * 100 : 0}%` }} />
+                </div>
+                <ol className="space-y-1.5 text-[11px]">
+                  {phaseObjectiveStatus.objectives.map((objective, index) => {
+                    const done = phaseObjectiveStatus.completedIndexes.includes(index);
+                    return (
+                      <li key={`${activeStoryObj.id}_${activePhaseObj.phaseNumber}_obj_${index}`} className={done ? 'text-emerald-300' : 'text-slate-200'}>
+                        <span className="font-mono mr-1.5">{done ? '✓' : `${index + 1}.`}</span>{objective}
+                      </li>
+                    );
+                  })}
+                </ol>
+                {!phaseObjectiveStatus.quizUnlocked && phaseObjectiveStatus.nextObjective && (
+                  <div className="rounded bg-amber-950/50 border border-amber-400/30 p-2 text-[11px] text-amber-100">
+                    <span className="font-bold">Next clue:</span> {phaseObjectiveStatus.nextObjective}
+                  </div>
+                )}
+                {phaseObjectiveStatus.quizUnlocked && (
+                  <div className="text-[11px] font-semibold text-emerald-300">All required objectives complete. Phase quiz unlocked.</div>
+                )}
+              </div>
               {/* 4-Option Quiz / Activity Decision */}
-              <div className="pt-2 border-t border-slate-700/70 space-y-1.5">
+              <div className={phaseObjectiveStatus.quizUnlocked ? 'pt-2 border-t border-slate-700/70 space-y-1.5' : 'hidden'}>
                 <div className="text-xs font-semibold text-indigo-200">
                   ❓ {activeStoryPack.question}
                 </div>
