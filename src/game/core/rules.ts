@@ -437,32 +437,29 @@ export function recordStoryObjectiveEvent(
     : undefined;
   let completed = false;
 
-  if (/speak|talk|meet|greet|conversation/.test(objective)) {
-    if (target?.kind === 'npc') {
-      const namedNpcIds = CAMPUS_INTERACTABLES
-        .filter((item) => item.kind === 'npc' && objective.includes(item.name.toLowerCase()))
-        .map((item) => item.id);
-      const interacted = new Set([...(current.interactedIds ?? []), target.id]);
-      completed = namedNpcIds.length > 0
-        ? namedNpcIds.every((id) => interacted.has(id))
-        : true;
-    } else if (event.customMessageSent) {
-      completed = true;
+  const key = `${storyId}:phase_${phaseNumber}:objective_${objectiveIndex}`;
+  const namedNpcIds = CAMPUS_INTERACTABLES
+    .filter((item) => item.kind === 'npc' && objective.includes(item.name.toLowerCase()))
+    .map((item) => item.id);
+  let objectiveNpcProgress = current.objectiveNpcProgress ?? {};
+
+  if (namedNpcIds.length > 0) {
+    if (!target || target.kind !== 'npc' || !namedNpcIds.includes(target.id)) return current;
+    const collected = new Set(objectiveNpcProgress[key] ?? []);
+    collected.add(target.id);
+    objectiveNpcProgress = { ...objectiveNpcProgress, [key]: [...collected] };
+    if (!namedNpcIds.every((id) => collected.has(id))) {
+      return { ...current, objectiveNpcProgress };
     }
+    completed = true;
   } else if (/inspect|examine|investigate|read/.test(objective)) {
-    completed = Boolean(
-      target && (
-        target.kind === 'landmark' ||
-        objective.includes(target.name.toLowerCase()) ||
-        (objective.includes('emblem') && /emblem|portico|plaque/i.test(target.name))
-      )
-    );
+    completed = Boolean(target?.kind === 'landmark');
   } else if (/report|arrive/.test(objective)) {
-    completed = Boolean(event.distanceDelta && current.distanceWalked + (event.distanceDelta ?? 0) >= 8);
+    completed = Boolean(event.distanceDelta && current.distanceWalked + event.distanceDelta >= 8);
   } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
     completed = Boolean(event.enteredInterior);
-  } else if (/custom conversation|send a message|build trust/.test(objective)) {
-    completed = Boolean(event.customMessageSent);
+  } else if (/custom conversation|send a message|build trust|speak|talk|meet|greet|conversation/.test(objective)) {
+    completed = Boolean(event.customMessageSent || target?.kind === 'npc');
   } else {
     completed = Boolean(target || event.enteredInterior);
   }
@@ -472,7 +469,9 @@ export function recordStoryObjectiveEvent(
   const completedObjectiveKeys = [...(current.completedObjectiveKeys ?? [])];
   if (completedObjectiveKeys.includes(key)) return current;
   completedObjectiveKeys.push(key);
-  return { ...current, completedObjectiveKeys };
+  const nextObjectiveNpcProgress = { ...objectiveNpcProgress };
+  delete nextObjectiveNpcProgress[key];
+  return { ...current, completedObjectiveKeys, objectiveNpcProgress: nextObjectiveNpcProgress };
 }
 
 /**
