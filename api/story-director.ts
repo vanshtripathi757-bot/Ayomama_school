@@ -12,6 +12,15 @@ function limited(key: string) {
 function text(value: unknown, max: number, fallback: string) { return typeof value === 'string' ? value.trim().slice(0, max) : fallback; }
 export default async function handler(req: RequestLike, res: ResponseLike) {
   res.setHeader('Cache-Control', 'no-store');
+  const origin = req.headers?.origin;
+  const host = req.headers?.host;
+  if (typeof origin === 'string' && typeof host === 'string') {
+    try {
+      if (new URL(origin).host !== host) return res.status(403).json({ error: 'Cross-origin request blocked.' });
+    } catch {
+      return res.status(403).json({ error: 'Invalid request origin.' });
+    }
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const forwarded = req.headers?.['x-forwarded-for'];
   const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded?.split(',')[0]) || 'unknown';
@@ -23,7 +32,7 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
   const location = text(body.location, 100, 'Hoshino Academy Courtyard');
   const base = getDeterministicStoryPack(xp, completed);
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(200).json({ pack: base, source: 'canonical-director' });
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return res.status(200).json({ pack: base, source: 'canonical-director' });
   try {
     const ai = new GoogleGenAI({ apiKey });
     const result = await ai.models.generateContent({
