@@ -1995,7 +1995,15 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // Enlarged East Gymnasium Arena, West Cafeteria Hall, and Northwest 4-Story Student Dormitory Hall
   { id: 'gym_annex', minX: 30.2, maxX: 46.8, minZ: -3.2, maxZ: 19.2 },
   { id: 'cafe_pavilion', minX: -46.8, maxX: -30.8, minZ: -1.6, maxZ: 17.6 },
-  { id: 'student_dormitory', minX: -54.5, maxX: -35.5, minZ: -44.0, maxZ: -25.0 },
+  // Dormitory exterior shell split around its south entrance.
+  { id: 'student_dormitory_west_wall', minX: -54.5, maxX: -54.0, minZ: -44.0, maxZ: -25.0 },
+  { id: 'student_dormitory_east_wall', minX: -36.0, maxX: -35.5, minZ: -44.0, maxZ: -25.0 },
+  { id: 'student_dormitory_north_wall', minX: -54.5, maxX: -35.5, minZ: -44.0, maxZ: -43.5 },
+  { id: 'student_dormitory_front_left', minX: -54.5, maxX: -48.0, minZ: -25.5, maxZ: -25.0 },
+  { id: 'student_dormitory_front_right', minX: -42.0, maxX: -35.5, minZ: -25.5, maxZ: -25.0 },
+  { id: 'dormitory_bed_west', minX: -51.6, maxX: -49.2, minZ: -37.9, maxZ: -34.5 },
+  { id: 'dormitory_bed_east', minX: -40.8, maxX: -38.4, minZ: -37.9, maxZ: -34.5 },
+  { id: 'dormitory_lounge_desk', minX: -48.0, maxX: -42.0, minZ: -41.6, maxZ: -40.4 },
 
   // South Perimeter Walls & Gate Pillars (leaving central gate open between -4.2 and +4.2)
   { id: 'south_wall_west', minX: -38.0, maxX: -4.2, minZ: 34.0, maxZ: 36.0 },
