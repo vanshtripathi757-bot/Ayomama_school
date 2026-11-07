@@ -713,8 +713,13 @@ export function updateCharacterRigAnimation(
   } else if (activityIntent !== 'idle') {
     // Small, readable task gestures make scheduled object use visible without a full mocap rig.
     const cycle = Math.sin(elapsedTime * 2.1);
-    rig.leftLegPivot.rotation.x *= 0.82;
-    rig.rightLegPivot.rotation.x *= 0.82;
+    if (activityIntent === 'sitting') {
+      rig.leftLegPivot.rotation.x = THREE.MathUtils.lerp(rig.leftLegPivot.rotation.x, -1.05, 0.14);
+      rig.rightLegPivot.rotation.x = THREE.MathUtils.lerp(rig.rightLegPivot.rotation.x, -1.05, 0.14);
+    } else {
+      rig.leftLegPivot.rotation.x *= 0.82;
+      rig.rightLegPivot.rotation.x *= 0.82;
+    }
     rig.bodyScaleGroup.position.y = activityIntent === 'sitting' ? -0.08 : Math.sin(elapsedTime * 1.8) * 0.008;
     rig.bodyScaleGroup.rotation.x = THREE.MathUtils.lerp(rig.bodyScaleGroup.rotation.x, activityIntent === 'reading' ? 0.08 : 0, 0.12);
     rig.headGroup.rotation.set(activityIntent === 'reading' ? 0.16 + cycle * 0.025 : 0, 0, cycle * 0.025);
