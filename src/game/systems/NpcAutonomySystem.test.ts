@@ -4,6 +4,7 @@ import {
   NPC_ACTIVITY_ANCHORS,
   NPC_DAILY_SCHEDULES,
   appendNpcMemory,
+  appendNpcRelationshipMemory,
   getNpcActivityDirectives,
   getNpcDailyDirective,
   getNpcMemoryContext,
@@ -61,4 +62,15 @@ test('invalid NPC memory events are ignored and summaries are capped', () => {
     id: 'long', npcId: 'npc_hana', kind: 'greeting', summary: 'x'.repeat(300), occurredAt: 1,
   });
   assert.equal(result[0].summary.length, 180);
+});
+
+test('relationship memories are persisted with bounded length and familiarity', () => {
+  let relationships = appendNpcRelationshipMemory(undefined, 'npc_hana', 'Met the transfer student');
+  relationships = appendNpcRelationshipMemory(relationships, 'npc_hana', 'Discussed the library archive');
+  relationships = appendNpcRelationshipMemory(relationships, 'npc_hana', 'Discussed the library archive');
+  assert.equal(relationships.npc_hana.familiarity, 2);
+  assert.deepEqual(relationships.npc_hana.memories, [
+    'Met the transfer student',
+    'Discussed the library archive',
+  ]);
 });
