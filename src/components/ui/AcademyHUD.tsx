@@ -29,6 +29,7 @@ import { useGameStore } from '../../store/useGameStore';
 import { CameraViewpointId } from '../../types/game';
 import { LIBRARY_BOOKS, getOwnedLibraryBookIds } from '../../game/systems/LibraryBookSystem';
 import { TRANSIT_DESTINATIONS } from '../../game/systems/TransitSystem';
+import { getOwnedTownItemIds, getTownShopItems } from '../../game/systems/TownShopSystem';
 
 export function AcademyHUD() {
   const phase = useGameStore((s) => s.phase);
@@ -61,6 +62,7 @@ export function AcademyHUD() {
   const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
   const takeLibraryBook = useGameStore((s) => s.takeLibraryBook);
   const returnLibraryBook = useGameStore((s) => s.returnLibraryBook);
+  const purchaseTownItem = useGameStore((s) => s.purchaseTownItem);
   const teleportToZone = useGameStore((s) => s.teleportToZone);
   const selectDialogueChoice = useGameStore((s) => s.selectDialogueChoice);
   const sendCustomDialogueMessage = useGameStore((s) => s.sendCustomDialogueMessage);
@@ -203,6 +205,15 @@ export function AcademyHUD() {
   }, [phase, activeDialogue, activeWorldInteraction, setIsSprintingUI]);
 
   if (phase !== 'playing' && phase !== 'paused') return null;
+
+  const activeTownShopId =
+    activeWorldInteraction?.objectId === 'town-manga-shop-counter'
+      ? 'manga-shop'
+      : activeWorldInteraction?.objectId === 'town-konbini-counter'
+        ? 'konbini'
+        : null;
+  const ownedTownItemIds = getOwnedTownItemIds(missionProgress.inventoryItems);
+  const currentCpBalance = missionProgress.cpPoints ?? 0;
 
   const atmo = ATMOSPHERE_PRESETS[timeOfDay];
   const periodCfg = SCHOOL_PERIODS[schoolPeriod];
@@ -719,6 +730,50 @@ export function AcademyHUD() {
             >
               Exit
             </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeTownShopId && (
+          <div
+            data-testid="town-shop-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Hoshino town shop"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,520px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-amber-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Hoshino Town · Shopping Street</div>
+                <h2 className="text-base font-bold text-white">
+                  {activeTownShopId === 'manga-shop' ? 'Manga, Books & Keepsakes' : 'Konbini Mart'}
+                </h2>
+                <p className="text-[11px] text-slate-300">Available Class Points: {currentCpBalance} CP</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="space-y-2">
+              {getTownShopItems(activeTownShopId).map((item) => {
+                const owned = ownedTownItemIds.includes(item.id);
+                const canAfford = currentCpBalance >= item.priceCp;
+                return (
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/80 p-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white">{item.name}</div>
+                      <div className="mt-1 text-[10px] text-slate-400">{item.description}</div>
+                      <div className="mt-1 text-[10px] font-mono text-amber-300">{item.priceCp} CP</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={owned || !canAfford}
+                      onClick={() => purchaseTownItem(item.id)}
+                      className="shrink-0 rounded-md bg-amber-600 px-3 py-2 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                    >
+                      {owned ? 'Owned' : canAfford ? 'Buy' : 'Need CP'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
