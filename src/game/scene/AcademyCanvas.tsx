@@ -468,7 +468,25 @@ export function AcademyCanvas() {
           activeWorldInteraction.actionId,
         );
         lastActiveWorldInteractionId = started ? activeWorldInteraction.objectId : null;
-        if (!started) useGameStore.getState().endWorldInteraction();
+        if (!started) {
+          useGameStore.getState().endWorldInteraction();
+        } else if (['sit', 'rest'].includes(activeWorldInteraction.actionId)) {
+          const targetObject = worldInteractionSystem.get(activeWorldInteraction.objectId);
+          const anchor = targetObject?.anchor;
+          if (anchor) {
+            playerState.x = anchor.position.x;
+            playerState.y = anchor.position.y;
+            playerState.z = anchor.position.z;
+            playerState.vx = 0;
+            playerState.vy = 0;
+            playerState.vz = 0;
+            playerState.yaw = anchor.yaw;
+            sharedInputBridge.playerX = playerState.x;
+            sharedInputBridge.playerY = playerState.y;
+            sharedInputBridge.playerZ = playerState.z;
+            sharedInputBridge.playerYaw = playerState.yaw;
+          }
+        }
       } else if (!activeWorldInteraction && lastActiveWorldInteractionId) {
         worldInteractionSystem.exit();
         lastActiveWorldInteractionId = null;
@@ -678,6 +696,14 @@ export function AcademyCanvas() {
 
           // Update protagonist rig animation
           const isMoving = Math.hypot(playerState.vx, playerState.vz) > 0.25;
+          const playerActivityIntent =
+            activeWorldInteraction?.actionId === 'sit' || activeWorldInteraction?.actionId === 'rest'
+              ? 'sitting'
+              : activeWorldInteraction?.actionId === 'study' || activeWorldInteraction?.actionId === 'read'
+                ? 'reading'
+                : activeWorldInteraction
+                  ? 'working'
+                  : 'idle';
           updateCharacterRigAnimation(
             protagonistRig,
             playerState.walkPhase,
@@ -685,7 +711,10 @@ export function AcademyCanvas() {
             playerState.isSprinting,
             playerState.squashY,
             playerState.squashXZ,
-            elapsedTotal
+            elapsedTotal,
+            false,
+            'wave',
+            playerActivityIntent
           );
 
           // Step autonomous NPC patrols before checking proximity
