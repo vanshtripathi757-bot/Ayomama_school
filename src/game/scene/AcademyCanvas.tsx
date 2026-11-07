@@ -437,6 +437,11 @@ export function AcademyCanvas() {
     function tick() {
       if (isDisposed) return;
       const now = performance.now();
+      const targetFrameInterval = 1000 / performanceProfile.targetFps;
+      if (!isSoftwareGl && now - lastTime < targetFrameInterval) {
+        frameId = requestAnimationFrame(tick);
+        return;
+      }
       const rawDt = (now - lastTime) / 1000;
       lastTime = now;
       const dt = Math.min(Math.max(rawDt, 0.001), 0.05);
