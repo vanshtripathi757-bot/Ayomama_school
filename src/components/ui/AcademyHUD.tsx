@@ -123,6 +123,14 @@ export function AcademyHUD() {
         return;
       }
 
+      if (activeWorldInteraction) {
+        if (e.code === 'Escape') {
+          e.preventDefault();
+          endWorldInteraction();
+        }
+        return;
+      }
+
       if (isTypingInInput) return;
 
       if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -133,6 +141,10 @@ export function AcademyHUD() {
         if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && nearbyInteractable) {
           e.preventDefault();
           openInteractionDialogue();
+        } else if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && nearbyWorldObject) {
+          e.preventDefault();
+          const action = nearbyWorldObject.actions.find((item) => item.enabled !== false);
+          if (action) beginWorldInteraction(nearbyWorldObject.id, action.id);
         } else if (e.code === 'KeyC') {
           setCameraMode(cameraMode === 'follow' ? 'overview' : 'follow');
         } else if (e.code === 'KeyH') {
@@ -161,24 +173,28 @@ export function AcademyHUD() {
     activeModal,
     activeDialogue,
     nearbyInteractable,
+    nearbyWorldObject,
+    activeWorldInteraction,
     setPhase,
     setCameraMode,
     setActiveModal,
     toggleMute,
     setActiveViewpoint,
     openInteractionDialogue,
+    beginWorldInteraction,
+    endWorldInteraction,
     closeDialogue,
   ]);
 
   // Reset mobile joystick if phase changes or dialogue opens
   useEffect(() => {
-    if (phase !== 'playing' || activeDialogue !== null) {
+    if (phase !== 'playing' || activeDialogue !== null || activeWorldInteraction !== null) {
       setKnobOffset({ x: 0, y: 0 });
       resetMobileInputBridge();
       setMobileSprintHeld(false);
       setIsSprintingUI(false);
     }
-  }, [phase, activeDialogue, setIsSprintingUI]);
+  }, [phase, activeDialogue, activeWorldInteraction, setIsSprintingUI]);
 
   if (phase !== 'playing' && phase !== 'paused') return null;
 
