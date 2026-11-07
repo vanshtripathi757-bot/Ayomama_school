@@ -458,7 +458,7 @@ export function recordStoryObjectiveEvent(
       )
     );
   } else if (/report|arrive/.test(objective)) {
-    completed = Boolean(event.distanceDelta && current.distanceWalked >= 8);
+    completed = Boolean(event.distanceDelta && current.distanceWalked + (event.distanceDelta ?? 0) >= 8);
   } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
     completed = Boolean(event.enteredInterior);
   } else if (/custom conversation|send a message|build trust/.test(objective)) {
