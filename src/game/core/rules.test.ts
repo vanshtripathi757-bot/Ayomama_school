@@ -7,6 +7,7 @@ import {
   completeStoryPhaseProgress,
   computeAudioGain,
   computeEffectivePixelRatio,
+  getMobilePerformanceProfile,
   createInitialNPCRuntimeStates,
   dampValue,
   findNearestInteractable,
@@ -562,4 +563,26 @@ test('custom-conversation objectives require a sent player message, not just ope
   const sentMessage = recordStoryObjectiveEvent(progress, { interactedId: 'npc_sora', customMessageSent: true });
   assert.equal(getStoryPhaseObjectiveStatus(sentMessage).completedCount, 3);
   assert.equal(getStoryPhaseObjectiveStatus(sentMessage).quizUnlocked, true);
+});
+
+test('mobile performance profile scales rendering for constrained devices', () => {
+  assert.deepEqual(getMobilePerformanceProfile({
+    isMobile: true,
+    deviceMemoryGb: 3,
+    hardwareConcurrency: 4,
+  }), {
+    maxPixelRatio: 1,
+    shadowsAllowed: false,
+    maxShadowMapSize: 0,
+    maxPetals: 40,
+  });
+  const capableMobile = getMobilePerformanceProfile({
+    isMobile: true,
+    deviceMemoryGb: 8,
+    hardwareConcurrency: 8,
+  });
+  assert.equal(capableMobile.maxPixelRatio, 1.25);
+  assert.equal(capableMobile.maxShadowMapSize, 512);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false }).maxPixelRatio, 2);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false, isSoftwareGl: true }).shadowsAllowed, false);
 });
