@@ -381,6 +381,99 @@ export function completeStoryPhaseProgress(
 }
 
 /**
+ * Returns the active phase and its required objective checklist.
+ */
+export function getStoryPhaseObjectiveStatus(progress: MissionProgressState): {
+  objectives: string[];
+  completedIndexes: number[];
+  completedCount: number;
+  total: number;
+  quizUnlocked: boolean;
+  nextObjective: string | null;
+} {
+  const storyId = progress.activeStoryId ?? 'story_01';
+  const phaseNumber = progress.activePhaseNumber ?? 1;
+  const story = getAllStories(progress.customStories ?? []).find((item) => item.id === storyId);
+  const phase = story?.phases.find((item) => item.phaseNumber === phaseNumber);
+  const objectives = phase?.mainObjectives ?? [];
+  const completed = new Set(progress.completedObjectiveKeys ?? []);
+  const completedIndexes = objectives
+    .map((_, index) => index)
+    .filter((index) => completed.has(`${storyId}:phase_${phaseNumber}:objective_${index}`));
+  const nextIndex = objectives.findIndex((_, index) => !completedIndexes.includes(index));
+  return {
+    objectives,
+    completedIndexes,
+    completedCount: completedIndexes.length,
+    total: objectives.length,
+    quizUnlocked: objectives.length > 0 && completedIndexes.length === objectives.length,
+    nextObjective: nextIndex >= 0 ? objectives[nextIndex] : null,
+  };
+}
+
+/**
+ * Records one verified gameplay event against the next active story objective.
+ * Only one objective can advance per event, preventing one interaction from
+ * accidentally completing an entire phase.
+ */
+export function recordStoryObjectiveEvent(
+  current: MissionProgressState,
+  event: {
+    interactedId?: string;
+    customMessageSent?: boolean;
+    enteredInterior?: boolean;
+    distanceDelta?: number;
+  }
+): MissionProgressState {
+  const status = getStoryPhaseObjectiveStatus(current);
+  if (!status.nextObjective) return current;
+
+  const storyId = current.activeStoryId ?? 'story_01';
+  const phaseNumber = current.activePhaseNumber ?? 1;
+  const objectiveIndex = status.objectives.indexOf(status.nextObjective);
+  const objective = status.nextObjective.toLowerCase();
+  const target = event.interactedId
+    ? CAMPUS_INTERACTABLES.find((item) => item.id === event.interactedId)
+    : undefined;
+  let completed = false;
+
+  if (/speak|talk|meet|greet|conversation/.test(objective)) {
+    if (target?.kind === 'npc') {
+      const namedNpcIds = CAMPUS_INTERACTABLES
+        .filter((item) => item.kind === 'npc' && objective.includes(item.name.toLowerCase()))
+        .map((item) => item.id);
+      const interacted = new Set([...(current.interactedIds ?? []), target.id]);
+      completed = namedNpcIds.length > 0
+        ? namedNpcIds.every((id) => interacted.has(id))
+        : true;
+    } else if (event.customMessageSent) {
+      completed = true;
+    }
+  } else if (/inspect|examine|investigate|read/.test(objective)) {
+    completed = Boolean(
+      target && (
+        target.kind === 'landmark' ||
+        objective.includes(target.name.toLowerCase()) ||
+        (objective.includes('emblem') && /emblem|portico|plaque/i.test(target.name))
+      )
+    );
+  } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
+    completed = Boolean(event.enteredInterior || (event.distanceDelta && event.distanceDelta >= 8));
+  } else if (/custom conversation|send a message|build trust/.test(objective)) {
+    completed = Boolean(event.customMessageSent);
+  } else {
+    completed = Boolean(target || event.enteredInterior);
+  }
+
+  if (!completed) return current;
+  const key = `${storyId}:phase_${phaseNumber}:objective_${objectiveIndex}`;
+  const completedObjectiveKeys = [...(current.completedObjectiveKeys ?? [])];
+  if (completedObjectiveKeys.includes(key)) return current;
+  completedObjectiveKeys.push(key);
+  return { ...current, completedObjectiveKeys };
+}
+
+/**
  * Updates NPC relationship metrics (friendship, trust, respect, rivalry, familiarity)
  * and appends a persistent memory entry when the player interacts or chats with an NPC.
  */
