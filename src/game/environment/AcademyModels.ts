@@ -1260,9 +1260,17 @@ export function buildAcademyEnvironment(
     trackGeo(new THREE.BoxGeometry(110, 0.18, 2.2)),
     hallwayTileMat
   );
-  residentialSidewalk.position.set(0, 0.09, 53.8);
+  residentialSidewalk.position.set(0, 0.09, 64.7);
   residentialSidewalk.receiveShadow = true;
   residentialGroup.add(residentialSidewalk);
+
+  const residentialNorthSidewalk = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(110, 0.18, 2.2)),
+    hallwayTileMat
+  );
+  residentialNorthSidewalk.position.set(0, 0.09, 85.8);
+  residentialNorthSidewalk.receiveShadow = true;
+  residentialGroup.add(residentialNorthSidewalk);
 
   // ==========================================================================
   // 8B. 4X EXPANDED DISTRICTS:
