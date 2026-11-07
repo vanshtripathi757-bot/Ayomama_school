@@ -139,3 +139,20 @@ export function getNpcMemoryContext(memories: NpcMemoryEvent[], npcId: string, l
     .slice(-Math.max(0, Math.min(8, limit)))
     .map((memory) => memory.summary);
 }
+
+export function applyNpcDailySchedules<T extends {
+  id: string;
+  patrolWaypoints?: Vector3Tuple[];
+  currentActivity?: string;
+}>(interactables: T[], period: TimeOfDayPreset): T[] {
+  const directives = getNpcActivityDirectives(period);
+  return interactables.map((item) => {
+    const directive = directives[item.id];
+    if (!directive) return item;
+    return {
+      ...item,
+      patrolWaypoints: [directive.anchor.position],
+      currentActivity: directive.activity,
+    };
+  });
+}
