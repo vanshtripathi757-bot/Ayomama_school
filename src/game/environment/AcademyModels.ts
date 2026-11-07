@@ -1160,6 +1160,103 @@ export function buildAcademyEnvironment(
   });
 
   // ==========================================================================
+  // 8A. HOSHINO RESIDENTIAL NEIGHBOURHOOD — low-rise homes and a walkable street
+  // ==========================================================================
+  const residentialGroup = new THREE.Group();
+  residentialGroup.name = 'HoshinoResidentialNeighbourhood';
+  rootGroup.add(residentialGroup);
+
+  const residentialWallMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0xd9d1c5, roughness: 0.82, metalness: 0.02,
+  }));
+  const residentialRoofMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x35465b, roughness: 0.62, metalness: 0.12,
+  }));
+  const residentialDoorMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x704c3b, roughness: 0.76,
+  }));
+  const residentialWindowMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x9ac6d9, roughness: 0.2, metalness: 0.1,
+    emissive: 0x1d3440, emissiveIntensity: 0.12,
+  }));
+  const houseBodyGeo = trackGeo(new THREE.BoxGeometry(10, 6.8, 9));
+  const houseRoofGeo = trackGeo(new THREE.ConeGeometry(7.2, 2.8, 4));
+  const houseDoorGeo = trackGeo(new THREE.BoxGeometry(1.25, 2.5, 0.16));
+  const houseWindowGeo = trackGeo(new THREE.BoxGeometry(1.75, 1.35, 0.12));
+  const houseStepGeo = trackGeo(new THREE.BoxGeometry(2.2, 0.22, 0.8));
+  const housePositions: Array<[number, number]> = [
+    [-48, 61], [48, 61], [-48, 80], [48, 80],
+  ];
+
+  for (const [houseX, houseZ] of housePositions) {
+    const home = new THREE.Group();
+    home.position.set(houseX, 0, houseZ);
+    const body = new THREE.Mesh(houseBodyGeo, residentialWallMat);
+    body.position.y = 3.4;
+    body.castShadow = true;
+    body.receiveShadow = true;
+    home.add(body);
+
+    const roof = new THREE.Mesh(houseRoofGeo, residentialRoofMat);
+    roof.rotation.y = Math.PI / 4;
+    roof.position.y = 8.15;
+    roof.castShadow = true;
+    home.add(roof);
+
+    const door = new THREE.Mesh(houseDoorGeo, residentialDoorMat);
+    door.position.set(0, 1.35, 4.58);
+    home.add(door);
+
+    for (const wx of [-2.9, 2.9]) {
+      const windowMesh = new THREE.Mesh(houseWindowGeo, residentialWindowMat);
+      windowMesh.position.set(wx, 3.6, 4.58);
+      home.add(windowMesh);
+      const sill = new THREE.Mesh(
+        trackGeo(new THREE.BoxGeometry(2.0, 0.12, 0.28)),
+        darkTrimMat
+      );
+      sill.position.set(wx, 2.82, 4.65);
+      home.add(sill);
+    }
+
+    const step = new THREE.Mesh(houseStepGeo, stoneMat);
+    step.position.set(0, 0.12, 5.0);
+    home.add(step);
+
+    // Mailbox and two short garden boundary rails.
+    const mailbox = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.34, 0.8, 0.34)),
+      darkTrimMat
+    );
+    mailbox.position.set(3.8, 0.4, 5.8);
+    home.add(mailbox);
+
+    const fenceGeo = trackGeo(new THREE.BoxGeometry(0.16, 0.72, 3.2));
+    for (const fx of [-5.7, 5.7]) {
+      const fence = new THREE.Mesh(fenceGeo, residentialDoorMat);
+      fence.position.set(fx, 0.36, 3.2);
+      home.add(fence);
+    }
+    residentialGroup.add(home);
+  }
+
+  const residentialRoad = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(110, 0.12, 8.5)),
+    darkTrimMat
+  );
+  residentialRoad.position.set(0, 0.035, 70.5);
+  residentialRoad.receiveShadow = true;
+  residentialGroup.add(residentialRoad);
+
+  const residentialSidewalk = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(110, 0.18, 2.2)),
+    hallwayTileMat
+  );
+  residentialSidewalk.position.set(0, 0.09, 76.0);
+  residentialSidewalk.receiveShadow = true;
+  residentialGroup.add(residentialSidewalk);
+
+  // ==========================================================================
   // 8B. 4X EXPANDED DISTRICTS:
   //  - SOUTH: SEIRAN TOWN SHOPPING STREET & ELECTRIC RAILWAY STATION (z = 42..102)
   //  - EAST:  OLYMPIC 25M SWIMMING POOL COMPLEX & OBSERVATORY DOME (x = 50..82)
