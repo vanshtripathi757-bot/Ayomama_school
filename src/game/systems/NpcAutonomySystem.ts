@@ -1,7 +1,7 @@
 import type { TimeOfDayPreset, Vector3Tuple } from '../../types/game';
 
 export type NpcActivityKind = 'teaching' | 'reading' | 'socializing' | 'club-work' | 'sports' | 'resting' | 'administration';
-export type NpcAnimationIntent = 'idle' | 'reading' | 'working' | 'sitting';
+export type NpcAnimationIntent = 'idle' | 'reading' | 'working' | 'sitting' | 'teaching';
 
 export interface NpcActivityAnchor {
   id: string;
@@ -53,7 +53,7 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
     twilight: { anchor: 'dormitory-common-room', activity: 'Relaxing in the dormitory common room', animation: 'sitting' },
   },
   npc_takeda: {
-    morning: { anchor: 'class-a-teacher-desk', activity: 'Teaching and preparing the Class A lesson', animation: 'teaching' as NpcAnimationIntent },
+    morning: { anchor: 'class-a-teacher-desk', activity: 'Teaching and preparing the Class A lesson', animation: 'teaching' },
     golden_hour: { anchor: 'class-a-teacher-desk', activity: 'Reviewing student assignments', animation: 'working' },
     twilight: { anchor: 'library-east-shelf', activity: 'Researching academy history', animation: 'reading' },
   },
