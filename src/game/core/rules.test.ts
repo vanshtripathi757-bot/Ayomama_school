@@ -547,3 +547,19 @@ test('sequential mission objectives require ordered gameplay events before the p
   const repeated = recordStoryObjectiveEvent(progress, { interactedId: 'landmark_notice_board' });
   assert.deepEqual(repeated.completedObjectiveKeys, progress.completedObjectiveKeys, 'repeated events do not duplicate objective keys');
 });
+
+test('custom-conversation objectives require a sent player message, not just opening NPC dialogue', () => {
+  const progress = {
+    ...structuredClone(INITIAL_MISSION_PROGRESS),
+    activePhaseNumber: 2,
+    completedObjectiveKeys: [
+      'story_01:phase_2:objective_0',
+      'story_01:phase_2:objective_1',
+    ],
+  };
+  const openedDialogue = recordStoryObjectiveEvent(progress, { interactedId: 'npc_sora' });
+  assert.equal(getStoryPhaseObjectiveStatus(openedDialogue).completedCount, 2);
+  const sentMessage = recordStoryObjectiveEvent(progress, { interactedId: 'npc_sora', customMessageSent: true });
+  assert.equal(getStoryPhaseObjectiveStatus(sentMessage).completedCount, 3);
+  assert.equal(getStoryPhaseObjectiveStatus(sentMessage).quizUnlocked, true);
+});
