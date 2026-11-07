@@ -788,25 +788,29 @@ export function buildAcademyEnvironment(
   rootGroup.add(cafeRoof);
 
   // 4-Story Hoshino Student Dormitory Hall. Split shell leaves a real walk-in entrance.
+  const dormitoryGroup = new THREE.Group();
+  dormitoryGroup.name = 'HoshinoDormitoryInterior';
+  dormitoryGroup.userData.streamRegionId = 'dormitory';
+  dormitoryGroup.userData.streamCenter = { x: -45, z: -34.5 };
   const dormFloor = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(18.5, 0.24, 18.5)),
     interiorFloorMat
   );
   dormFloor.position.set(-45.0, 0.12, -34.5);
   dormFloor.receiveShadow = true;
-  rootGroup.add(dormFloor);
+  dormitoryGroup.add(dormFloor);
 
   const dormWallGeo = trackGeo(new THREE.BoxGeometry(0.5, 15.2, 18.5));
   const dormSideLeft = new THREE.Mesh(dormWallGeo, facadeMaterial);
   dormSideLeft.position.set(-54.25, 7.6, -34.5);
   dormSideLeft.castShadow = true;
   dormSideLeft.receiveShadow = true;
-  rootGroup.add(dormSideLeft);
+  dormitoryGroup.add(dormSideLeft);
   const dormSideRight = new THREE.Mesh(dormWallGeo, facadeMaterial);
   dormSideRight.position.set(-35.75, 7.6, -34.5);
   dormSideRight.castShadow = true;
   dormSideRight.receiveShadow = true;
-  rootGroup.add(dormSideRight);
+  dormitoryGroup.add(dormSideRight);
 
   const dormBackWall = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(18.5, 15.2, 0.5)),
@@ -814,7 +818,7 @@ export function buildAcademyEnvironment(
   );
   dormBackWall.position.set(-45.0, 7.6, -43.75);
   dormBackWall.castShadow = true;
-  rootGroup.add(dormBackWall);
+  dormitoryGroup.add(dormBackWall);
 
   const dormFrontWallGeo = trackGeo(new THREE.BoxGeometry(6.25, 15.2, 0.5));
   for (const x of [-51.125, -38.875]) {
@@ -822,7 +826,7 @@ export function buildAcademyEnvironment(
     segment.position.set(x, 7.6, -25.25);
     segment.castShadow = true;
     segment.receiveShadow = true;
-    rootGroup.add(segment);
+    dormitoryGroup.add(segment);
   }
 
   // Ground-floor resident common room: beds, wardrobes, desks and a lounge.
@@ -836,13 +840,13 @@ export function buildAcademyEnvironment(
     const base = new THREE.Mesh(dormBedGeo, darkTrimMat);
     base.position.set(bed.x, 0.42, bed.z);
     base.castShadow = true;
-    rootGroup.add(base);
+    dormitoryGroup.add(base);
     const mattress = new THREE.Mesh(dormMattressGeo, interiorWallMat);
     mattress.position.set(bed.x, 0.72, bed.z);
-    rootGroup.add(mattress);
+    dormitoryGroup.add(mattress);
     const pillow = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(1.15, 0.14, 0.55)), lanternBulbMaterial);
     pillow.position.set(bed.x, 0.88, bed.z - 1.12);
-    rootGroup.add(pillow);
+    dormitoryGroup.add(pillow);
   }
 
   const dormLockerGeo = trackGeo(new THREE.BoxGeometry(1.15, 2.5, 0.8));
@@ -850,7 +854,7 @@ export function buildAcademyEnvironment(
     const locker = new THREE.Mesh(dormLockerGeo, darkTrimMat);
     locker.position.set(x, 1.25, -29.0);
     locker.castShadow = true;
-    rootGroup.add(locker);
+    dormitoryGroup.add(locker);
   }
 
   const dormDesk = new THREE.Mesh(
@@ -859,7 +863,7 @@ export function buildAcademyEnvironment(
   );
   dormDesk.position.set(-45.0, 0.48, -41.0);
   dormDesk.castShadow = true;
-  rootGroup.add(dormDesk);
+  dormitoryGroup.add(dormDesk);
 
   const dormRoof = new THREE.Mesh(
     trackGeo(new THREE.ConeGeometry(15.2, 4.2, 4)),
@@ -868,17 +872,19 @@ export function buildAcademyEnvironment(
   dormRoof.rotation.y = Math.PI / 4;
   dormRoof.position.set(-45.0, 17.3, -34.5);
   dormRoof.castShadow = true;
-  rootGroup.add(dormRoof);
+  dormitoryGroup.add(dormRoof);
 
   // Repeating facade bands and upper-floor windows establish the four-storey silhouette.
   const dormBandGeo = trackGeo(new THREE.BoxGeometry(18.7, 0.22, 0.34));
   for (const y of [3.8, 7.6, 11.4, 15.0]) {
     const band = new THREE.Mesh(dormBandGeo, darkTrimMat);
     band.position.set(-45.0, y, -25.0);
-    rootGroup.add(band);
+    dormitoryGroup.add(band);
   }
 
   // ==========================================================================
+  rootGroup.add(dormitoryGroup);
+
   // 5. NORTH ATHLETIC RUNNING TRACK & SOCCER FIELD (Behind the Main Wing!)
   // ==========================================================================
   const northTrackSurface = new THREE.Mesh(
@@ -1164,6 +1170,8 @@ export function buildAcademyEnvironment(
   // ==========================================================================
   const residentialGroup = new THREE.Group();
   residentialGroup.name = 'HoshinoResidentialNeighbourhood';
+  residentialGroup.userData.streamRegionId = 'residential';
+  residentialGroup.userData.streamCenter = { x: 0, z: 70 };
   rootGroup.add(residentialGroup);
 
   const residentialWallMat = trackMat(new THREE.MeshStandardMaterial({
@@ -1252,7 +1260,7 @@ export function buildAcademyEnvironment(
     trackGeo(new THREE.BoxGeometry(110, 0.18, 2.2)),
     hallwayTileMat
   );
-  residentialSidewalk.position.set(0, 0.09, 76.0);
+  residentialSidewalk.position.set(0, 0.09, 53.8);
   residentialSidewalk.receiveShadow = true;
   residentialGroup.add(residentialSidewalk);
 
