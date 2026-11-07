@@ -95,7 +95,6 @@ export function buildExpandedFacilities(): ExpandedFacilityRefs {
     dispose: () => {
       geometries.forEach((item) => item.dispose());
       materials.forEach((item) => item.dispose());
-      ceilingLight.dispose();
     },
   };
 }
