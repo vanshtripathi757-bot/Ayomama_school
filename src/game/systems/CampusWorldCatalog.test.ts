@@ -30,6 +30,16 @@ test('expanded facility and transport objects expose the expected actions', () =
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'town-konbini-counter')?.actions.some((action) => action.id === 'view-menu'));
 });
 
+test('regional facilities expose meaningful player interactions', () => {
+  const byId = new Map(CAMPUS_WORLD_OBJECTS.map((object) => [object.id, object]));
+  assert.ok(byId.get('east-aquatics-deck')?.actions.some((action) => action.id === 'start-activity'));
+  assert.ok(byId.get('research-centre-observatory')?.actions.some((action) => action.id === 'inspect'));
+  assert.ok(byId.get('west-koi-garden-bridge')?.actions.some((action) => action.id === 'inspect'));
+  assert.ok(byId.get('festival-amphitheatre-stage')?.actions.some((action) => action.id === 'start-activity'));
+  assert.ok(byId.get('mountain-shrine-altar')?.actions.some((action) => action.id === 'inspect'));
+  assert.ok(byId.get('station-timetable-board')?.actions.some((action) => action.id === 'view-map'));
+});
+
 test('every scheduled NPC object activity points to a registered world object', () => {
   const registeredIds = new Set(CAMPUS_WORLD_OBJECTS.map((object) => object.id));
   for (const activity of NPC_OBJECT_ACTIVITIES) {
