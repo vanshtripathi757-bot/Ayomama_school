@@ -349,6 +349,7 @@ export function AcademyCanvas() {
     let unsavedWalkDistance = 0;
     let stepCount = 0;
     let wasInsideSchool = false;
+    let lastActiveWorldInteractionId: string | null = null;
 
     // 9. Animation Loop State & Responsive ResizeObserver
     let frameId = 0;
@@ -419,6 +420,17 @@ export function AcademyCanvas() {
         activeWorldInteraction,
       } = stateRef.current;
       const isWorldInteracting = Boolean(activeWorldInteraction);
+      if (activeWorldInteraction && activeWorldInteraction.objectId !== lastActiveWorldInteractionId) {
+        const started = worldInteractionSystem.begin(
+          activeWorldInteraction.objectId,
+          activeWorldInteraction.actionId,
+        );
+        lastActiveWorldInteractionId = started ? activeWorldInteraction.objectId : null;
+        if (!started) useGameStore.getState().endWorldInteraction();
+      } else if (!activeWorldInteraction && lastActiveWorldInteractionId) {
+        worldInteractionSystem.exit();
+        lastActiveWorldInteractionId = null;
+      }
 
       // Sync dynamic Graphics Settings changes immediately
       if (settings.graphics.resolutionScale !== prevResScale) {
