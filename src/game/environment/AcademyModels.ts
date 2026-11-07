@@ -1187,7 +1187,6 @@ export function buildAcademyEnvironment(
     color: 0x9ac6d9, roughness: 0.2, metalness: 0.1,
     emissive: 0x1d3440, emissiveIntensity: 0.12,
   }));
-  const houseBodyGeo = trackGeo(new THREE.BoxGeometry(10, 6.8, 9));
   const houseRoofGeo = trackGeo(new THREE.ConeGeometry(7.2, 2.8, 4));
   const houseDoorGeo = trackGeo(new THREE.BoxGeometry(1.25, 2.5, 0.16));
   const houseWindowGeo = trackGeo(new THREE.BoxGeometry(1.75, 1.35, 0.12));
@@ -1199,11 +1198,70 @@ export function buildAcademyEnvironment(
   for (const [houseX, houseZ] of housePositions) {
     const home = new THREE.Group();
     home.position.set(houseX, 0, houseZ);
-    const body = new THREE.Mesh(houseBodyGeo, residentialWallMat);
-    body.position.y = 3.4;
-    body.castShadow = true;
-    body.receiveShadow = true;
-    home.add(body);
+    // Open-front wall construction replaces the old solid box so each house has a walk-in interior.
+    const homeFloor = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(9.8, 0.18, 8.8)),
+      interiorFloorMat
+    );
+    homeFloor.position.y = 0.09;
+    homeFloor.receiveShadow = true;
+    home.add(homeFloor);
+
+    const homeSideWallGeo = trackGeo(new THREE.BoxGeometry(0.28, 6.8, 9));
+    for (const sideX of [-4.86, 4.86]) {
+      const sideWall = new THREE.Mesh(homeSideWallGeo, residentialWallMat);
+      sideWall.position.set(sideX, 3.4, 0);
+      sideWall.castShadow = true;
+      sideWall.receiveShadow = true;
+      home.add(sideWall);
+    }
+    const homeBackWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(10, 6.8, 0.28)),
+      residentialWallMat
+    );
+    homeBackWall.position.set(0, 3.4, -4.36);
+    homeBackWall.castShadow = true;
+    home.add(homeBackWall);
+
+    const homeFrontPanelGeo = trackGeo(new THREE.BoxGeometry(4.15, 6.8, 0.28));
+    for (const panelX of [-2.92, 2.92]) {
+      const frontPanel = new THREE.Mesh(homeFrontPanelGeo, residentialWallMat);
+      frontPanel.position.set(panelX, 3.4, 4.36);
+      frontPanel.castShadow = true;
+      home.add(frontPanel);
+    }
+
+    // Compact furnished living area visible from the open doorway.
+    const homeSofa = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.5, 0.72, 0.9)),
+      darkTrimMat
+    );
+    homeSofa.position.set(-2.7, 0.48, -2.0);
+    home.add(homeSofa);
+    const homeTable = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(1.8, 0.14, 1.0)),
+      woodMat
+    );
+    homeTable.position.set(-2.0, 0.82, 0.0);
+    home.add(homeTable);
+    const homeBed = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.2, 0.42, 3.0)),
+      darkTrimMat
+    );
+    homeBed.position.set(2.6, 0.38, -2.1);
+    home.add(homeBed);
+    const homeMattress = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.12, 0.16, 2.9)),
+      interiorWallMat
+    );
+    homeMattress.position.set(2.6, 0.66, -2.1);
+    home.add(homeMattress);
+    const homeDesk = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(1.8, 0.82, 0.72)),
+      woodMat
+    );
+    homeDesk.position.set(2.5, 0.48, 1.1);
+    home.add(homeDesk);
 
     const roof = new THREE.Mesh(houseRoofGeo, residentialRoofMat);
     roof.rotation.y = Math.PI / 4;
@@ -1212,7 +1270,8 @@ export function buildAcademyEnvironment(
     home.add(roof);
 
     const door = new THREE.Mesh(houseDoorGeo, residentialDoorMat);
-    door.position.set(0, 1.35, 4.58);
+    door.position.set(0.72, 1.35, 4.58);
+    door.rotation.y = -0.82;
     home.add(door);
 
     for (const wx of [-2.9, 2.9]) {
