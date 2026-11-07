@@ -6,6 +6,8 @@ import {
   appendNpcMemory,
   appendNpcRelationshipMemory,
   getNpcActivityDirectives,
+  getNpcObjectActivity,
+  applyNpcDailySchedules,
   getNpcDailyDirective,
   getNpcMemoryContext,
 } from './NpcAutonomySystem';
@@ -73,4 +75,24 @@ test('relationship memories are persisted with bounded length and familiarity', 
     'Met the transfer student',
     'Discussed the library archive',
   ]);
+});
+
+test('scheduled NPC object activities resolve to registered world object ids', () => {
+  assert.equal(getNpcObjectActivity('npc_takeda', 'morning')?.objectId, 'class-a-teacher-desk');
+  assert.equal(getNpcObjectActivity('npc_akari', 'morning')?.objectId, 'east-library-shelf-2');
+  assert.equal(getNpcObjectActivity('npc_ren', 'golden_hour')?.objectId, 'east-sports-court');
+  assert.equal(getNpcObjectActivity('unknown-npc', 'morning'), null);
+});
+
+test('daily schedules send NPCs to their concrete object activity positions', () => {
+  const interactables = [{
+    id: 'npc_takeda',
+    patrolWaypoints: [{ x: 0, y: 0, z: 0 }],
+    currentActivity: 'Old activity',
+  }];
+  const scheduled = applyNpcDailySchedules(interactables, 'morning');
+  assert.equal(scheduled[0].activityObjectId, 'class-a-teacher-desk');
+  assert.equal(scheduled[0].activityActionId, 'teach');
+  assert.deepEqual(scheduled[0].patrolWaypoints, [{ x: -12.2, y: 0, z: -18.4 }]);
+  assert.match(scheduled[0].currentActivity ?? '', /teacher desk/i);
 });
