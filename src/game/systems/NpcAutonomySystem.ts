@@ -28,6 +28,12 @@ export const NPC_OBJECT_ACTIVITIES: NpcObjectActivity[] = [
   { npcId: 'npc_ren', period: 'golden_hour', objectId: 'east-sports-court', actionId: 'practice', label: 'Practising with the athletics club', target: { x: 25, y: 0, z: 8.5 } },
   { npcId: 'npc_hana', period: 'twilight', objectId: 'courtyard-bench-east', actionId: 'sit', label: 'Sitting at the courtyard bench and reviewing notices', target: { x: 8, y: 0, z: 10 } },
   { npcId: 'npc_kaito', period: 'twilight', objectId: 'courtyard-bench-south', actionId: 'sit', label: 'Sitting with classmates after club activities', target: { x: 0, y: 0, z: 17.8 } },
+  { npcId: 'npc_sora', period: 'morning', objectId: 'east-aquatics-deck', actionId: 'practice', label: 'Preparing the aquatics club pool deck', target: { x: 55.5, y: 0, z: 18 } },
+  { npcId: 'npc_sora', period: 'twilight', objectId: 'research-centre-observatory', actionId: 'read', label: 'Reviewing research notes at the observatory', target: { x: 54, y: 0, z: -26 } },
+  { npcId: 'npc_yuki', period: 'morning', objectId: 'west-koi-garden-bridge', actionId: 'socialize', label: 'Walking beside the koi garden bridge', target: { x: -66, y: 0, z: 8 } },
+  { npcId: 'npc_yuki', period: 'twilight', objectId: 'west-koi-garden-bridge', actionId: 'socialize', label: 'Relaxing beside the koi garden bridge', target: { x: -66, y: 0, z: 8 } },
+  { npcId: 'npc_haruto', period: 'morning', objectId: 'station-timetable-board', actionId: 'read', label: 'Checking the railway timetable', target: { x: 0, y: 0, z: 88.5 } },
+
 ];
 
 export function getNpcObjectActivity(
