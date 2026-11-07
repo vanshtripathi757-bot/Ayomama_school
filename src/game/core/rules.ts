@@ -125,6 +125,7 @@ export interface MobilePerformanceProfile {
   shadowsAllowed: boolean;
   maxShadowMapSize: number;
   maxPetals: number;
+  targetFps: number;
 }
 
 export function getMobilePerformanceProfile(input: {
@@ -134,17 +135,17 @@ export function getMobilePerformanceProfile(input: {
   isSoftwareGl?: boolean;
 }): MobilePerformanceProfile {
   if (input.isSoftwareGl) {
-    return { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 24 };
+    return { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 24, targetFps: 30 };
   }
   if (!input.isMobile) {
-    return { maxPixelRatio: 2, shadowsAllowed: true, maxShadowMapSize: 1024, maxPetals: 150 };
+    return { maxPixelRatio: 2, shadowsAllowed: true, maxShadowMapSize: 1024, maxPetals: 150, targetFps: 60 };
   }
   const memory = input.deviceMemoryGb ?? 4;
   const cores = input.hardwareConcurrency ?? 4;
   const constrained = memory <= 4 || cores <= 4;
   return constrained
-    ? { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 40 }
-    : { maxPixelRatio: 1.25, shadowsAllowed: true, maxShadowMapSize: 512, maxPetals: 75 };
+    ? { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 40, targetFps: 30 }
+    : { maxPixelRatio: 1.25, shadowsAllowed: true, maxShadowMapSize: 512, maxPetals: 75, targetFps: 45 };
 }
 
 export function dampValue(
