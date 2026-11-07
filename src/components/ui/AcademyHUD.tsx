@@ -272,6 +272,19 @@ export function AcademyHUD() {
     void sendCustomDialogueMessage(msg);
   };
 
+  const speakLatestNpcMessage = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    const latestNpcMessage = [...(activeDialogue?.messages ?? [])]
+      .reverse()
+      .find((message) => message.sender === 'npc');
+    if (!latestNpcMessage) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(latestNpcMessage.text);
+    utterance.lang = /[\\u0900-\\u097F]/.test(latestNpcMessage.text) ? 'hi-IN' : 'en-IN';
+    utterance.rate = 0.96;
+    window.speechSynthesis.speak(utterance);
+  };
+
   const dialogueInteractable = activeDialogue?.target ?? null;
   const currentDialogueLine =
     dialogueInteractable && activeDialogue
@@ -763,6 +776,16 @@ export function AcademyHUD() {
                 </span>
               </div>
 
+              <button
+                type="button"
+                data-testid="dialogue-speak-btn"
+                onClick={speakLatestNpcMessage}
+                disabled={!('speechSynthesis' in window)}
+                aria-label="Speak latest NPC reply"
+                className="px-2 py-0.5 rounded bg-indigo-600/80 hover:bg-indigo-500 disabled:opacity-40 text-[11px] font-semibold text-white cursor-pointer shrink-0"
+              >
+                Speak
+              </button>
               <button
                 type="button"
                 data-testid="dialogue-close-btn"
