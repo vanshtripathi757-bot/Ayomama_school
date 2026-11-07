@@ -21,8 +21,8 @@ export interface NpcDailyDirective {
 /** Stable, low-cost anchors used by NPCs to visibly use nearby campus facilities. */
 export const NPC_ACTIVITY_ANCHORS: NpcActivityAnchor[] = [
   { id: 'courtyard-fountain', label: 'Courtyard Fountain', position: { x: -7.5, y: 0, z: 5.5 }, kind: 'socializing' },
-  { id: 'library-east-shelf', label: 'East Library Shelves', position: { x: 11.5, y: 0, z: -15.5 }, kind: 'reading' },
-  { id: 'class-a-teacher-desk', label: 'Class A Teacher Desk', position: { x: -13.8, y: 0, z: -18.2 }, kind: 'teaching' },
+  { id: 'library-east-shelf', label: 'East Library Shelves', position: { x: 9.5, y: 0, z: -19.5 }, kind: 'reading' },
+  { id: 'class-a-teacher-desk', label: 'Class A Teacher Desk', position: { x: -12.2, y: 0, z: -18.4 }, kind: 'teaching' },
   { id: 'west-cafeteria', label: 'West Cafeteria Pavilion', position: { x: -24.5, y: 0, z: 8 }, kind: 'resting' },
   { id: 'east-sports-court', label: 'East Sports Court', position: { x: 25, y: 0, z: 8.5 }, kind: 'sports' },
   { id: 'dormitory-common-room', label: 'Dormitory Common Room', position: { x: -16, y: 0, z: 11.5 }, kind: 'socializing' },
