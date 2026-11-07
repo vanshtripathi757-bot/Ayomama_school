@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { WorldActionId, WorldInteractableDefinition } from '../game/systems/WorldInteractionSystem';
 import {
   ActiveModal,
   CameraMode,
@@ -96,6 +97,8 @@ interface GameStoreState {
   // V7.0 Story Library, Phase Selection & Gameplay State
   selectedStoryId: string;
   nearbyInteractable: CampusInteractable | null;
+  nearbyWorldObject: WorldInteractableDefinition | null;
+  activeWorldInteraction: { objectId: string; actionId: WorldActionId; displayName: string; actionLabel: string } | null;
   activeDialogue: ActiveDialogueSession | null;
   missionProgress: MissionProgressState;
   isSprintingUI: boolean;
@@ -152,6 +155,9 @@ interface GameStoreState {
   cycleSchoolPeriod: () => void;
   toggleHudCollapsed: () => void;
   setNearbyInteractable: (target: CampusInteractable | null) => void;
+  setNearbyWorldObject: (target: WorldInteractableDefinition | null) => void;
+  beginWorldInteraction: (objectId: string, actionId: WorldActionId) => void;
+  endWorldInteraction: () => void;
   openInteractionDialogue: (target?: CampusInteractable) => void;
   selectDialogueChoice: (
     choiceLabel: string,
@@ -199,6 +205,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     selectedStoryId: 'story_01',
     nearbyInteractable: null,
+    nearbyWorldObject: null,
+    activeWorldInteraction: null,
     activeDialogue: null,
     missionProgress: initialMission,
     isSprintingUI: false,
@@ -843,6 +851,36 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     setNearbyInteractable: (nearbyInteractable: CampusInteractable | null) => {
       if (get().nearbyInteractable?.id !== nearbyInteractable?.id) {
         set({ nearbyInteractable });
+      }
+    },
+
+    setNearbyWorldObject: (nearbyWorldObject: WorldInteractableDefinition | null) => {
+      if (get().nearbyWorldObject?.id !== nearbyWorldObject?.id) {
+        set({ nearbyWorldObject });
+      }
+    },
+
+    beginWorldInteraction: (objectId: string, actionId: WorldActionId) => {
+      const target = get().nearbyWorldObject;
+      if (!target || target.id !== objectId || get().activeWorldInteraction) return;
+      const action = target.actions.find((item) => item.id === actionId && item.enabled !== false);
+      if (!action) return;
+      set({
+        activeWorldInteraction: {
+          objectId,
+          actionId,
+          displayName: target.displayName,
+          actionLabel: action.label,
+        },
+        nearbyWorldObject: null,
+      });
+      audioManager.playClick();
+    },
+
+    endWorldInteraction: () => {
+      if (get().activeWorldInteraction) {
+        set({ activeWorldInteraction: null });
+        audioManager.playCancel();
       }
     },
 
