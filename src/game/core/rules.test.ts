@@ -23,6 +23,8 @@ import {
   getShadowMapSize,
   getSkyWeatherDescription,
   getStoryCompletionPercentage,
+  getStoryPhaseObjectiveStatus,
+  recordStoryObjectiveEvent,
   getStudentAcademicRank,
   isInsideSchoolBuilding,
   isPhaseUnlocked,
@@ -507,4 +509,37 @@ test('story phase completion rejects invalid, skipped, and repeated phases witho
   assert.equal(repeated, first);
   assert.equal(repeated.reputationPoints, first.reputationPoints);
   assert.equal(repeated.cpPoints, first.cpPoints);
+});
+
+test('sequential mission objectives require ordered gameplay events before the phase quiz unlocks', () => {
+  let progress = structuredClone(INITIAL_MISSION_PROGRESS);
+  let status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 0);
+  assert.equal(status.quizUnlocked, false);
+  assert.match(status.nextObjective ?? '', /Report to the Hoshino Academy Courtyard/i);
+
+  progress = recordStoryObjectiveEvent(progress, { distanceDelta: 9 });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 1);
+  assert.match(status.nextObjective ?? '', /Aiko Hoshino.*Sora Amamiya/i);
+
+  const afterAiko = advanceMissionProgress(progress, { interactedId: 'npc_hana' });
+  progress = recordStoryObjectiveEvent(afterAiko, { interactedId: 'npc_hana' });
+  assert.equal(getStoryPhaseObjectiveStatus(progress).completedCount, 1, 'both named classmates are required');
+
+  const afterSora = advanceMissionProgress(progress, { interactedId: 'npc_sora' });
+  progress = recordStoryObjectiveEvent(afterSora, { interactedId: 'npc_sora' });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 2);
+  assert.match(status.nextObjective ?? '', /Inspect the Faded Star-and-Chronicle Emblem/i);
+
+  const afterLandmark = advanceMissionProgress(progress, { interactedId: 'landmark_notice_board' });
+  progress = recordStoryObjectiveEvent(afterLandmark, { interactedId: 'landmark_notice_board' });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 3);
+  assert.equal(status.quizUnlocked, true);
+  assert.equal(status.nextObjective, null);
+
+  const repeated = recordStoryObjectiveEvent(progress, { interactedId: 'landmark_notice_board' });
+  assert.deepEqual(repeated.completedObjectiveKeys, progress.completedObjectiveKeys, 'repeated events do not duplicate objective keys');
 });
