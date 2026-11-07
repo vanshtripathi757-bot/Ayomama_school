@@ -457,6 +457,8 @@ export function recordStoryObjectiveEvent(
         (objective.includes('emblem') && /emblem|portico|plaque/i.test(target.name))
       )
     );
+  } else if (/report|arrive/.test(objective)) {
+    completed = Boolean(event.distanceDelta && event.distanceDelta >= 8);
   } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
     completed = Boolean(event.enteredInterior || (event.distanceDelta && event.distanceDelta >= 8));
   } else if (/custom conversation|send a message|build trust/.test(objective)) {
