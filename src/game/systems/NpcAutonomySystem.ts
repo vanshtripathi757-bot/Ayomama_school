@@ -166,7 +166,7 @@ export function appendNpcRelationshipMemory(
   summary: string,
   maxMemories = 8
 ): Record<string, NPCRelationshipState> {
-  const clean = summary.trim().replace(/\\s+/g, ' ').slice(0, 160);
+  const clean = summary.trim().replace(/\s+/g, ' ').slice(0, 160);
   if (!npcId || !clean) return relationships ?? {};
   const current = relationships?.[npcId] ?? {
     npcId,
