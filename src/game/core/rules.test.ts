@@ -575,6 +575,7 @@ test('mobile performance profile scales rendering for constrained devices', () =
     shadowsAllowed: false,
     maxShadowMapSize: 0,
     maxPetals: 40,
+    targetFps: 30,
   });
   const capableMobile = getMobilePerformanceProfile({
     isMobile: true,
@@ -583,6 +584,8 @@ test('mobile performance profile scales rendering for constrained devices', () =
   });
   assert.equal(capableMobile.maxPixelRatio, 1.25);
   assert.equal(capableMobile.maxShadowMapSize, 512);
+  assert.equal(capableMobile.targetFps, 45);
   assert.equal(getMobilePerformanceProfile({ isMobile: false }).maxPixelRatio, 2);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false }).targetFps, 60);
   assert.equal(getMobilePerformanceProfile({ isMobile: false, isSoftwareGl: true }).shadowsAllowed, false);
 });
