@@ -1,5 +1,5 @@
 import type { Vector3Tuple } from '../../types/game';
-import { WorldInteractableDefinition } from './WorldInteractionSystem';
+import { WorldInteractionSystem, WorldInteractableDefinition } from './WorldInteractionSystem';
 
 const point = (x: number, y: number, z: number): Vector3Tuple => ({ x, y, z });
 
@@ -75,7 +75,8 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
   },
 ];
 
-export function createCampusWorldInteractionSystem() {
-  // Imported lazily at module scope to keep the catalog as plain game data.
-  return CAMPUS_WORLD_OBJECTS;
+export function createCampusWorldInteractionSystem(): WorldInteractionSystem {
+  const system = new WorldInteractionSystem();
+  for (const object of CAMPUS_WORLD_OBJECTS) system.register(object);
+  return system;
 }
