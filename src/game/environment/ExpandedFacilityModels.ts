@@ -9,6 +9,8 @@ export interface ExpandedFacilityRefs {
 export function buildExpandedFacilities(): ExpandedFacilityRefs {
   const rootGroup = new THREE.Group();
   rootGroup.name = 'ExpandedMedicalFacility';
+  rootGroup.userData.streamRegionId = 'medical-room';
+  rootGroup.userData.streamCenter = { x: 34, z: -27 };
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
   const geo = <T extends THREE.BufferGeometry>(value: T): T => {
