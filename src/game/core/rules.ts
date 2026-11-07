@@ -1685,7 +1685,7 @@ export function generateSmartNpcReply(params: {
   const classTag = npcConfig?.academyClass ?? 'Hoshino Academy';
   const personality = npcConfig?.personalityType ?? 'Friendly';
 
-  if (/\\b(remember|last time|previous|before|yaad|pichli baar|pehle)\\b/i.test(playerMessage) && npcMemories.length > 0) {
+  if (/\b(remember|last time|previous|before|yaad|pichli baar|pehle)\b/i.test(playerMessage) && npcMemories.length > 0) {
     const remembered = npcMemories.slice(-2).join('; ');
     return {
       reply: `Of course, I remember our earlier conversation: ${remembered}. What would you like to explore next?`,
