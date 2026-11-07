@@ -25,4 +25,6 @@ test('expanded facility and transport objects expose the expected actions', () =
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'dormitory-bed-west')?.actions.some((action) => action.id === 'rest'));
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'medical-room-reception')?.actions.some((action) => action.id === 'use'));
   assert.equal(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'station-ticket-terminal')?.type, 'terminal');
+  assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'town-manga-shop-counter')?.actions.some((action) => action.id === 'view-menu'));
+  assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'town-konbini-counter')?.actions.some((action) => action.id === 'view-menu'));
 });
