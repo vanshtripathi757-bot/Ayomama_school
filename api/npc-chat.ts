@@ -30,6 +30,15 @@ function fallback(name: string, role: string, message: string) {
 }
 export default async function handler(req: RequestLike, res: ResponseLike) {
   res.setHeader('Cache-Control', 'no-store');
+  const origin = req.headers?.origin;
+  const host = req.headers?.host;
+  if (typeof origin === 'string' && typeof host === 'string') {
+    try {
+      if (new URL(origin).host !== host) return res.status(403).json({ error: 'Cross-origin request blocked.' });
+    } catch {
+      return res.status(403).json({ error: 'Invalid request origin.' });
+    }
+  }
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   if (rateLimited(getClientKey(req))) return res.status(429).json({ error: 'Too many requests. Please wait a moment.' });
   const body = (req.body && typeof req.body === 'object' ? req.body : {}) as Record<string, unknown>;
@@ -43,7 +52,7 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
     return `${item.sender === 'player' ? 'Student' : name}: ${safeText(item.text, 300)}`;
   }).join('\n') : '';
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return res.status(200).json(fallback(name, role, message));
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') return res.status(200).json(fallback(name, role, message));
   try {
     const ai = new GoogleGenAI({ apiKey });
     const result = await ai.models.generateContent({
