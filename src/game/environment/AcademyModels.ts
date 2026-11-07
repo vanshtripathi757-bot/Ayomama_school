@@ -528,6 +528,98 @@ export function buildAcademyEnvironment(
   mainRoof.castShadow = true;
   rootGroup.add(mainRoof);
 
+  // 2G. Architectural facade system: framed glazing, floor bands and balcony rails.
+  const glazingMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x8bb9c8, metalness: 0.42, roughness: 0.18,
+    transparent: true, opacity: 0.72,
+  }));
+  const windowFrameMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x263548, metalness: 0.72, roughness: 0.32,
+  }));
+  const sillMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0xc4c9ce, metalness: 0.18, roughness: 0.58,
+  }));
+  const addFacadeWindow = (x: number, y: number, z: number, width: number, height: number, facing: 'south' | 'north' = 'south') => {
+    const group = new THREE.Group();
+    group.position.set(x, y, z);
+    if (facing === 'north') group.rotation.y = Math.PI;
+    const depth = 0.16;
+    const pane = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(width, height, 0.055)), glazingMat);
+    pane.position.z = 0.02;
+    group.add(pane);
+    const frameGeo = trackGeo(new THREE.BoxGeometry(0.12, height + 0.22, depth));
+    for (const side of [-1, 1]) {
+      const jamb = new THREE.Mesh(frameGeo, windowFrameMat);
+      jamb.position.set(side * (width / 2 + 0.06), 0, 0);
+      group.add(jamb);
+    }
+    const railGeo = trackGeo(new THREE.BoxGeometry(width + 0.24, 0.12, depth));
+    for (const edge of [-1, 1]) {
+      const rail = new THREE.Mesh(railGeo, windowFrameMat);
+      rail.position.y = edge * (height / 2 + 0.06);
+      group.add(rail);
+    }
+    const mullion = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.075, height, depth)), windowFrameMat);
+    group.add(mullion);
+    const sill = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(width + 0.38, 0.14, 0.42)), sillMat);
+    sill.position.set(0, -height / 2 - 0.12, 0.12);
+    group.add(sill);
+    group.traverse((node) => {
+      if (node instanceof THREE.Mesh) { node.castShadow = true; node.receiveShadow = true; }
+    });
+    rootGroup.add(group);
+  };
+  const addBalconyRail = (x: number, y: number, z: number, width: number) => {
+    const balcony = new THREE.Group();
+    balcony.position.set(x, y, z);
+    const slab = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(width + 0.8, 0.22, 1.05)), sillMat);
+    slab.position.z = 0.28;
+    balcony.add(slab);
+    const topRail = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(width + 0.8, 0.09, 0.09)), windowFrameMat);
+    topRail.position.set(0, 1.02, 0.78);
+    balcony.add(topRail);
+    const lowerRail = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(width + 0.8, 0.07, 0.07)), windowFrameMat);
+    lowerRail.position.set(0, 0.38, 0.78);
+    balcony.add(lowerRail);
+    const postGeo = trackGeo(new THREE.BoxGeometry(0.07, 1.05, 0.07));
+    const postCount = Math.max(3, Math.floor(width / 0.8));
+    for (let i = 0; i <= postCount; i++) {
+      const post = new THREE.Mesh(postGeo, windowFrameMat);
+      post.position.set(-width / 2 + (width * i) / postCount, 0.68, 0.78);
+      balcony.add(post);
+    }
+    rootGroup.add(balcony);
+  };
+  // Main academic facade: four readable horizontal levels with repeated framed bays.
+  for (const y of [6.6, 9.5, 12.4, 15.5]) {
+    for (const x of [-23, -15.5, -8, 8, 15.5, 23]) {
+      addFacadeWindow(x, y, -8.88, 3.1, 1.9);
+    }
+    const band = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(58.8, 0.18, 0.42)), sillMat);
+    band.position.set(0, y - 1.25, -8.93);
+    rootGroup.add(band);
+  }
+  for (const x of [-15.5, 15.5]) addBalconyRail(x, 8.25, -8.95, 5.2);
+  // North-facing glazing repeats the facade language without copying the entrance frontage.
+  for (const y of [6.6, 9.5, 12.4]) {
+    for (const x of [-22, -14, -6, 6, 14, 22]) addFacadeWindow(x, y, -23.2, 3.0, 1.85, 'north');
+  }
+  // Distinct window bays and floor bands give the east/west wings their own scale.
+  for (const wx of [-21.2, 21.2]) {
+    for (const y of [2.8, 6.8, 10.8]) {
+      for (const z of [-7.0, -2.5, 2.0]) {
+        const bay = new THREE.Group();
+        bay.position.set(wx + (wx < 0 ? 6.18 : -6.18), y, z);
+        bay.rotation.y = wx < 0 ? -Math.PI / 2 : Math.PI / 2;
+        const pane = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.7, 2.0, 0.055)), glazingMat);
+        bay.add(pane);
+        const frame = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.95, 2.18, 0.14)), windowFrameMat);
+        const cutout = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.7, 2.0, 0.18)), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, transparent: true, opacity: 0 }));
+        void frame; void cutout;
+        rootGroup.add(bay);
+      }
+    }
+  }
   // Central Entrance Portico & Columns (Flanking the Open Entrance Doors!)
   const porticoCanopy = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(14.5, 0.85, 5.8)),
