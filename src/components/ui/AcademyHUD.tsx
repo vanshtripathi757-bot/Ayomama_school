@@ -27,6 +27,7 @@ import {
 } from '../../game/systems/InputBridge';
 import { useGameStore } from '../../store/useGameStore';
 import { CameraViewpointId } from '../../types/game';
+import { LIBRARY_BOOKS, getOwnedLibraryBookIds } from '../../game/systems/LibraryBookSystem';
 
 export function AcademyHUD() {
   const phase = useGameStore((s) => s.phase);
@@ -57,6 +58,8 @@ export function AcademyHUD() {
   const openInteractionDialogue = useGameStore((s) => s.openInteractionDialogue);
   const beginWorldInteraction = useGameStore((s) => s.beginWorldInteraction);
   const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
+  const takeLibraryBook = useGameStore((s) => s.takeLibraryBook);
+  const returnLibraryBook = useGameStore((s) => s.returnLibraryBook);
   const selectDialogueChoice = useGameStore((s) => s.selectDialogueChoice);
   const sendCustomDialogueMessage = useGameStore((s) => s.sendCustomDialogueMessage);
   const closeDialogue = useGameStore((s) => s.closeDialogue);
@@ -77,6 +80,7 @@ export function AcademyHUD() {
 
   // Custom typed message state for NPC chat
   const [customMessageInput, setCustomMessageInput] = useState('');
+  const [readingBookId, setReadingBookId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Subtle, tap-to-dismiss Ambient NPC-to-NPC conversation toast
@@ -713,6 +717,63 @@ export function AcademyHUD() {
             >
               Exit
             </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.actionId === 'browse-books' && (
+          <div
+            data-testid="library-books-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Academy library books"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,560px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-amber-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Seiran Academy · Library</div>
+                <h2 className="text-base font-bold text-white">Browse the shelves</h2>
+                <p className="text-[11px] text-slate-300">Take a book to keep it in your saved bag. Open it here to read.</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="space-y-2">
+              {LIBRARY_BOOKS.map((book) => {
+                const owned = getOwnedLibraryBookIds(inventoryItems).includes(book.id);
+                const isReading = readingBookId === book.id;
+                return (
+                  <article key={book.id} className="rounded-lg border border-slate-700 bg-[#101d33] p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-wide text-cyan-300">{book.category} · {book.author}</div>
+                        <h3 className="text-sm font-semibold text-white">{book.title}</h3>
+                        <p className="mt-1 text-[11px] text-slate-300">{book.summary}</p>
+                      </div>
+                      <span className="shrink-0 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{owned ? 'In bag' : 'On shelf'}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {!owned ? (
+                        <button type="button" data-testid={`take-book-${book.id}`} onClick={() => takeLibraryBook(book.id)} className="rounded bg-cyan-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-cyan-600">Take book</button>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => setReadingBookId(isReading ? null : book.id)} className="rounded bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500">{isReading ? 'Close reading' : 'Read book'}</button>
+                          <button type="button" onClick={() => { returnLibraryBook(book.id); if (isReading) setReadingBookId(null); }} className="rounded border border-amber-300/40 bg-amber-950/50 px-3 py-1.5 text-[11px] font-semibold text-amber-100 hover:bg-amber-900/60">Return book</button>
+                        </>
+                      )}
+                    </div>
+                    {isReading && (
+                      <div data-testid={`book-reading-${book.id}`} className="mt-3 space-y-2 rounded bg-[#050b17] p-3 text-xs leading-relaxed text-slate-200">
+                        <div className="font-semibold text-amber-200">{book.title}</div>
+                        {book.content.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-700 pt-2 text-[10px] text-slate-400">
+              <span>Books in bag: {getOwnedLibraryBookIds(inventoryItems).length}</span>
+              <span>Progress is saved with your session</span>
+            </div>
           </div>
         )}
 
