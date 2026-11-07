@@ -1,0 +1,6 @@
+{
+  "name": "The School Chronicles",
+  "description": "A third-person 3D anime school-life simulation game set in Seiran High Academy, featuring a real-time 3D campus courtyard, atmospheric day-night lighting, and modular game systems.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

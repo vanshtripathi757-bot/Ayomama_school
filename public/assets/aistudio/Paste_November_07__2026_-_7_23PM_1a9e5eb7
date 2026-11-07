@@ -1,0 +1,1246 @@
+THE SCHOOL CHRONICLES
+
+MASTER PROMPT V8.0
+
+COMPLETE ACADEMY REDESIGN, DETAILED OPEN WORLD & UNIVERSAL INTERACTION SYSTEM
+
+1. PRIMARY OBJECTIVE
+
+Completely redesign the existing school environment and its surrounding world.
+
+The current basic buildings, interiors, exterior structures, furniture and environmental objects must be replaced with a cohesive, detailed, large-scale 3D academy environment.
+
+The game must have a premium Japanese elite-academy atmosphere inspired by high-quality school-life anime environments, while maintaining original architecture, floor plans, designs, locations and identity.
+
+Do not make the school look like a small collection of simple 3D boxes.
+
+Create a believable, enormous, architecturally consistent educational campus.
+
+Every building must have:
+
+- Detailed exterior architecture.
+- Fully designed interiors.
+- Multiple floors where appropriate.
+- Connected rooms and corridors.
+- Realistic furniture.
+- Functional doors.
+- Lighting systems.
+- Environmental details.
+- Interactive objects.
+- NPC activities.
+- Proper collision and navigation.
+
+The player must be able to explore and use the environment instead of simply looking at decorative objects.
+
+---
+
+2. COMPLETE VISUAL REDESIGN
+
+Redesign the entire environment.
+
+Do not preserve the old basic building appearance merely to save time.
+
+Architecture style
+
+Use a sophisticated modern Japanese academy architectural language.
+
+Visual characteristics:
+
+- Large multi-storey institutional buildings.
+- Modern Japanese architectural design.
+- Large glass windows.
+- Concrete and stone surfaces.
+- Metal framing.
+- Detailed entrance structures.
+- Wide staircases.
+- Covered walkways.
+- Balconies.
+- Long corridors.
+- Large open courtyards.
+- Carefully designed gardens.
+- Premium interior materials.
+- Consistent architectural proportions.
+
+Exterior visual quality
+
+Every building should include:
+
+- Main structural walls.
+- Windows with frames.
+- Window glass and reflections where practical.
+- Detailed entrance doors.
+- Roof structures.
+- Balconies.
+- Railings.
+- Support columns.
+- Exterior lights.
+- Signs.
+- Building numbers or department names.
+- Drainage details.
+- Wall panels.
+- Decorative elements.
+- Realistic ground connections.
+
+Avoid:
+
+- Floating objects.
+- Overlapping geometry.
+- Random decorations.
+- Repeated identical facades everywhere.
+- Unfinished walls.
+- Empty building interiors.
+- Inconsistent proportions.
+- Excessively bright or distracting visual effects.
+
+Building scale
+
+The academy must feel enormous.
+
+- Main academic buildings should be large multi-storey structures.
+- Corridors must be wide enough for several NPCs to walk together.
+- Classrooms must have realistic capacity.
+- Libraries must have multiple sections.
+- Sports facilities must be appropriately large.
+- Outdoor areas must connect naturally to the buildings.
+- Buildings should not appear smaller than the characters.
+- Interior dimensions must match exterior dimensions.
+
+Use consistent architectural measurements and modular building systems.
+
+---
+
+3. COMPLETE ACADEMY CAMPUS LAYOUT
+
+Design the academy as a coherent campus rather than disconnected buildings.
+
+A. Main Entrance
+
+Create a large, impressive main entrance.
+
+Include:
+
+- Large academy entrance gate.
+- Academy name signage.
+- Security and reception booth.
+- Entry barriers.
+- Pedestrian gates.
+- Vehicle entrance.
+- Security cameras as environmental details.
+- Road markings.
+- Sidewalks.
+- Decorative plants.
+- Large entrance plaza.
+- Visitor information board.
+- Academy map.
+- Security staff NPCs.
+- Student arrival activities.
+
+Interactions
+
+- Open and close entrance gates where appropriate.
+- Interact with reception.
+- View the campus map.
+- Speak to security staff.
+- Read notices.
+- Sit on entrance benches.
+
+B. Main Academic Building
+
+Create a large multi-storey academic building.
+
+Include:
+
+- Grand entrance lobby.
+- Reception.
+- Information desk.
+- Administrative offices.
+- Long corridors.
+- Multiple classrooms.
+- Faculty rooms.
+- Student facilities.
+- Staircases.
+- Elevators where appropriate.
+- Restrooms.
+- Water fountains.
+- Storage rooms.
+- Bulletin boards.
+- Emergency exits.
+
+Every floor must have its own layout and identifiable navigation.
+
+Use floor indicators and room signage.
+
+C. Classrooms — A, B, C, D
+
+There must be exactly four main classes:
+
+- Class A.
+- Class B.
+- Class C.
+- Class D.
+
+Do not create 1-A, 2-A or grade-based class names.
+
+Create four large, individually designed classrooms.
+
+Each classroom should contain:
+
+- Teacher's desk.
+- Large blackboard or digital display.
+- Student desks.
+- Student chairs.
+- Front podium.
+- Wall clock.
+- Windows.
+- Curtains or blinds.
+- Ceiling lights.
+- Air conditioning.
+- Bookshelves.
+- Storage cabinets.
+- Notice boards.
+- Class timetable.
+- Class name signage.
+- Waste bins.
+- Classroom decorations.
+- Teacher supplies.
+- Learning materials.
+
+Desk arrangement
+
+Use realistic rows or group-based seating arrangements.
+
+Every student should have an assigned or selectable seat where the gameplay requires it.
+
+NPCs should autonomously:
+
+- Enter the classroom.
+- Find their seats.
+- Sit down.
+- Listen to lessons.
+- Write notes.
+- Interact with classmates.
+- Leave when class finishes.
+
+Classroom interactions
+
+- Sit on a student chair.
+- Stand up.
+- Sit at a desk.
+- Open a desk drawer where supported.
+- Read a timetable.
+- Inspect a notice board.
+- Interact with the teacher.
+- Open the classroom door.
+- Interact with the blackboard.
+- Start a lesson.
+- Take a quiz.
+- Submit an assignment.
+
+D. Library
+
+Create a large, premium multi-section library.
+
+It should feel like a real academic library.
+
+Include:
+
+- Multiple bookshelf rows.
+- Different book categories.
+- Fiction section.
+- Science section.
+- Mathematics section.
+- History section.
+- Literature section.
+- Reference section.
+- Study tables.
+- Individual study desks.
+- Reading chairs.
+- Computer terminals.
+- Librarian counter.
+- Book-return station.
+- Book-search terminals.
+- Reading lamps.
+- Quiet-study rooms.
+- Group-study rooms.
+- Large windows.
+- Library signage.
+- Book storage area.
+
+Book interaction system
+
+The player must be able to:
+
+1. Approach a bookshelf.
+2. Press Browse Books.
+3. See the available books.
+4. Select a book.
+5. Press Take Book.
+6. Add the book to inventory or library borrowing records.
+7. Open Read Book.
+8. Read its in-game content.
+9. Return the book at the return station.
+
+Individual books should have unique titles and categories.
+
+Do not generate copyrighted book text from existing commercial books. Use original in-game content or public-domain works.
+
+NPCs should independently visit the library, select books, sit and study.
+
+E. Science Laboratory
+
+Create a detailed science laboratory.
+
+Include:
+
+- Laboratory benches.
+- Student stools.
+- Storage cabinets.
+- Sinks.
+- Digital displays.
+- Microscopes.
+- Model equipment.
+- Safety information boards.
+- Teacher station.
+- Laboratory storage.
+- Ventilation.
+- Appropriate safety equipment.
+
+Interactions
+
+- Sit on laboratory stools.
+- Inspect educational equipment.
+- Interact with microscopes through safe educational simulations.
+- Read experiment instructions.
+- Start classroom activities.
+- Speak to the laboratory teacher.
+
+Do not turn the environment into instructions for dangerous experiments.
+
+F. Computer Laboratory
+
+Include:
+
+- Large computer tables.
+- Desktop computers.
+- Monitors.
+- Keyboards.
+- Mice.
+- Headphones.
+- Office chairs.
+- Instructor station.
+- Projector.
+- Network cabinets.
+- Wall displays.
+
+Interactions
+
+- Sit at a computer.
+- Use a computer terminal.
+- Start an educational mini-activity.
+- View assignments.
+- Complete coding puzzles.
+- Stand up and leave the station.
+
+G. Cafeteria
+
+Create a large dining facility.
+
+Include:
+
+- Food counters.
+- Payment counter.
+- Kitchen area.
+- Dining tables.
+- Individual chairs.
+- Tray stations.
+- Water dispensers.
+- Food displays.
+- Waste bins.
+- Menu boards.
+- Refrigeration equipment.
+- Staff area.
+- Dish-return station.
+
+Interactions
+
+- View the menu.
+- Select an available food item.
+- Purchase using the in-game economy.
+- Collect a tray.
+- Sit at a chair.
+- Eat through an animation.
+- Talk to nearby NPCs.
+- Return trays.
+- Dispose of waste.
+
+NPCs should independently visit the cafeteria during appropriate schedules.
+
+H. Auditorium
+
+Create a large auditorium.
+
+Include:
+
+- Large stage.
+- Stage curtains.
+- Seating rows.
+- Individual seats.
+- Presentation screen.
+- Sound system.
+- Lighting rigs.
+- Backstage area.
+- Storage rooms.
+- Side entrances.
+- Control booth.
+
+Interactions
+
+- Sit in an audience seat.
+- Stand up.
+- Attend events.
+- Watch presentations.
+- Participate in speeches.
+- Interact with stage controls when authorized.
+
+I. Student Council Building or Section
+
+Include:
+
+- Council office.
+- Meeting room.
+- Work desks.
+- Chairs.
+- Filing cabinets.
+- Notice boards.
+- Computers.
+- Document storage.
+- Meeting table.
+
+Interactions
+
+- Attend council meetings.
+- Talk to council members.
+- Read public announcements.
+- Receive appropriate missions.
+- Participate in school planning activities.
+
+J. Club Rooms
+
+Create separate rooms for:
+
+- Science Club.
+- Computer Club.
+- Sports Club.
+- Art Club.
+- Music Club.
+- Literature Club.
+- Photography Club.
+- Debate Club.
+
+Every club room must have unique furniture, objects, decorations and activities.
+
+K. Gymnasium and Sports Complex
+
+Create large indoor and outdoor sports facilities.
+
+Include:
+
+- Basketball court.
+- Badminton courts.
+- Volleyball court.
+- Indoor training space.
+- Equipment storage.
+- Changing rooms.
+- Spectator seating.
+- Scoreboards.
+- Water stations.
+
+Interactions
+
+- Sit in spectator seats.
+- Join sports activities.
+- Collect available sports equipment.
+- Start practice activities.
+- Participate in competitions.
+- Interact with coaches.
+
+L. Dormitories
+
+Create residential buildings with:
+
+- Entrance lobby.
+- Reception.
+- Corridors.
+- Rooms.
+- Beds.
+- Desks.
+- Wardrobes.
+- Storage.
+- Bathrooms.
+- Common rooms.
+- Study areas.
+- Laundry area.
+- Vending machines.
+
+Interactions
+
+- Open authorized doors.
+- Enter the player's room.
+- Sit on chairs.
+- Sleep or rest where gameplay permits.
+- Use the desk.
+- Store items.
+- Change outfits.
+- Interact with residents.
+
+NPC room privacy must be respected by the game's access rules.
+
+M. Medical Room
+
+Include:
+
+- Reception desk.
+- Waiting chairs.
+- Medical beds.
+- Storage cabinets.
+- Staff desk.
+- First-aid supplies.
+- Privacy curtains.
+
+Interactions should be appropriate to a school simulation.
+
+N. Administrative and Faculty Areas
+
+Include:
+
+- Principal's office.
+- Staff room.
+- Meeting rooms.
+- Records office.
+- Reception.
+- Faculty workspaces.
+- Storage.
+- Corridors.
+
+Access can depend on missions or authorization.
+
+O. Outdoor Campus
+
+Include:
+
+- Large central courtyard.
+- Gardens.
+- Water features.
+- Benches.
+- Trees.
+- Walking paths.
+- Covered walkways.
+- Outdoor seating.
+- Sports fields.
+- Bicycle parking.
+- Parking area.
+- Decorative lighting.
+- Campus maps.
+- Outdoor notice boards.
+
+All areas must be connected through realistic paths and entrances.
+
+---
+
+4. SURROUNDING OPEN WORLD
+
+Expand the world beyond the academy.
+
+Create connected districts with consistent architecture and believable NPC populations.
+
+Residential District
+
+- Apartment buildings.
+- Residential streets.
+- Small parks.
+- Convenience stores.
+- Bus stops.
+- Street lamps.
+- Pedestrian crossings.
+- Public seating.
+- Local NPCs.
+
+Commercial District
+
+- Shopping streets.
+- Bookstores.
+- Restaurants.
+- Cafes.
+- Clothing shops.
+- Electronics shops.
+- Convenience stores.
+- Public plazas.
+
+Transport District
+
+- Train station.
+- Ticketing area.
+- Platforms.
+- Waiting room.
+- Bus station.
+- Bus stops.
+- Pedestrian routes.
+
+Other regions
+
+- Research centre.
+- Public park.
+- Mountain area.
+- Shrine.
+- Riverfront.
+- Entertainment area.
+- Additional educational facilities.
+
+Every district must contain interactive locations and appropriate NPCs.
+
+---
+
+5. UNIVERSAL OBJECT INTERACTION SYSTEM
+
+This is a mandatory core gameplay feature.
+
+The player must be able to interact with objects throughout the world.
+
+The current problem where the player approaches an object but cannot use it must be fixed.
+
+Create a universal interaction framework instead of implementing unrelated buttons for every object.
+
+A. Proximity Detection
+
+When the player comes within the interaction range of an interactable object:
+
+- Detect the player.
+- Identify the object.
+- Check whether the interaction is available.
+- Display a small contextual interaction button.
+
+The button must appear only when the player is near a valid object.
+
+Do not display interaction buttons everywhere.
+
+B. Contextual Interaction Button
+
+Example:
+
+<escape>[ Small floating interaction button ]</escape>
+
+Sit
+
+When near a chair, display Sit.
+
+When near a bookshelf, display Browse Books.
+
+When near a door, display Open Door.
+
+When near a computer, display Use Computer.
+
+When near a classroom board, display Read Notice.
+
+The button label must change according to the object.
+
+UI requirements
+
+- Small and clean.
+- Minimal visual footprint.
+- Rounded design.
+- Clear icon.
+- Short action label.
+- Smooth appearance animation.
+- Mobile-friendly touch target.
+- Positioned consistently near the gameplay HUD.
+- Must not cover the joystick or camera controls.
+
+The interaction prompt should not obscure the player's view.
+
+C. Object Interaction Data
+
+Every interactable object must have structured metadata.
+
+Required fields:
+
+- Unique object ID.
+- Object type.
+- Display name.
+- Location.
+- Interaction range.
+- Available actions.
+- Required conditions.
+- Interaction animation.
+- Result.
+- Cooldown if needed.
+- Associated UI or mini-activity.
+
+Example object definitions:
+
+Chair:
+
+- Object type: seat.
+- Actions: Sit, Stand.
+- Result: Player sits on the chair.
+
+Bookshelf:
+
+- Object type: bookshelf.
+- Actions: Browse Books.
+- Result: Opens book-selection interface.
+
+Book:
+
+- Object type: book.
+- Actions: Take Book, Read Book.
+- Result: Adds the book to inventory or opens its reading interface.
+
+Door:
+
+- Object type: door.
+- Actions: Open, Close, Enter.
+- Result: Plays door animation and changes accessible space.
+
+Computer:
+
+- Object type: computer.
+- Actions: Use Computer, Exit.
+- Result: Starts computer interaction.
+
+D. Interaction State Machine
+
+Use a consistent interaction lifecycle:
+
+1. Player approaches object.
+2. Proximity detection identifies it.
+3. Available actions are checked.
+4. Contextual button appears.
+5. Player presses the button.
+6. Player and camera enter the correct interaction state.
+7. Animation plays.
+8. Object action executes.
+9. Interaction interface appears if needed.
+10. Player can exit interaction.
+11. Normal movement resumes.
+
+Prevent multiple conflicting interactions at the same time.
+
+E. Interaction Priority
+
+If multiple objects are close:
+
+- Select the object the player is facing.
+- Prioritize the nearest valid target.
+- Avoid switching targets rapidly.
+- Keep the selected target stable while the interaction button is visible.
+- Allow another nearby object to be selected when the player turns or moves.
+
+F. Interaction Animations
+
+Use appropriate animations.
+
+Examples:
+
+- Sit: approach, turn, sit.
+- Stand: stand up and return to normal movement.
+- Read: hold book and read.
+- Use computer: sit and interact with keyboard.
+- Open door: reach, turn handle, open.
+- Take object: reach and pick up.
+- Talk: face NPC and begin dialogue.
+- Use vending machine: approach and operate.
+- Eat: sit and perform eating animation.
+
+Never simply teleport the player into a chair without appropriate positioning and animation.
+
+Use interaction anchors to align the player correctly.
+
+G. Interaction Exit
+
+Every interaction must have a clear exit mechanism.
+
+Examples:
+
+- Stand Up.
+- Close.
+- Exit Computer.
+- Return Book.
+- Leave Conversation.
+- Stop Reading.
+
+After exiting, the player must regain normal movement and camera control.
+
+---
+
+6. OBJECT-BY-OBJECT INTERACTION REQUIREMENTS
+
+Implement interactions according to object type.
+
+Furniture
+
+Object| Available interaction
+Chair| Sit, Stand
+Bench| Sit, Stand
+Sofa| Sit, Stand
+Bed| Rest or Sleep where permitted
+Desk| Sit, Use Desk
+Table| Interact where supported
+Locker| Open, Close, Store
+Wardrobe| Open, Change Outfit
+Cabinet| Open, Inspect
+
+Library
+
+Object| Available interaction
+Bookshelf| Browse Books
+Book| Take, Read, Return
+Reading desk| Sit, Study
+Computer terminal| Search Catalogue
+Return station| Return Book
+Librarian desk| Talk
+
+Classroom
+
+Object| Available interaction
+Student chair| Sit
+Student desk| Sit, Study
+Blackboard| Read, Interact
+Notice board| Read
+Classroom door| Open, Close
+Teacher desk| Inspect when permitted
+Wall clock| View Time
+Classroom computer| Use
+
+Cafeteria
+
+Object| Available interaction
+Food counter| View Menu
+Payment counter| Purchase
+Dining chair| Sit
+Tray station| Collect Tray
+Water dispenser| Use
+Menu board| Read
+Dish-return station| Return Tray
+
+Computer Lab
+
+Object| Available interaction
+Computer| Use
+Keyboard| Type during an activity
+Monitor| View Interface
+Headphones| Use
+Office chair| Sit
+Projector| View Presentation
+
+Campus
+
+Object| Available interaction
+Main gate| Enter, Exit
+Door| Open, Close
+Elevator| Call, Select Floor
+Staircase| Climb
+Vending machine| Purchase
+Bicycle| Use where available
+Notice board| Read
+Water fountain| Use
+Bench| Sit
+Map board| View Map
+
+Sports Facilities
+
+Object| Available interaction
+Sports equipment| Collect, Use
+Scoreboard| View
+Court entrance| Enter
+Spectator seat| Sit
+Storage locker| Open, Close
+
+Do not make every decorative object interactable without a purpose. Prioritize objects that have meaningful gameplay use.
+
+---
+
+7. INTERACTION WITH NPCS
+
+NPC interactions must use the same contextual interaction system.
+
+When approaching an NPC:
+
+Show a small Talk button.
+
+When clicked:
+
+- Start dialogue.
+- Display the NPC name.
+- Use their personality.
+- Load relevant memories.
+- Use current story context.
+- Provide natural dialogue choices where appropriate.
+
+Additional contextual actions may include:
+
+- Talk.
+- Ask About School.
+- Ask About Events.
+- Join Activity.
+- Invite to Study.
+- Request Help.
+- Start Mission.
+
+Available actions must depend on the NPC, relationship and situation.
+
+---
+
+8. NPC AUTONOMOUS BEHAVIOUR
+
+All previous AI NPC requirements remain mandatory.
+
+Every important NPC must have:
+
+- Unique personality.
+- Independent goals.
+- Autonomous decisions.
+- Daily routine.
+- Persistent memory.
+- Relationships.
+- Emotional state.
+- Natural dialogue.
+- Social interactions.
+- Character development.
+
+NPCs must interact with furniture and environmental objects too.
+
+Examples:
+
+- Students sit on chairs.
+- Students use desks.
+- Students take books from shelves.
+- Students use computers.
+- Students eat at dining tables.
+- Students attend classes.
+- Students open doors.
+- Students participate in sports.
+- Students interact with notice boards.
+
+The interaction framework must be shared between player and NPCs where appropriate.
+
+NPCs must use correct object anchors and animations.
+
+Do not create an AI system that only generates dialogue while NPCs remain physically static.
+
+---
+
+9. WORLD CONSISTENCY AND CLEAN DESIGN
+
+The game must remain visually clean.
+
+Design rules
+
+- Consistent materials.
+- Consistent object scale.
+- Proper spacing.
+- Clear pathways.
+- No unnecessary clutter.
+- No floating furniture.
+- No objects blocking doors.
+- No chairs intersecting desks.
+- No NPCs walking through walls.
+- No inaccessible important objects.
+- No overlapping interaction prompts.
+- No excessive map markers.
+- No random decorative objects.
+
+Every room must have a clear layout and purpose.
+
+Every important object must be positioned logically.
+
+The exterior and interior of the same building must correspond correctly.
+
+If a player enters a building, the interior must feel like the actual inside of that building, not an unrelated room.
+
+---
+
+10. BUILDING ACCESS AND NAVIGATION
+
+Implement proper navigation throughout the school.
+
+- Doors must connect to the correct rooms.
+- Stairs must connect floors.
+- Elevators must connect available floors.
+- Corridors must connect departments.
+- Interior maps should show floor information.
+- Room signs should be readable.
+- NPC navigation must use valid paths.
+- Player collision must work correctly.
+- Important rooms must be accessible through gameplay.
+
+Do not create fake entrances that lead nowhere.
+
+If an area is locked, show an understandable reason or unlock requirement.
+
+---
+
+11. WORLD DETAIL AND IMMERSION
+
+Add small environmental details that make the academy feel inhabited.
+
+Examples:
+
+- Wall clocks.
+- Room numbers.
+- Direction signs.
+- Fire extinguishers as environmental safety equipment.
+- Notice boards.
+- Bulletin papers.
+- Benches.
+- Waste bins.
+- Water dispensers.
+- Ceiling lights.
+- Floor markings.
+- Window blinds.
+- Curtains.
+- Potted plants.
+- Decorative wall panels.
+- Books and stationery.
+- Bags.
+- Personal student belongings.
+- Indoor plants.
+- Outdoor trees.
+- Street signs.
+- Lighting fixtures.
+
+Objects should have correct scale, materials, placement and visual consistency.
+
+Use appropriate sound effects for doors, footsteps, furniture, computers and environmental ambience.
+
+---
+
+12. INTERACTION TESTING
+
+Every interactable object must pass a functional test.
+
+Required test cases
+
+1. Walk toward a chair.
+2. Verify Sit appears.
+3. Press Sit.
+4. Verify correct sitting animation.
+5. Verify player position and alignment.
+6. Press Stand Up.
+7. Verify normal movement returns.
+
+Library test:
+
+1. Walk toward bookshelf.
+2. Verify Browse Books appears.
+3. Open book list.
+4. Select a book.
+5. Take the book.
+6. Verify inventory updates.
+7. Open and read the book.
+8. Return it.
+9. Verify library records update.
+
+Door test:
+
+1. Approach door.
+2. Verify Open appears.
+3. Open the door.
+4. Enter the correct room.
+5. Verify collision and navigation.
+6. Exit correctly.
+
+NPC test:
+
+1. Approach NPC.
+2. Verify Talk appears.
+3. Start conversation.
+4. Complete conversation.
+5. Verify movement returns.
+6. Verify relevant memory is saved.
+
+Repeat equivalent tests for every major object category.
+
+Create automated interaction tests where possible.
+
+---
+
+13. TECHNICAL IMPLEMENTATION
+
+Use the existing Three.js / React Three Fiber architecture where suitable.
+
+Create reusable systems:
+
+- Building architecture modules.
+- Interior room modules.
+- Furniture modules.
+- Object interaction registry.
+- Proximity detection.
+- Interaction state machine.
+- Animation controller.
+- NPC navigation.
+- NPC object interaction.
+- Save-state integration.
+
+Every interactable object must register with the interaction system using a unique ID.
+
+Use stable object references and avoid fragile checks based only on display names.
+
+Implement interaction range and collision checks using the actual object position and geometry.
+
+Prevent interaction with objects behind walls or on inaccessible floors.
+
+Use raycasting or equivalent target detection combined with proximity checks.
+
+For seating and workstation interactions, use dedicated interaction anchors.
+
+Save important interaction outcomes, such as collected books or stored objects, when they affect progression.
+
+---
+
+14. PERFORMANCE AND ASSET QUALITY
+
+Do not reduce architectural detail so much that the school looks empty.
+
+Use:
+
+- Reusable modular assets.
+- Level of detail.
+- Instanced repeated objects.
+- Optimized textures.
+- Efficient lighting.
+- Region-based loading.
+- Occlusion culling where appropriate.
+- NPC distance simulation.
+- Asset streaming.
+- Collision simplification for complex decorative models.
+
+Use detailed geometry for close-up objects and optimized geometry for distant objects.
+
+Prioritize smooth mobile gameplay.
+
+---
+
+15. DEVELOPMENT ORDER
+
+Phase 1 — Audit Existing World
+
+- Inspect every building.
+- Inspect all exterior structures.
+- Inspect all interiors.
+- Identify missing rooms.
+- Identify inaccessible locations.
+- Identify broken interactions.
+- Create a complete redesign plan.
+
+Phase 2 — Architectural Redesign
+
+- Rebuild academy exterior.
+- Rebuild main entrance.
+- Rebuild academic buildings.
+- Rebuild all major interiors.
+- Improve materials and lighting.
+- Ensure correct proportions.
+
+Phase 3 — Campus Facilities
+
+- Library.
+- Classrooms A, B, C, D.
+- Laboratories.
+- Cafeteria.
+- Auditorium.
+- Student council.
+- Club rooms.
+- Sports facilities.
+- Dormitories.
+- Administrative areas.
+
+Phase 4 — Universal Interaction Framework
+
+- Object registration.
+- Proximity detection.
+- Contextual button.
+- Interaction priority.
+- State machine.
+- Exit handling.
+
+Phase 5 — Furniture and Object Interactions
+
+- Chairs.
+- Desks.
+- Beds.
+- Bookshelves.
+- Books.
+- Doors.
+- Computers.
+- Counters.
+- Vending machines.
+- Other relevant objects.
+
+Phase 6 — NPC Object Usage
+
+- NPC seating.
+- NPC studying.
+- NPC reading.
+- NPC computer usage.
+- NPC cafeteria activities.
+- NPC door navigation.
+- NPC sports activities.
+
+Phase 7 — World Expansion
+
+- Residential district.
+- Commercial district.
+- Transport district.
+- Research centre.
+- Additional regions.
+
+Phase 8 — Verification
+
+- Geometry checks.
+- Collision checks.
+- Navigation checks.
+- Interaction tests.
+- NPC behaviour tests.
+- Mobile controls.
+- Performance tests.
+
+Do not mark a phase complete until the implementation has been verified.
+
+---
+
+FINAL ACCEPTANCE CRITERIA
+
+The redesigned world is acceptable only when:
+
+1. The academy exterior has been completely redesigned.
+2. All major interiors have detailed layouts.
+3. Building dimensions are consistent.
+4. The academy feels large and architecturally believable.
+5. All four classes have their own classrooms.
+6. The library has usable bookshelves and books.
+7. The player can sit on chairs.
+8. The player can use desks and computers.
+9. Doors can open and connect to correct interiors.
+10. Relevant environmental objects have contextual actions.
+11. Interaction buttons appear only near valid targets.
+12. Interaction buttons remain small and clean.
+13. The player can exit interactions correctly.
+14. NPCs can use furniture and environmental objects.
+15. NPCs can navigate buildings without walking through walls.
+16. Interiors match their exterior buildings.
+17. All major buildings have meaningful gameplay activities.
+18. No important interactive object is merely decorative.
+19. Mobile performance remains acceptable.
+20. Existing story, save, controls and AI systems remain functional.
+
+FINAL EXPERIENCE
+
+The School Chronicles must have a huge, detailed, beautifully designed academy with believable architecture, complete interiors, realistic furniture, functional doors, connected rooms and a large surrounding world.
+
+The player should be able to approach almost any meaningful object and interact through a small contextual button.
+
+The library should allow actual book selection and reading. Classrooms should allow sitting and studying. Cafeterias should allow ordering and eating. Computers should be usable. Doors should open. Furniture should work.
+
+NPCs must use the same world intelligently and independently.
+
+The objective is to create a genuinely interactive living 3D world, not a decorative 3D environment.

@@ -1,0 +1,1368 @@
+THE SCHOOL CHRONICLES
+
+ULTIMATE MASTER GAME DEVELOPMENT PROMPT — V7.0
+
+PROJECT VISION
+
+Build a complete, high-quality, third-person 3D open-world school-life RPG named THE SCHOOL CHRONICLES.
+
+This must be a real playable 3D game, not a normal website that only looks like a game.
+
+The player should experience a living academy and a large surrounding world populated by hundreds of unique characters, AI-controlled NPCs, meaningful stories, dynamic events, friendships, rivalries, examinations, missions and continuous progression.
+
+The world must evolve according to the player's actions and the history of previous stories.
+
+The game must support mobile and desktop gameplay.
+
+Use the existing project and preserve all working features. Extend the current implementation instead of unnecessarily rebuilding everything.
+
+---
+
+1. COMPLETE GAME ENTRY FLOW
+
+The player must never directly enter the 3D world when opening the game.
+
+The complete flow must be:
+
+MAIN MENU
+→ NEW GAME OR RESUME GAME
+→ CHARACTER CREATION
+→ CHARACTER INTRODUCTION
+→ STORY LIBRARY
+→ STORY DETAILS
+→ PHASE SELECTION
+→ GAMEPLAY
+
+Returning players should be able to select Resume Game and continue exactly where they left off.
+
+Main Menu
+
+Create a cinematic main menu with:
+
+- New Game
+- Resume Game
+- Settings
+- Character Profile
+- Credits
+
+Design
+
+- Full-screen 3D academy environment.
+- Cinematic camera movement.
+- Atmospheric lighting.
+- Animated background elements.
+- Professional game-style typography.
+- Smooth transitions.
+- Subtle sound effects.
+- Responsive mobile interface.
+
+New Game
+
+When clicked:
+
+1. Open Character Creation.
+2. Allow complete character customization.
+3. Show the player's introduction story.
+4. Open Story Library.
+5. Let the player select the first unlocked story.
+
+Never silently overwrite existing saved games.
+
+Support multiple save slots or a clear new-game confirmation.
+
+Resume Game
+
+Resume Game must restore:
+
+- Player position.
+- Character appearance.
+- Current story.
+- Current phase.
+- Mission progress.
+- Completed objectives.
+- XP and other progression.
+- Class membership.
+- Relationships.
+- NPC memories.
+- Inventory.
+- World state.
+- Relevant events.
+
+The player must return to the last saved checkpoint or saved gameplay state.
+
+---
+
+2. CHARACTER CREATION
+
+Character creation must happen before entering the open world.
+
+Create an interactive 3D character creator.
+
+Customization
+
+- Character name.
+- Age.
+- Gender presentation.
+- Face.
+- Hairstyle.
+- Hair colour.
+- Eye colour.
+- Skin tone.
+- Height.
+- Body proportions.
+- School uniform.
+- Casual outfits.
+- Accessories.
+- Personality.
+
+Show a real-time 3D preview.
+
+Allow the player to rotate the model and inspect the selected appearance.
+
+Personality selection
+
+Include:
+
+- Calm.
+- Intelligent.
+- Friendly.
+- Confident.
+- Competitive.
+- Introverted.
+- Curious.
+- Creative.
+
+Personality should influence dialogue and NPC reactions without restricting player decisions.
+
+Save all customization permanently.
+
+---
+
+3. PLAYER INTRODUCTION STORY
+
+After character creation, show a short cinematic introduction.
+
+Include:
+
+- Player's fictional background.
+- Hometown.
+- Previous school.
+- Reason for joining Hoshino Academy.
+- Personal goals.
+- Arrival at the academy.
+- First impressions.
+- Introduction to the academy environment.
+
+Use cinematic scenes, dialogue and meaningful choices.
+
+Player decisions may influence the first NPC interactions.
+
+After the introduction, open the Story Library.
+
+---
+
+4. VISUAL STORY LIBRARY
+
+The Story Library must be a premium visual story-selection interface.
+
+Do not display stories as plain text paragraphs or ordinary lists.
+
+Each story card must contain:
+
+1. Cinematic cover image.
+2. Story title below the image.
+3. Story number.
+4. Short description.
+5. Completion percentage.
+6. Locked/unlocked indicator.
+7. Completion status.
+
+Use a clean card layout with attractive animations and responsive design.
+
+Initial story library
+
+1. A New Beginning
+2. Hidden Rivalries
+3. Secrets of Hoshino
+4. The Academy Festival
+5. Beyond the Campus
+6. The Forgotten Project
+7. The Final Challenge
+8. A New Chapter
+
+Each story must have a distinct narrative, visual identity and connected phases.
+
+Story unlocking
+
+- Story 01 is initially unlocked.
+- All remaining stories are locked.
+- Completing all required phases of Story 01 unlocks Story 02.
+- Completing Story 02 unlocks Story 03.
+- Continue sequentially.
+- Locked stories remain visible as cards.
+- Their titles and cover images may be visible, but their actual story content must remain inaccessible.
+- Players cannot skip required stories.
+
+Completed stories may be replayed without resetting the overall player progression.
+
+---
+
+5. STORY DETAILS AND PHASE SELECTION
+
+When a player clicks an unlocked story, open its dedicated phase-selection screen.
+
+Each phase must have:
+
+- Its own cinematic image.
+- Phase name below the image.
+- Phase number.
+- Short description.
+- Locked/unlocked status.
+- Completion status.
+
+Keep phase cards visually smaller and cleaner than the main story cards.
+
+Example: Story 01 — A New Beginning
+
+- Phase 01: First Day at Hoshino
+- Phase 02: Meet Your Classmates
+- Phase 03: The First Classroom
+- Phase 04: Exploring the Academy
+- Phase 05: The First Challenge
+- Phase 06: New Friendships
+- Phase 07: The First Examination
+- Phase 08: An Unexpected Discovery
+- Phase 09: A New Beginning
+
+These are initial examples. Develop a complete connected storyline.
+
+Phase progression
+
+- Only Phase 01 is initially playable.
+- Phase 02 unlocks after Phase 01 is completed.
+- Phase 03 unlocks after Phase 02 is completed.
+- Continue the same rule.
+- The final required phase marks the story as complete.
+- Completing the story unlocks the next story.
+
+Never allow skipping required phases.
+
+Display clear visual progress indicators.
+
+Replaying a phase must not erase previously earned rewards or completed progression.
+
+---
+
+6. CINEMATIC STORYTELLING
+
+Do not show the entire game story as simple text.
+
+The actual story must unfold through gameplay.
+
+Include:
+
+- Cinematic opening scenes.
+- NPC conversations.
+- Character interactions.
+- Exploration.
+- Missions.
+- Player choices.
+- Environmental storytelling.
+- School events.
+- Classroom activities.
+- Examinations.
+- Discoveries.
+- Cutscenes.
+- Story conclusions.
+
+Every phase must have:
+
+1. Opening scene.
+2. Main objectives.
+3. Optional objectives.
+4. Relevant characters.
+5. Locations.
+6. Player decisions.
+7. NPC interactions.
+8. Completion requirements.
+9. Rewards.
+10. Next-phase transition.
+
+Every phase must meaningfully contribute to the overall narrative.
+
+---
+
+7. ACADEMY CLASS SYSTEM — ONLY A, B, C, D
+
+The academy has exactly four main classes:
+
+- Class A
+- Class B
+- Class C
+- Class D
+
+Do not create 1-A, 1-B, 2-A or other grade-based class names.
+
+All students must belong to one of the four classes.
+
+Each class must have
+
+- Its own classroom.
+- Class representative.
+- Main characters.
+- Supporting characters.
+- Normal student NPCs.
+- Assigned teachers.
+- Friend groups.
+- Rivalries.
+- Academic performance.
+- Class reputation.
+- Unique events.
+- Class missions.
+- Social identity.
+
+Class A
+
+A highly competitive class with academically strong, ambitious and strategically minded students.
+
+Class B
+
+A balanced class with cooperative students and diverse abilities.
+
+Class C
+
+A socially diverse class with creative, ambitious and unpredictable personalities.
+
+Class D
+
+A diverse class containing students with different backgrounds, strengths and opportunities to prove themselves.
+
+These are general class identities, not restrictions. Every class must contain varied characters.
+
+Class competition
+
+Implement:
+
+- Academic rankings.
+- Class points.
+- Class reputation.
+- Inter-class challenges.
+- Group projects.
+- Sports competitions.
+- Examinations.
+- Special events.
+- Class-specific storylines.
+
+Player actions and performance should influence class progression.
+
+---
+
+8. LARGE CHARACTER ECOSYSTEM
+
+The world must contain a large population of unique characters.
+
+Do not limit the academy to three or four NPCs.
+
+NPC categories
+
+1. Main story characters.
+2. Class A main characters.
+3. Class B main characters.
+4. Class C main characters.
+5. Class D main characters.
+6. Supporting students.
+7. Normal student NPCs.
+8. Teachers.
+9. School staff.
+10. Student council members.
+11. Club members.
+12. Rival characters.
+13. Special event characters.
+14. Outside-world NPCs.
+
+Character diversity
+
+Every important character must have:
+
+- Unique name.
+- Age.
+- Class or occupation.
+- Appearance.
+- Personality.
+- Background.
+- Interests.
+- Goals.
+- Strengths.
+- Weaknesses.
+- Daily schedule.
+- Relationships.
+- Memories.
+- Dialogue style.
+- Personal development.
+
+Avoid identical-looking or identical-behaving characters.
+
+Create varied outfits, hairstyles, animations, voices or dialogue styles where supported.
+
+Main characters
+
+Expand the existing cast, including Aiko, Ren and Mika.
+
+Introduce many additional original characters from all four classes, student council, clubs, teaching staff and outside-world locations.
+
+Each major character must have their own story, development, goals and relationships.
+
+---
+
+9. AUTONOMOUS AI-CONTROLLED NPC SYSTEM
+
+This is a core feature, not an optional future addition.
+
+NPCs must behave like independent characters living in the world.
+
+They must not simply follow fixed routes or wait for the player.
+
+Use Gemini as an AI intelligence provider through a secure backend, combined with local NPC simulation.
+
+A. Individual NPC Brain
+
+Each important NPC should have:
+
+- Personality model.
+- Current goals.
+- Long-term goals.
+- Interests.
+- Emotional state.
+- Current activity.
+- Memories.
+- Relationships.
+- Preferences.
+- Knowledge.
+- Decision history.
+- Daily routine.
+
+NPC behaviour must reflect its personality and circumstances.
+
+B. Autonomous Decisions
+
+NPCs should independently decide:
+
+- Where to go.
+- What activity to perform.
+- Which class or event to attend.
+- Whom to interact with.
+- Whether to study or socialize.
+- Which personal goal to pursue.
+- How to react to relevant events.
+- How to respond to the player's actions.
+
+Decisions must respect world rules, schedules and character continuity.
+
+C. AI Conversations
+
+Players must be able to talk naturally with important NPCs.
+
+NPC conversations should:
+
+- Use unique personality.
+- Understand conversation context.
+- Remember relevant previous conversations.
+- Respond to player decisions.
+- Recognize story events.
+- Have different dialogue styles.
+- Avoid repetitive generic responses.
+
+Normal NPCs should also have context-sensitive dialogue, using lightweight conversation systems where full AI is unnecessary.
+
+D. NPC Long-Term Memory
+
+Important NPCs should remember:
+
+- Previous conversations.
+- Important player decisions.
+- Completed shared missions.
+- Promises and commitments.
+- Significant school events.
+- Important achievements.
+- Relationship changes.
+
+Memory must be persistent and consistent.
+
+Use structured memory records rather than saving unlimited raw conversation history.
+
+E. NPC-to-NPC Interaction
+
+NPCs must interact with each other without requiring player involvement.
+
+Examples:
+
+- Friends having conversations.
+- Students studying together.
+- Club members planning activities.
+- Classmates discussing examinations.
+- Students meeting in the cafeteria.
+- Characters developing friendships.
+- Characters experiencing disagreements.
+- Students reacting to major school events.
+
+NPC-to-NPC interactions can change their relationships and future behaviour.
+
+F. Relationship System
+
+Track:
+
+- Friendship.
+- Trust.
+- Respect.
+- Rivalry.
+- Cooperation.
+- Familiarity.
+- Group relationships.
+
+Relationships should evolve through meaningful interactions.
+
+Avoid arbitrary changes without an understandable cause.
+
+G. NPC Emotions
+
+NPCs may have changing emotional states based on:
+
+- Recent events.
+- Personal goals.
+- Relationships.
+- Academic results.
+- Player decisions.
+- Story developments.
+
+Emotions should influence dialogue, animations and behaviour.
+
+H. NPC Daily Life
+
+NPCs must follow believable routines.
+
+Examples:
+
+- Attend classes.
+- Walk between classrooms.
+- Study in the library.
+- Eat in the cafeteria.
+- Participate in clubs.
+- Practice sports.
+- Socialize.
+- Visit the courtyard.
+- Prepare for exams.
+- Participate in events.
+- Return to dormitories.
+
+NPCs should not remain frozen when the player is not nearby.
+
+I. Dynamic NPC Progression
+
+NPCs should develop over time.
+
+Their:
+
+- Academic performance.
+- Skills.
+- Goals.
+- Relationships.
+- Personal stories.
+- Reputation.
+- Activities.
+
+can change based on relevant world events.
+
+J. NPC Storylines
+
+Important NPCs must have individual story arcs.
+
+These may include:
+
+- Personal goals.
+- Class responsibilities.
+- Friendship challenges.
+- Academic ambitions.
+- Club activities.
+- Rivalries.
+- Secrets.
+- Character development.
+
+NPC storylines can become side missions or connect to main stories.
+
+K. World Awareness
+
+NPCs should be aware of relevant:
+
+- Time of day.
+- Locations.
+- School calendar.
+- Current events.
+- Class activities.
+- Their own relationships.
+- Player actions.
+- Established story history.
+
+Never let an NPC claim knowledge of events they could not reasonably know.
+
+L. NPC Simulation Architecture
+
+Do not call Gemini continuously for every NPC or every frame.
+
+Use a layered system:
+
+Layer 1 — Local Behaviour
+
+- Movement.
+- Pathfinding.
+- Animations.
+- Basic reactions.
+- Collision handling.
+
+Layer 2 — Schedule and Decision Engine
+
+- Activities.
+- Daily routines.
+- Goals.
+- Social opportunities.
+- Event participation.
+
+Layer 3 — AI Intelligence
+
+- Important decisions.
+- Natural dialogue.
+- Character development.
+- Complex social interactions.
+- Storyline decisions.
+
+Layer 4 — Persistent Memory
+
+- Relationships.
+- Significant events.
+- Important conversations.
+- Long-term goals.
+
+Use AI calls when meaningful decisions or conversations require them.
+
+Use local deterministic simulation for routine movement and basic activities.
+
+M. NPC Population and Performance
+
+The world should feel populated.
+
+Use:
+
+- Distance-based NPC activation.
+- Level of detail.
+- Background simulation.
+- NPC spawning and despawning.
+- Instanced repeated assets.
+- Lightweight distant character simulation.
+- Persistent important-character data.
+
+All NPCs must retain their important state even when they are not rendered.
+
+Never confuse NPC despawning with deleting the character or their memory.
+
+---
+
+10. EXPANDED OPEN WORLD
+
+The world must extend far beyond the academy campus.
+
+Create a large interconnected environment.
+
+Academy district
+
+- Main academy building.
+- Multiple classrooms.
+- Library.
+- Science laboratories.
+- Computer laboratories.
+- Cafeteria.
+- Gymnasium.
+- Indoor sports complex.
+- Swimming pool.
+- Auditorium.
+- Student council room.
+- Club rooms.
+- Dormitories.
+- Medical room.
+- Rooftop.
+- Courtyard.
+- Gardens.
+- Sports fields.
+- Restricted areas for appropriate story missions.
+
+Outside districts
+
+- Residential neighbourhood.
+- Shopping streets.
+- Bookstores.
+- Restaurants.
+- Public park.
+- Train station.
+- Bus station.
+- Research centre.
+- Mountain region.
+- Shrine.
+- Riverfront.
+- Entertainment district.
+- Sports facilities.
+- Additional educational institutions.
+
+World systems
+
+- Day and night cycle.
+- Dynamic weather.
+- Time-based schedules.
+- Weekdays and weekends.
+- School calendar.
+- Special events.
+- Environmental sounds.
+- Interactive buildings.
+- Indoor and outdoor activities.
+- Dynamic NPC populations.
+
+Every location must have a purpose.
+
+Do not expand the map using empty terrain alone.
+
+Each district should introduce new NPCs, activities, missions and story opportunities.
+
+---
+
+11. PLAYER PROGRESSION
+
+Create a persistent progression system.
+
+Progression attributes
+
+- XP.
+- CP.
+- PP.
+- Academic performance.
+- Class reputation.
+- Personal reputation.
+- Skills.
+- Friendships.
+- Achievements.
+- Inventory.
+- Customization unlocks.
+
+Skills
+
+- Academics.
+- Communication.
+- Leadership.
+- Creativity.
+- Sports.
+- Problem solving.
+- Observation.
+
+Skills should develop through meaningful gameplay rather than repetitive grinding.
+
+---
+
+12. CLASSROOM AND EXAMINATION SYSTEM
+
+Create interactive classrooms and academic activities.
+
+Include:
+
+- Attendance.
+- Teacher interactions.
+- Lessons.
+- Assignments.
+- Group projects.
+- Quizzes.
+- Examinations.
+- Results.
+- Academic rankings.
+- Class competitions.
+
+AI can generate new age-appropriate questions according to subject and difficulty.
+
+Validate questions and answer keys before displaying them.
+
+Academic performance should influence relevant progression and class events.
+
+---
+
+13. MISSION SYSTEM
+
+Support:
+
+- Main story missions.
+- Side missions.
+- Character missions.
+- Class missions.
+- Club missions.
+- Exploration missions.
+- Daily activities.
+- Special events.
+
+Every mission should include:
+
+- Title.
+- Description.
+- Objective.
+- Relevant location.
+- NPCs.
+- Progress tracking.
+- Completion conditions.
+- Rewards.
+
+Use contextual mission markers and map guidance.
+
+Do not overcrowd the HUD.
+
+---
+
+14. CLUBS AND SCHOOL EVENTS
+
+Create interactive school clubs.
+
+Examples:
+
+- Science Club.
+- Computer Club.
+- Sports Club.
+- Art Club.
+- Music Club.
+- Literature Club.
+- Photography Club.
+- Debate Club.
+
+Each club should have:
+
+- Members.
+- Club leader.
+- Meeting schedule.
+- Activities.
+- Events.
+- Unique NPCs.
+- Missions.
+- Rewards.
+
+School events
+
+Include:
+
+- School festival.
+- Sports day.
+- Academic competition.
+- Cultural events.
+- Club exhibitions.
+- Seasonal celebrations.
+- Special examinations.
+
+NPCs should participate autonomously according to their interests and roles.
+
+---
+
+15. GEMINI AI STORY DIRECTOR
+
+Use Gemini through a secure server-side backend.
+
+Never expose API keys in frontend code, browser requests or public source files.
+
+Read the secret from:
+
+"GEMINI_API_KEY"
+
+The AI Story Director must generate structured content, not arbitrary game code.
+
+AI responsibilities
+
+- New stories.
+- Story phases.
+- Side missions.
+- Quizzes.
+- Examinations.
+- School events.
+- NPC dialogue.
+- NPC backgrounds.
+- Character storylines.
+- World activities.
+- Relevant character interactions.
+
+Context supplied to AI
+
+- Previous stories.
+- Story endings.
+- Player decisions.
+- Completed phases.
+- Player class.
+- Academic progression.
+- NPC relationships.
+- NPC memories.
+- Unresolved mysteries.
+- Existing characters.
+- World history.
+- Relevant locations.
+
+Generation pipeline
+
+1. Retrieve saved progression.
+2. Retrieve relevant story history.
+3. Retrieve NPC and relationship context.
+4. Generate a new story outline.
+5. Generate sequential phases.
+6. Generate objectives and missions.
+7. Validate continuity.
+8. Validate character references.
+9. Validate age-appropriateness.
+10. Validate phase dependencies.
+11. Generate cover-image prompts.
+12. Save approved content.
+13. Display the story in the library.
+
+Do not publish unvalidated AI-generated content.
+
+Endless Story System
+
+When all existing stories are completed:
+
+- Gemini generates an original new story.
+- The new story is added to the Story Library.
+- Its first phase becomes available.
+- Remaining phases stay locked.
+- Phases unlock sequentially.
+- Story completion unlocks the next story or initiates generation of the next adventure.
+
+New stories must continue previous world history.
+
+They must not randomly reset the academy, characters or relationships.
+
+The AI should generate stories based on player history, not unrelated random adventures.
+
+---
+
+16. AI NPC AND STORY CONTINUITY
+
+The NPC AI and Story Director must share a consistent world-history system.
+
+Examples:
+
+- If an NPC becomes friends with the player, future stories should reflect that relationship.
+- If a major school event occurs, relevant NPCs should remember it.
+- If a character changes their goal, the change should persist.
+- If a story introduces a new character, the character should remain available in later stories when relevant.
+- If the player completes an important mission, NPCs with relevant knowledge may react.
+- If a class competition ends, its results should influence future class activities.
+
+Maintain a structured canonical world history.
+
+Use event records, timestamps, character IDs and relationship changes.
+
+Never allow generated content to overwrite established facts without an explicit story explanation.
+
+---
+
+17. CHARACTER PROFILE AND RELATIONSHIPS
+
+Create a dedicated Character Profile screen.
+
+Display:
+
+- Player appearance.
+- Class.
+- Academic statistics.
+- Skills.
+- Achievements.
+- Current story.
+- Completed stories.
+- Completed phases.
+- Relationships.
+- Inventory.
+- Reputation.
+
+Create an NPC profile screen for important characters.
+
+Display appropriate information:
+
+- Name.
+- Appearance.
+- Class or occupation.
+- Personality summary.
+- Known interests.
+- Relationship status.
+- Relevant story history.
+
+Do not expose private or unknown NPC information before the player discovers it.
+
+---
+
+18. SAVE AND RESUME SYSTEM
+
+Create persistent save slots.
+
+Save:
+
+- Character appearance.
+- Player profile.
+- Current location.
+- Current story.
+- Current phase.
+- Completed stories.
+- Completed phases.
+- Unlocked content.
+- XP and progression.
+- Class membership.
+- Academic records.
+- Inventory.
+- NPC relationships.
+- NPC memories.
+- NPC development.
+- Mission state.
+- World events.
+- Settings.
+
+Reliability
+
+- Automatic checkpoints.
+- Manual save where appropriate.
+- Versioned save format.
+- Validation.
+- Recovery from corrupted data.
+- Consistent progression.
+- Reliable resume.
+
+Use authenticated backend persistence for production cross-device accounts.
+
+Do not rely exclusively on browser localStorage for long-term account-based progression.
+
+---
+
+19. THIRD-PERSON 3D GAMEPLAY
+
+Preserve and improve the existing Three.js / React Three Fiber implementation.
+
+Controls
+
+Desktop:
+
+- WASD.
+- Arrow keys.
+- Camera controls.
+- Jump.
+- Run.
+- Interact.
+
+Mobile:
+
+- Virtual joystick.
+- Camera orbit.
+- Jump button.
+- Run button.
+- Interaction button.
+
+Gameplay requirements
+
+- Smooth movement.
+- Collision detection.
+- Character animations.
+- NPC animations.
+- Interactive buildings.
+- Indoor environments.
+- Interactive doors.
+- Environmental interactions.
+- Minimap.
+- Mission markers.
+- Location indicators.
+
+Keep gameplay controls accessible and responsive.
+
+---
+
+20. UI AND UX DESIGN
+
+Use a polished cinematic design.
+
+Visual style
+
+- Dark premium interface.
+- Elegant typography.
+- High-quality cinematic imagery.
+- Subtle gradients.
+- Smooth transitions.
+- Consistent spacing.
+- Clear visual hierarchy.
+- Responsive layouts.
+
+Required screens
+
+1. Main Menu.
+2. Save Selection.
+3. Character Creation.
+4. Character Introduction.
+5. Story Library.
+6. Story Details.
+7. Phase Library.
+8. Gameplay HUD.
+9. Character Profile.
+10. NPC Profile.
+11. Inventory.
+12. Map.
+13. Settings.
+14. Mission Journal.
+15. Relationships.
+16. Academic Results.
+17. Club Screen.
+
+Do not overcrowd the gameplay interface.
+
+---
+
+21. PERFORMANCE AND TECHNICAL ARCHITECTURE
+
+The game must remain playable on mobile devices.
+
+Rendering and simulation
+
+- NPC level of detail.
+- Distance-based activation.
+- Background simulation.
+- Instanced geometry.
+- Optimized textures.
+- Asset streaming by region.
+- Lazy loading.
+- Efficient rendering.
+- Memory management.
+- Adaptive quality settings.
+
+AI backend
+
+- Secure Gemini integration.
+- Input validation.
+- Output validation.
+- Rate limiting.
+- Authentication where appropriate.
+- Persistent storage.
+- Structured NPC memory.
+- Structured world history.
+- Story progression validation.
+- Error handling.
+- Fallback content.
+
+AI reliability
+
+The game must remain playable if Gemini is unavailable.
+
+Use:
+
+- Cached dialogue.
+- Local NPC schedules.
+- Fallback activities.
+- Retry controls.
+- Clear error messages.
+
+Never let an AI failure corrupt the game save.
+
+---
+
+22. SECURITY AND CONTENT SAFETY
+
+- Keep API keys server-side.
+- Validate all AI inputs and outputs.
+- Protect save data.
+- Apply appropriate authentication.
+- Apply request limits.
+- Prevent unauthorized story unlocks.
+- Do not trust frontend XP or completion claims.
+- Validate progression on the backend where available.
+- Avoid exposing internal NPC memory or private data unnecessarily.
+
+All stories must remain appropriate for a school-life game.
+
+Do not generate explicit sexual content, dangerous dares, instructions for real-world harm, exploitative interactions or substance-use promotion.
+
+Use age-appropriate mystery, competition, humour, friendship, academic challenges and character development.
+
+---
+
+23. COMPLETE DEVELOPMENT ROADMAP
+
+Implement and verify in this order.
+
+PHASE 1 — MAIN MENU
+
+- Cinematic main menu.
+- New Game.
+- Resume Game.
+- Save slots.
+- Settings.
+
+PHASE 2 — CHARACTER CREATION
+
+- Real-time 3D preview.
+- Character customization.
+- Personality selection.
+- Persistent character profile.
+
+PHASE 3 — INTRODUCTION
+
+- Character background.
+- Opening cinematic.
+- Dialogue.
+- Player choices.
+
+PHASE 4 — STORY LIBRARY
+
+- Visual story cards.
+- Cover images.
+- Descriptions.
+- Locked and unlocked states.
+
+PHASE 5 — PHASE SYSTEM
+
+- Visual phase cards.
+- Sequential unlocking.
+- Completion tracking.
+- Story completion.
+- Next story unlocking.
+
+PHASE 6 — CHARACTER EXPANSION
+
+- Class A characters.
+- Class B characters.
+- Class C characters.
+- Class D characters.
+- Supporting students.
+- Normal NPCs.
+- Teachers and staff.
+- Student council.
+- Club members.
+
+PHASE 7 — AI NPC SYSTEM
+
+- Individual NPC brains.
+- Personalities.
+- Goals.
+- Autonomous decisions.
+- Natural conversations.
+- NPC memory.
+- NPC-to-NPC interactions.
+- Relationships.
+- Emotional states.
+- Daily routines.
+- NPC progression.
+
+PHASE 8 — NPC WORLD SIMULATION
+
+- Dynamic schedules.
+- Social groups.
+- Background activity.
+- Event participation.
+- NPC persistence.
+- Performance optimization.
+
+PHASE 9 — WORLD EXPANSION
+
+- Academy.
+- Residential district.
+- Town.
+- Train station.
+- Research centre.
+- Mountain region.
+- Additional districts.
+- Interactive interiors.
+
+PHASE 10 — GAMEPLAY SYSTEMS
+
+- Missions.
+- Classroom.
+- Exams.
+- Clubs.
+- Events.
+- Skills.
+- Class competition.
+
+PHASE 11 — AI STORY DIRECTOR
+
+- Gemini backend.
+- Story generation.
+- Phase generation.
+- NPC storylines.
+- Continuity validation.
+- Endless story progression.
+
+PHASE 12 — PERSISTENCE
+
+- Save slots.
+- Resume.
+- NPC memories.
+- World history.
+- Cross-session consistency.
+
+PHASE 13 — VERIFICATION
+
+- Build validation.
+- Type checking.
+- Story unlock tests.
+- Save/resume tests.
+- NPC memory tests.
+- AI conversation tests.
+- NPC-to-NPC interaction tests.
+- Mobile controls.
+- Performance.
+- Security.
+- Deployment verification.
+
+A phase must not be marked complete merely because code was written. Verify actual behaviour through automated tests and gameplay testing.
+
+---
+
+24. ACCEPTANCE CRITERIA
+
+The game is not considered complete until these requirements are verified:
+
+1. Main Menu appears before gameplay.
+2. New Game opens Character Creation.
+3. Resume Game restores the saved state.
+4. Character customization persists.
+5. Story cards display relevant images and titles.
+6. Locked stories cannot be started.
+7. Phase cards display relevant images and titles.
+8. Only the first required phase is initially playable.
+9. Completing a phase unlocks the next phase.
+10. Completing a story unlocks the next story.
+11. Only Class A, B, C and D exist.
+12. Each class has main characters and many normal NPCs.
+13. Important NPCs have individual personalities and goals.
+14. NPCs follow independent routines.
+15. NPCs can make autonomous decisions.
+16. NPCs can interact with each other.
+17. Important NPCs remember relevant past events.
+18. NPC relationships evolve.
+19. NPCs react to relevant player decisions.
+20. The world has multiple meaningful districts.
+21. The game remains playable when Gemini is unavailable.
+22. Gemini generates validated stories based on previous events.
+23. Generated stories contain sequential phases.
+24. Story continuity survives restarting the game.
+25. Mobile controls and performance are tested.
+26. No API secrets are exposed.
+27. Existing working features remain functional.
+
+---
+
+FINAL EXPERIENCE
+
+The School Chronicles must feel like a continuously evolving 3D world.
+
+The player creates a character, enters the academy, selects stories, completes phases, attends classes, explores the world and develops relationships.
+
+There are exactly four academy classes: A, B, C and D.
+
+Each class contains main characters, supporting characters and a large population of normal NPCs.
+
+NPCs are AI-controlled characters with personalities, independent decisions, memories, goals, schedules, relationships and interactions with other NPCs.
+
+The player should not be the only character whose life progresses. The world must feel alive even when the player is exploring somewhere else.
+
+The Gemini AI Story Director must use previous stories, player choices, NPC memories and world history to generate new connected stories and phases.
+
+When all existing stories are complete, the world should continue expanding through new AI-generated adventures.
+
+FINAL GOAL: A persistent, intelligent, large-scale 3D open-world school RPG with autonomous AI NPCs, meaningful stories, continuous character development and an expandable living world.
