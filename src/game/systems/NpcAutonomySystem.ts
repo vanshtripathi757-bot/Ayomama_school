@@ -1,4 +1,4 @@
-import type { TimeOfDayPreset, Vector3Tuple } from '../../types/game';
+import type { NPCRelationshipState, TimeOfDayPreset, Vector3Tuple } from '../../types/game';
 
 export type NpcActivityKind = 'teaching' | 'reading' | 'socializing' | 'club-work' | 'sports' | 'resting' | 'administration';
 export type NpcAnimationIntent = 'idle' | 'reading' | 'working' | 'sitting' | 'teaching';
@@ -155,4 +155,33 @@ export function applyNpcDailySchedules<T extends {
       currentActivity: directive.activity,
     };
   });
+}
+
+export function appendNpcRelationshipMemory(
+  relationships: Record<string, NPCRelationshipState> | undefined,
+  npcId: string,
+  summary: string,
+  maxMemories = 8
+): Record<string, NPCRelationshipState> {
+  const clean = summary.trim().replace(/\\s+/g, ' ').slice(0, 160);
+  if (!npcId || !clean) return relationships ?? {};
+  const current = relationships?.[npcId] ?? {
+    npcId,
+    friendship: 0,
+    trust: 0,
+    respect: 0,
+    rivalry: 0,
+    familiarity: 0,
+    memories: [],
+  };
+  const memories = [...(current.memories ?? [])];
+  if (memories[memories.length - 1] !== clean) memories.push(clean);
+  return {
+    ...(relationships ?? {}),
+    [npcId]: {
+      ...current,
+      familiarity: Math.min(100, current.familiarity + 1),
+      memories: memories.slice(-Math.max(1, maxMemories)),
+    },
+  };
 }
