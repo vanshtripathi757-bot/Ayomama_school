@@ -21,6 +21,7 @@ export interface NpcDailyDirective {
 /** Stable, low-cost anchors used by NPCs to visibly use nearby campus facilities. */
 export const NPC_ACTIVITY_ANCHORS: NpcActivityAnchor[] = [
   { id: 'courtyard-fountain', label: 'Courtyard Fountain', position: { x: -7.5, y: 0, z: 5.5 }, kind: 'socializing' },
+  { id: 'courtyard-east-bench', label: 'South Courtyard Bench', position: { x: 5.5, y: 0, z: 18 }, kind: 'socializing' },
   { id: 'library-east-shelf', label: 'East Library Shelves', position: { x: 9.5, y: 0, z: -19.5 }, kind: 'reading' },
   { id: 'class-a-teacher-desk', label: 'Class A Teacher Desk', position: { x: -12.2, y: 0, z: -18.4 }, kind: 'teaching' },
   { id: 'west-cafeteria', label: 'West Cafeteria Pavilion', position: { x: -24.5, y: 0, z: 8 }, kind: 'resting' },
@@ -50,9 +51,9 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
     twilight: { anchor: 'courtyard-fountain', activity: 'Reviewing the student council notice board', animation: 'working' },
   },
   npc_kaito: {
-    morning: { anchor: 'courtyard-fountain', activity: 'Meeting the student festival committee', animation: 'working' },
-    golden_hour: { anchor: 'courtyard-fountain', activity: 'Planning the cultural festival with classmates', animation: 'working' },
-    twilight: { anchor: 'courtyard-fountain', activity: 'Chatting with classmates after club activities', animation: 'idle' },
+    morning: { anchor: 'courtyard-east-bench', activity: 'Meeting the student festival committee', animation: 'working' },
+    golden_hour: { anchor: 'courtyard-east-bench', activity: 'Planning the cultural festival with classmates', animation: 'working' },
+    twilight: { anchor: 'courtyard-east-bench', activity: 'Chatting with classmates after club activities', animation: 'idle' },
   },
   npc_takeda: {
     morning: { anchor: 'class-a-teacher-desk', activity: 'Teaching and preparing the Class A lesson', animation: 'teaching' },
@@ -65,9 +66,9 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
     twilight: { anchor: 'library-east-shelf', activity: 'Studying quietly in the library', animation: 'reading' },
   },
   npc_aoi: {
-    morning: { anchor: 'class-a-teacher-desk', activity: 'Working on class notes', animation: 'working' },
-    golden_hour: { anchor: 'east-sports-court', activity: 'Attending an after-school club session', animation: 'working' },
-    twilight: { anchor: 'library-east-shelf', activity: 'Reading in the library', animation: 'reading' },
+    morning: { anchor: 'courtyard-east-bench', activity: 'Working on class notes between lessons', animation: 'working' },
+    golden_hour: { anchor: 'courtyard-east-bench', activity: 'Attending an after-school study group', animation: 'working' },
+    twilight: { anchor: 'courtyard-east-bench', activity: 'Reviewing notes with classmates', animation: 'reading' },
   },
   npc_daichi: {
     morning: { anchor: 'east-sports-court', activity: 'Setting up sports practice', animation: 'working' },
