@@ -53,6 +53,7 @@ import {
 import { sharedInputBridge } from '../game/systems/InputBridge';
 import { LIBRARY_BOOKS, takeLibraryBook as addLibraryBook, returnLibraryBook as removeLibraryBook } from '../game/systems/LibraryBookSystem';
 import { appendNpcRelationshipMemory } from '../game/systems/NpcAutonomySystem';
+import { purchaseTownItem as buyTownItem } from '../game/systems/TownShopSystem';
 
 export interface ActiveDialogueSession {
   target: CampusInteractable;
@@ -162,6 +163,7 @@ interface GameStoreState {
   endWorldInteraction: () => void;
   takeLibraryBook: (bookId: string) => void;
   returnLibraryBook: (bookId: string) => void;
+  purchaseTownItem: (itemId: string) => boolean;
   openInteractionDialogue: (target?: CampusInteractable) => void;
   selectDialogueChoice: (
     choiceLabel: string,
@@ -906,6 +908,18 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ missionProgress: { ...mp, inventoryItems } });
       audioManager.playClick();
       void get().saveCurrentSession();
+    },
+
+    purchaseTownItem: (itemId: string) => {
+      const result = buyTownItem(get().missionProgress, itemId);
+      if (!result.success) {
+        audioManager.playCancel();
+        return false;
+      }
+      set({ missionProgress: result.progress });
+      audioManager.playConfirmChime();
+      void get().saveCurrentSession();
+      return true;
     },
 
     openInteractionDialogue: (explicitTarget?: CampusInteractable) => {
