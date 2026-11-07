@@ -54,7 +54,7 @@ test('NPC memories are deduplicated, bounded per NPC and preserve other NPCs', (
 });
 
 test('invalid NPC memory events are ignored and summaries are capped', () => {
-  const initial = [];
+  const initial: ReturnType<typeof appendNpcMemory> = [];
   assert.equal(appendNpcMemory(initial, {
     id: '', npcId: 'npc_hana', kind: 'greeting', summary: 'Hi', occurredAt: 1,
   }), initial);
