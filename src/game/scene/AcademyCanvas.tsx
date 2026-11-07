@@ -27,6 +27,7 @@ import {
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
+import { createCampusWorldInteractionSystem } from '../systems/CampusWorldCatalog';
 import { sharedInputBridge } from '../systems/InputBridge';
 
 const _petalDummy = new THREE.Object3D();
@@ -47,6 +48,7 @@ export function AcademyCanvas() {
     settings: useGameStore.getState().settings,
     activeDialogue: useGameStore.getState().activeDialogue,
     nearbyInteractableId: useGameStore.getState().nearbyInteractable?.id ?? null,
+    activeWorldInteraction: useGameStore.getState().activeWorldInteraction,
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
   });
@@ -61,6 +63,7 @@ export function AcademyCanvas() {
         settings: state.settings,
         activeDialogue: state.activeDialogue,
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
+        activeWorldInteraction: state.activeWorldInteraction,
         characterCustomization: state.missionProgress.characterCustomization,
       };
     });
@@ -199,6 +202,7 @@ export function AcademyCanvas() {
     const textures = createProceduralTextureSet(maxAniso);
     const academyEnv = buildAcademyEnvironment(textures);
     scene.add(academyEnv.rootGroup);
+    const worldInteractionSystem = createCampusWorldInteractionSystem();
 
     // 7. Build Phase 2 Playable Anime Protagonist & Campus NPCs / Landmarks
     const entitiesGroup = new THREE.Group();
@@ -412,7 +416,9 @@ export function AcademyCanvas() {
         settings,
         activeDialogue,
         nearbyInteractableId,
+        activeWorldInteraction,
       } = stateRef.current;
+      const isWorldInteracting = Boolean(activeWorldInteraction);
 
       // Sync dynamic Graphics Settings changes immediately
       if (settings.graphics.resolutionScale !== prevResScale) {
@@ -473,7 +479,7 @@ export function AcademyCanvas() {
           // Consume one-shot mobile interact press
           if (sharedInputBridge.mobileInteractJustPressed) {
             sharedInputBridge.mobileInteractJustPressed = false;
-            if (!activeDialogue) {
+            if (!activeDialogue && !isWorldInteracting) {
               useGameStore.getState().openInteractionDialogue();
             }
           }
@@ -482,7 +488,7 @@ export function AcademyCanvas() {
           // Note: moveZ < 0 is forward (-Z), moveZ > 0 is backward (+Z)
           let kbMoveX = 0;
           let kbMoveZ = 0;
-          if (!activeDialogue) {
+          if (!activeDialogue && !isWorldInteracting) {
             if (heldKeys.has('KeyA')) kbMoveX -= 1;
             if (heldKeys.has('KeyD')) kbMoveX += 1;
             if (heldKeys.has('KeyW')) kbMoveZ -= 1;
@@ -513,10 +519,10 @@ export function AcademyCanvas() {
           }
 
           // Combine keyboard & mobile virtual thumbstick (joystickY > 0 is up on screen -> negative moveZ)
-          const combinedMoveX = activeDialogue
+          const combinedMoveX = activeDialogue || isWorldInteracting
             ? 0
             : Math.max(-1, Math.min(1, kbMoveX + sharedInputBridge.joystickX));
-          const combinedMoveZ = activeDialogue
+          const combinedMoveZ = activeDialogue || isWorldInteracting
             ? 0
             : Math.max(-1, Math.min(1, kbMoveZ - sharedInputBridge.joystickY));
 
@@ -529,17 +535,17 @@ export function AcademyCanvas() {
           }
 
           const sprintHeld =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (heldKeys.has('ShiftLeft') ||
               heldKeys.has('ShiftRight') ||
               sharedInputBridge.mobileSprintHeld ||
               sharedInputBridge.mobileSprintToggle);
 
           const jumpJustPressed =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (jumpKeyJustPressed || sharedInputBridge.mobileJumpJustPressed);
           const jumpHeld =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (heldKeys.has('Space') || sharedInputBridge.mobileJumpHeld);
 
           jumpKeyJustPressed = false;
@@ -645,6 +651,20 @@ export function AcademyCanvas() {
           const nearestId = nearest.target?.id ?? null;
           if (nearestId !== nearbyInteractableId) {
             useGameStore.getState().setNearbyInteractable(nearest.target);
+          }
+
+          // Shared world-object targeting: nearest valid object in range, biased toward the player's facing.
+          // NPC conversations retain priority so the two contextual prompts never compete.
+          if (nearest.target || isWorldInteracting || activeDialogue) {
+            useGameStore.getState().setNearbyWorldObject(null);
+          } else {
+            const worldTarget = worldInteractionSystem.findTarget({
+              player: {
+                position: { x: playerState.x, y: playerState.y, z: playerState.z },
+                yaw: playerState.yaw,
+              },
+            });
+            useGameStore.getState().setNearbyWorldObject(worldTarget?.object ?? null);
           }
         } else {
           // Even on title / character-creation screen, sync customization & let NPCs stroll around the courtyard!
