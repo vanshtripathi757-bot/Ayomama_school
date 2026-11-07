@@ -27,8 +27,10 @@ export const NPC_ACTIVITY_ANCHORS: NpcActivityAnchor[] = [
   { id: 'east-sports-court', label: 'East Sports Court', position: { x: 25, y: 0, z: 8.5 }, kind: 'sports' },
   { id: 'dormitory-common-room', label: 'Dormitory Common Room', position: { x: -45, y: 0, z: -30.5 }, kind: 'socializing' },
   { id: 'town-station-plaza', label: 'Hoshino Station Plaza', position: { x: 0, y: 0, z: 88.5 }, kind: 'socializing' },
-  { id: 'research-centre', label: 'Research Centre', position: { x: 55.5, y: 0, z: 18 }, kind: 'reading' },
-  { id: 'festival-amphitheatre', label: 'Festival Amphitheatre', position: { x: -66, y: 0, z: 8 }, kind: 'club-work' },
+  { id: 'east-aquatics-deck', label: 'East Aquatics Deck', position: { x: 55.5, y: 0, z: 18 }, kind: 'sports' },
+  { id: 'research-centre', label: 'Research Centre', position: { x: 54, y: 0, z: -26 }, kind: 'reading' },
+  { id: 'west-koi-garden', label: 'West Koi Garden', position: { x: -66, y: 0, z: 8 }, kind: 'socializing' },
+  { id: 'festival-amphitheatre', label: 'Festival Amphitheatre', position: { x: -66, y: 0, z: -26 }, kind: 'club-work' },
 ];
 
 const ANCHORS = Object.fromEntries(NPC_ACTIVITY_ANCHORS.map((anchor) => [anchor.id, anchor])) as Record<string, NpcActivityAnchor>;
@@ -44,13 +46,13 @@ type DailySchedule = Partial<Record<TimeOfDayPreset, ScheduleRow>>;
 export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
   npc_hana: {
     morning: { anchor: 'courtyard-fountain', activity: 'Welcoming students at the courtyard fountain', animation: 'working' },
-    golden_hour: { anchor: 'dormitory-common-room', activity: 'Checking the dormitory welcome board', animation: 'working' },
+    golden_hour: { anchor: 'courtyard-fountain', activity: 'Helping students with after-school orientation', animation: 'working' },
     twilight: { anchor: 'library-east-shelf', activity: 'Reading archive records in the library', animation: 'reading' },
   },
   npc_kaito: {
     morning: { anchor: 'courtyard-fountain', activity: 'Meeting the student festival committee', animation: 'working' },
-    golden_hour: { anchor: 'festival-amphitheatre', activity: 'Preparing the cultural festival stage', animation: 'working' },
-    twilight: { anchor: 'dormitory-common-room', activity: 'Relaxing in the dormitory common room', animation: 'sitting' },
+    golden_hour: { anchor: 'courtyard-fountain', activity: 'Planning the cultural festival with classmates', animation: 'working' },
+    twilight: { anchor: 'courtyard-fountain', activity: 'Chatting with classmates after club activities', animation: 'idle' },
   },
   npc_takeda: {
     morning: { anchor: 'class-a-teacher-desk', activity: 'Teaching and preparing the Class A lesson', animation: 'teaching' },
@@ -83,13 +85,13 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
     twilight: { anchor: 'town-station-plaza', activity: 'Heading home from the academy', animation: 'idle' },
   },
   npc_sora: {
-    morning: { anchor: 'research-centre', activity: 'Preparing a science club experiment', animation: 'working' },
-    golden_hour: { anchor: 'research-centre', activity: 'Working on a research project', animation: 'working' },
-    twilight: { anchor: 'research-centre', activity: 'Reviewing research notes', animation: 'reading' },
+    morning: { anchor: 'east-aquatics-deck', activity: 'Preparing for the aquatics club session', animation: 'working' },
+    golden_hour: { anchor: 'east-aquatics-deck', activity: 'Helping the aquatics club with practice', animation: 'working' },
+    twilight: { anchor: 'research-centre', activity: 'Reviewing research notes at the observatory', animation: 'reading' },
   },
   npc_yuki: {
-    morning: { anchor: 'festival-amphitheatre', activity: 'Checking cultural festival preparations', animation: 'working' },
-    golden_hour: { anchor: 'festival-amphitheatre', activity: 'Rehearsing with the performance club', animation: 'working' },
+    morning: { anchor: 'west-koi-garden', activity: 'Walking the koi garden path', animation: 'idle' },
+    golden_hour: { anchor: 'west-koi-garden', activity: 'Meeting classmates at the vermilion bridge', animation: 'idle' },
     twilight: { anchor: 'west-cafeteria', activity: 'Meeting friends after club activities', animation: 'idle' },
   },
 };
