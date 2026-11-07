@@ -61,7 +61,7 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
     const ai = new GoogleGenAI({ apiKey });
     const result = await ai.models.generateContent({
       model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-      contents: `${history}\nStudent says: ${message}\nReply as ${name}.`,
+      contents: `${memoryContext}\n\nRecent conversation:\n${history}\nStudent says: ${message}\nReply as ${name}.`,
       config: {
         systemInstruction: `You are ${name}, ${role} at Hoshino Academy. Persona: ${persona}. Reply naturally to the student's message in their language (English or Hinglish). Keep it age-appropriate, friendly, non-romantic, and under 55 words. Never ask for personal contact details.`,
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
