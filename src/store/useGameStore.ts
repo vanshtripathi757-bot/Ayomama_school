@@ -28,6 +28,8 @@ import {
   getCampusZoneLabel,
   getCurrentStoryChapter,
   getDeterministicStoryPack,
+  getStoryPhaseObjectiveStatus,
+  recordStoryObjectiveEvent,
   getLoadingMessageForProgress,
   getNextCameraViewpoint,
   getNextSchoolPeriod,
@@ -392,6 +394,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     completeCurrentStoryPhase: () => {
       const mp = get().missionProgress;
+      if (!getStoryPhaseObjectiveStatus(mp).quizUnlocked) return;
       const storyId = mp.activeStoryId ?? 'story_01';
       const phaseNum = mp.activePhaseNumber ?? 1;
       audioManager.playConfirmChime();
@@ -1010,13 +1013,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const currentActive = get().activeDialogue;
       if (!currentActive || currentActive.target.id !== active.target.id) return;
 
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        interactedId: active.target.id,
-        reputationDelta: bonus,
-        customMessageSent: true,
-        customMessageText: trimmed,
-        rewardItemName: active.target.rewardItemName,
-      });
+      const nextMission = recordStoryObjectiveEvent(
+        advanceMissionProgress(get().missionProgress, {
+          interactedId: active.target.id,
+          reputationDelta: bonus,
+          customMessageSent: true,
+          customMessageText: trimmed,
+          rewardItemName: active.target.rewardItemName,
+        }),
+        { interactedId: active.target.id, customMessageSent: true }
+      );
 
       set({
         activeDialogue: {
@@ -1074,17 +1080,19 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     recordMovementDistance: (distanceDelta: number) => {
       if (distanceDelta <= 0) return;
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        distanceDelta,
-      });
+      const nextMission = recordStoryObjectiveEvent(
+        advanceMissionProgress(get().missionProgress, { distanceDelta }),
+        { distanceDelta }
+      );
       set({ missionProgress: nextMission });
     },
 
     recordInteriorVisit: () => {
       if (get().missionProgress.visitedInterior) return;
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        enteredInterior: true,
-      });
+      const nextMission = recordStoryObjectiveEvent(
+        advanceMissionProgress(get().missionProgress, { enteredInterior: true }),
+        { enteredInterior: true }
+      );
       set({ missionProgress: nextMission });
       void get().saveCurrentSession();
     },
@@ -1097,7 +1105,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       sharedInputBridge.playerYaw = yaw;
       const inside = x >= -22.8 && x <= 22.8 && z <= -9.6 && z >= -22.4;
       const nextMission = inside
-        ? advanceMissionProgress(get().missionProgress, { enteredInterior: true })
+        ? recordStoryObjectiveEvent(
+            advanceMissionProgress(get().missionProgress, { enteredInterior: true }),
+            { enteredInterior: true }
+          )
         : get().missionProgress;
       set({
         cameraMode: 'follow',
@@ -1136,6 +1147,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     submitStoryPackAnswer: (optionIndex: number) => {
       const pack = get().activeStoryPack;
+      if (!getStoryPhaseObjectiveStatus(get().missionProgress).quizUnlocked) {
+        set({
+          lastQuizFeedback: {
+            selectedOption: optionIndex,
+            isCorrect: false,
+            explanation: 'Complete every required mission objective before taking this phase quiz. Follow the current clue in your Mission Tracker.',
+          },
+        });
+        return;
+      }
       const isCorrect = optionIndex === pack.correctOption;
       if (isCorrect) {
         audioManager.playConfirmChime();
