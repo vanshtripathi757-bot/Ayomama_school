@@ -120,6 +120,17 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
     floorId: 'medical-ground',
   },
   {
+    id: 'medical-room-bed-2',
+    type: 'bed',
+    displayName: 'Medical Rest Bed',
+    position: point(36.8, 0.9, -28.8),
+    interactionRange: 2.0,
+    actions: [{ id: 'rest', label: 'Rest' }],
+    anchor: { position: point(36.8, 0, -32.0), yaw: 0 },
+    roomId: 'medical-room',
+    floorId: 'medical-ground',
+  },
+  {
     id: 'station-ticket-terminal',
     type: 'terminal',
     displayName: 'Hoshino Railway Ticket Terminal',
