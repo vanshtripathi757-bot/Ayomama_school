@@ -369,6 +369,19 @@ export function AcademyHUD() {
         </div>
       </div>
 
+      {phase === 'playing' && !storyModalOpen && !activeDialogue && (
+        <div data-testid="live-mission-clue" className="pointer-events-auto absolute top-14 left-3 z-10 w-[min(82vw,280px)] rounded-lg bg-[#071426]/90 border border-emerald-400/35 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Current Mission · {phaseObjectiveStatus.completedCount}/{phaseObjectiveStatus.total}</div>
+          {phaseObjectiveStatus.nextObjective ? (
+            <>
+              <div className="mt-1 text-[11px] font-semibold text-white">{phaseObjectiveStatus.nextObjective}</div>
+              <div className="mt-1 text-[10px] leading-relaxed text-amber-100">{getStoryObjectiveHint(missionProgress)}</div>
+            </>
+          ) : (
+            <div className="mt-1 text-[11px] text-emerald-200">All objectives complete. Open Story &amp; Quiz to finish this phase.</div>
+          )}
+        </div>
+      )}
       {/* Upper-Right Expandable Menu Panel (Cleanly Organized · No Manual Weather or Teleport Cheats) */}
       {hubOpen && (
         <div
