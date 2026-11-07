@@ -1092,13 +1092,15 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     },
 
     recordInteriorVisit: () => {
-      if (get().missionProgress.visitedInterior) return;
-      const nextMission = recordStoryObjectiveEvent(
-        advanceMissionProgress(get().missionProgress, { enteredInterior: true }),
-        { enteredInterior: true }
-      );
-      set({ missionProgress: nextMission });
-      void get().saveCurrentSession();
+      const currentMission = get().missionProgress;
+      const baseMission = currentMission.visitedInterior
+        ? currentMission
+        : advanceMissionProgress(currentMission, { enteredInterior: true });
+      const nextMission = recordStoryObjectiveEvent(baseMission, { enteredInterior: true });
+      if (nextMission !== currentMission) {
+        set({ missionProgress: nextMission });
+        void get().saveCurrentSession();
+      }
     },
 
     teleportToZone: (x: number, z: number, yaw = Math.PI) => {
