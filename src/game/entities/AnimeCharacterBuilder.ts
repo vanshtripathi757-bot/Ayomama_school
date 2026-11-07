@@ -403,7 +403,7 @@ export function createAnimeCharacterRig(
   const heldBookPages = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.235, 0.322, 0.026)), heldBookPageMat);
   heldBookPages.position.z = 0.012;
   heldBookGroup.add(heldBookPages);
-  const heldBookSpine = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.035, 0.34, 0.04)), darkTrimMat);
+  const heldBookSpine = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.035, 0.34, 0.04)), heldBookCoverMat);
   heldBookSpine.position.x = -0.108;
   heldBookGroup.add(heldBookSpine);
   heldBookGroup.position.set(0.035, -0.64, 0.105);
