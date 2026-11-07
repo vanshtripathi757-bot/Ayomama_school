@@ -55,6 +55,7 @@ export function AcademyCanvas() {
     activeWorldInteraction: useGameStore.getState().activeWorldInteraction,
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
+    hasLibraryBook: useGameStore.getState().missionProgress.inventoryItems.some((item) => item.startsWith('library-book:')),
   });
 
   useEffect(() => {
@@ -69,6 +70,7 @@ export function AcademyCanvas() {
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
         activeWorldInteraction: state.activeWorldInteraction,
         characterCustomization: state.missionProgress.characterCustomization,
+        hasLibraryBook: state.missionProgress.inventoryItems.some((item) => item.startsWith('library-book:')),
       };
     });
     return unsub;
@@ -696,7 +698,9 @@ export function AcademyCanvas() {
 
           // Show a hand-held book while the player is browsing the library shelves.
           if (protagonistRig.heldBookGroup) {
-            protagonistRig.heldBookGroup.visible = activeWorldInteraction?.actionId === 'browse-books';
+            protagonistRig.heldBookGroup.visible = Boolean(
+              activeWorldInteraction?.actionId === 'browse-books' && hasLibraryBook
+            );
           }
 
           // Update protagonist rig animation
