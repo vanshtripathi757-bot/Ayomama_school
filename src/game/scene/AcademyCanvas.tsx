@@ -55,7 +55,7 @@ export function AcademyCanvas() {
     activeWorldInteraction: useGameStore.getState().activeWorldInteraction,
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
-    hasLibraryBook: useGameStore.getState().missionProgress.inventoryItems.some((item) => item.startsWith('library-book:')),
+    hasLibraryBook: (useGameStore.getState().missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
   });
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function AcademyCanvas() {
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
         activeWorldInteraction: state.activeWorldInteraction,
         characterCustomization: state.missionProgress.characterCustomization,
-        hasLibraryBook: state.missionProgress.inventoryItems.some((item) => item.startsWith('library-book:')),
+        hasLibraryBook: (state.missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
       };
     });
     return unsub;
@@ -457,6 +457,7 @@ export function AcademyCanvas() {
         activeDialogue,
         nearbyInteractableId,
         activeWorldInteraction,
+        hasLibraryBook,
       } = stateRef.current;
       if (timeOfDay !== scheduledPeriod) {
         scheduledPeriod = timeOfDay;
