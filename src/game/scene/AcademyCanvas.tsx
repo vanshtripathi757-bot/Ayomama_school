@@ -709,7 +709,7 @@ export function AcademyCanvas() {
           const playerActivityIntent =
             activeWorldInteraction?.actionId === 'sit' || activeWorldInteraction?.actionId === 'rest'
               ? 'sitting'
-              : activeWorldInteraction?.actionId === 'study' || activeWorldInteraction?.actionId === 'read'
+              : activeWorldInteraction?.actionId === 'study' || activeWorldInteraction?.actionId === 'read' || activeWorldInteraction?.actionId === 'browse-books'
                 ? 'reading'
                 : activeWorldInteraction
                   ? 'working'
