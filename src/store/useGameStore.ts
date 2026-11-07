@@ -1080,11 +1080,15 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     recordMovementDistance: (distanceDelta: number) => {
       if (distanceDelta <= 0) return;
+      const currentMission = get().missionProgress;
       const nextMission = recordStoryObjectiveEvent(
-        advanceMissionProgress(get().missionProgress, { distanceDelta }),
+        advanceMissionProgress(currentMission, { distanceDelta }),
         { distanceDelta }
       );
       set({ missionProgress: nextMission });
+      if (nextMission.completedObjectiveKeys !== currentMission.completedObjectiveKeys) {
+        void get().saveCurrentSession();
+      }
     },
 
     recordInteriorVisit: () => {
