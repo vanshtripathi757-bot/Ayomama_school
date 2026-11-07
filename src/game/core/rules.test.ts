@@ -492,3 +492,19 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
 
 
 
+
+
+test('story phase completion rejects invalid, skipped, and repeated phases without rewards', () => {
+  const initial = structuredClone(INITIAL_MISSION_PROGRESS);
+  const invalid = completeStoryPhaseProgress(initial, 'not-a-story', 1);
+  assert.equal(invalid, initial);
+  const skipped = completeStoryPhaseProgress(initial, 'story_01', 2);
+  assert.equal(skipped, initial);
+  const first = completeStoryPhaseProgress(initial, 'story_01', 1);
+  assert.ok(first.completedPhaseKeys?.includes('story_01:phase_1'));
+  assert.equal(first.activePhaseNumber, 2);
+  const repeated = completeStoryPhaseProgress(first, 'story_01', 1);
+  assert.equal(repeated, first);
+  assert.equal(repeated.reputationPoints, first.reputationPoints);
+  assert.equal(repeated.cpPoints, first.cpPoints);
+});
