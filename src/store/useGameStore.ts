@@ -51,6 +51,7 @@ import {
   SCHOOL_PERIODS,
 } from '../config/defaults';
 import { sharedInputBridge } from '../game/systems/InputBridge';
+import { LIBRARY_BOOKS, takeLibraryBook as addLibraryBook, returnLibraryBook as removeLibraryBook } from '../game/systems/LibraryBookSystem';
 
 export interface ActiveDialogueSession {
   target: CampusInteractable;
@@ -158,6 +159,8 @@ interface GameStoreState {
   setNearbyWorldObject: (target: WorldInteractableDefinition | null) => void;
   beginWorldInteraction: (objectId: string, actionId: WorldActionId) => void;
   endWorldInteraction: () => void;
+  takeLibraryBook: (bookId: string) => void;
+  returnLibraryBook: (bookId: string) => void;
   openInteractionDialogue: (target?: CampusInteractable) => void;
   selectDialogueChoice: (
     choiceLabel: string,
@@ -882,6 +885,26 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         set({ activeWorldInteraction: null });
         audioManager.playCancel();
       }
+    },
+
+    takeLibraryBook: (bookId: string) => {
+      if (!LIBRARY_BOOKS.some((book) => book.id === bookId)) return;
+      const mp = get().missionProgress;
+      const inventoryItems = addLibraryBook(mp.inventoryItems ?? [], bookId);
+      if (inventoryItems.length === (mp.inventoryItems ?? []).length) return;
+      set({ missionProgress: { ...mp, inventoryItems } });
+      audioManager.playConfirmChime();
+      void get().saveCurrentSession();
+    },
+
+    returnLibraryBook: (bookId: string) => {
+      const mp = get().missionProgress;
+      const currentItems = mp.inventoryItems ?? [];
+      const inventoryItems = removeLibraryBook(currentItems, bookId);
+      if (inventoryItems.length === currentItems.length) return;
+      set({ missionProgress: { ...mp, inventoryItems } });
+      audioManager.playClick();
+      void get().saveCurrentSession();
     },
 
     openInteractionDialogue: (explicitTarget?: CampusInteractable) => {
