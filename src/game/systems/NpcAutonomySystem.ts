@@ -47,7 +47,7 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
   npc_hana: {
     morning: { anchor: 'courtyard-fountain', activity: 'Welcoming students at the courtyard fountain', animation: 'working' },
     golden_hour: { anchor: 'courtyard-fountain', activity: 'Helping students with after-school orientation', animation: 'working' },
-    twilight: { anchor: 'library-east-shelf', activity: 'Reading archive records in the library', animation: 'reading' },
+    twilight: { anchor: 'courtyard-fountain', activity: 'Reviewing the student council notice board', animation: 'working' },
   },
   npc_kaito: {
     morning: { anchor: 'courtyard-fountain', activity: 'Meeting the student festival committee', animation: 'working' },
@@ -77,7 +77,7 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
   npc_ren: {
     morning: { anchor: 'courtyard-fountain', activity: 'Talking with classmates between lessons', animation: 'idle' },
     golden_hour: { anchor: 'east-sports-court', activity: 'Training with the sports club', animation: 'working' },
-    twilight: { anchor: 'library-east-shelf', activity: 'Studying academy records', animation: 'reading' },
+    twilight: { anchor: 'east-sports-court', activity: 'Cooling down after sports practice', animation: 'sitting' },
   },
   npc_haruto: {
     morning: { anchor: 'town-station-plaza', activity: 'Checking the station timetable', animation: 'working' },
@@ -92,7 +92,7 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
   npc_yuki: {
     morning: { anchor: 'west-koi-garden', activity: 'Walking the koi garden path', animation: 'idle' },
     golden_hour: { anchor: 'west-koi-garden', activity: 'Meeting classmates at the vermilion bridge', animation: 'idle' },
-    twilight: { anchor: 'west-cafeteria', activity: 'Meeting friends after club activities', animation: 'idle' },
+    twilight: { anchor: 'west-koi-garden', activity: 'Relaxing by the koi garden path', animation: 'idle' },
   },
 };
 
