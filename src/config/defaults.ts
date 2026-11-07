@@ -2019,6 +2019,12 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
 
   // North Mountain Shrine Grand Hall
   { id: 'north_shrine_hall', minX: -9.5, maxX: 9.5, minZ: -95.5, maxZ: -85.0 },
+  // Medical room shell with a 6m south entrance kept open.
+  { id: 'medical_room_north_wall', minX: 27.0, maxX: 41.0, minZ: -34.0, maxZ: -33.45 },
+  { id: 'medical_room_west_wall', minX: 26.9, maxX: 27.45, minZ: -33.75, maxZ: -20.25 },
+  { id: 'medical_room_east_wall', minX: 40.55, maxX: 41.1, minZ: -33.75, maxZ: -20.25 },
+  { id: 'medical_room_front_left', minX: 27.0, maxX: 31.0, minZ: -20.55, maxZ: -20.0 },
+  { id: 'medical_room_front_right', minX: 37.0, maxX: 41.0, minZ: -20.55, maxZ: -20.0 },
 ];
 
 export const CAMPUS_CIRCLE_COLLIDERS: CircleCollider2D[] = [
