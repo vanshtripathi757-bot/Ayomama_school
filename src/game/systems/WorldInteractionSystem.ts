@@ -70,7 +70,7 @@ export interface InteractionQuery {
 }
 
 const distance3 = (a: Vector3Tuple, b: Vector3Tuple): number =>
-  Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 const normalizeAngle = (angle: number): number =>
   Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -136,7 +136,7 @@ export class WorldInteractionSystem {
   findTarget(query: InteractionQuery): InteractionCandidate | null {
     const now = query.now ?? Date.now();
     const candidates: InteractionCandidate[] = [];
-    const [px, py, pz] = query.player.position;
+    const { x: px, z: pz } = query.player.position;
 
     for (const object of this.definitions.values()) {
       if (object.requiredFlags?.some((flag) => !query.flags?.has(flag))) continue;
@@ -145,8 +145,8 @@ export class WorldInteractionSystem {
       if (this.getAvailableActions(object.id, query.flags, now).length === 0) continue;
       if (query.isOccluded?.(query.player.position, object.position, object.id)) continue;
 
-      const dx = object.position[0] - px;
-      const dz = object.position[2] - pz;
+      const dx = object.position.x - px;
+      const dz = object.position.z - pz;
       const targetYaw = Math.atan2(dx, dz);
       const angleDelta = Math.abs(normalizeAngle(targetYaw - query.player.yaw));
       const facingScore = 1 - Math.min(angleDelta / Math.PI, 1);
