@@ -23,6 +23,28 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
       priority: 2,
     }))
   ),
+  {
+    id: 'class-a-teacher-desk',
+    type: 'desk',
+    displayName: 'Class A Teacher Desk',
+    position: point(-12.2, 0.9, -18.4),
+    interactionRange: 2.4,
+    actions: [{ id: 'inspect', label: 'Inspect Lesson Notes' }],
+    roomId: 'class-a',
+    floorId: 'academic-ground',
+    priority: 2,
+  },
+  {
+    id: 'east-sports-court',
+    type: 'landmark',
+    displayName: 'East Sports Court Practice Area',
+    position: point(25, 0.1, 8.5),
+    interactionRange: 3.0,
+    actions: [{ id: 'inspect', label: 'Inspect Sports Practice' }],
+    roomId: 'east-sports-court',
+    floorId: 'outdoor',
+    priority: 1,
+  },
   ...[9.8, 14.2, 18.6].map((x, index) => ({
     id: `east-library-shelf-${index + 1}`,
     type: 'bookshelf' as const,
