@@ -218,6 +218,7 @@ export interface MissionProgressState {
   completedPhaseKeys?: string[]; // format: `${storyId}:phase_${phaseNumber}`
   completedStoryIds?: string[];
   completedObjectiveKeys?: string[]; // `${storyId}:phase_${phaseNumber}:objective_${index}`
+  objectiveNpcProgress?: Record<string, string[]>; // NPC IDs collected for the current objective
   npcRelationships?: Record<string, NPCRelationshipState>;
   customStories?: StoryLibraryItem[];
 }
