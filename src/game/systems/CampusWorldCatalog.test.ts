@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { CAMPUS_WORLD_OBJECTS, createCampusWorldInteractionSystem } from './CampusWorldCatalog';
+import { NPC_OBJECT_ACTIVITIES } from './NpcAutonomySystem';
 
 test('campus catalog has unique stable ids and useful actions', () => {
   const ids = CAMPUS_WORLD_OBJECTS.map((object) => object.id);
@@ -27,4 +28,11 @@ test('expanded facility and transport objects expose the expected actions', () =
   assert.equal(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'station-ticket-terminal')?.type, 'terminal');
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'town-manga-shop-counter')?.actions.some((action) => action.id === 'view-menu'));
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'town-konbini-counter')?.actions.some((action) => action.id === 'view-menu'));
+});
+
+test('every scheduled NPC object activity points to a registered world object', () => {
+  const registeredIds = new Set(CAMPUS_WORLD_OBJECTS.map((object) => object.id));
+  for (const activity of NPC_OBJECT_ACTIVITIES) {
+    assert.ok(registeredIds.has(activity.objectId), `${activity.npcId} references missing object ${activity.objectId}`);
+  }
 });
