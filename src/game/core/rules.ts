@@ -1676,13 +1676,22 @@ export function generateSmartNpcReply(params: {
   npcRole: string;
   playerMessage: string;
   schoolPeriodLabel: string;
+  npcMemories?: string[];
 }): { reply: string; affinityBonus: number } {
-  const { npcId, npcName, npcRole, playerMessage, schoolPeriodLabel } = params;
+  const { npcId, npcName, npcRole, playerMessage, schoolPeriodLabel, npcMemories = [] } = params;
   const msg = playerMessage.trim();
   const lower = msg.toLowerCase();
   const npcConfig = CAMPUS_INTERACTABLES.find((i) => i.id === npcId);
   const classTag = npcConfig?.academyClass ?? 'Hoshino Academy';
   const personality = npcConfig?.personalityType ?? 'Friendly';
+
+  if (/\\b(remember|last time|previous|before|yaad|pichli baar|pehle)\\b/i.test(playerMessage) && npcMemories.length > 0) {
+    const remembered = npcMemories.slice(-2).join('; ');
+    return {
+      reply: `Of course, I remember our earlier conversation: ${remembered}. What would you like to explore next?`,
+      affinityBonus: 6,
+    };
+  }
 
   const isHinglish =
     /\b(kya|kaise|kaisa|kaisi|kaha|kahan|tum|aap|naam|bhai|dost|chalo|batao|accha|theek|haan|nahi|kar|rahe|ho|hai|mera|mujhe|kab|kyu|kyun|aur|sab|badhiya|sensei|sir)\b/i.test(
