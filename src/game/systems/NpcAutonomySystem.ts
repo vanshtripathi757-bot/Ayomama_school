@@ -25,7 +25,7 @@ export const NPC_ACTIVITY_ANCHORS: NpcActivityAnchor[] = [
   { id: 'class-a-teacher-desk', label: 'Class A Teacher Desk', position: { x: -12.2, y: 0, z: -18.4 }, kind: 'teaching' },
   { id: 'west-cafeteria', label: 'West Cafeteria Pavilion', position: { x: -24.5, y: 0, z: 8 }, kind: 'resting' },
   { id: 'east-sports-court', label: 'East Sports Court', position: { x: 25, y: 0, z: 8.5 }, kind: 'sports' },
-  { id: 'dormitory-common-room', label: 'Dormitory Common Room', position: { x: -16, y: 0, z: 11.5 }, kind: 'socializing' },
+  { id: 'dormitory-common-room', label: 'Dormitory Common Room', position: { x: -45, y: 0, z: -30.5 }, kind: 'socializing' },
   { id: 'town-station-plaza', label: 'Hoshino Station Plaza', position: { x: 0, y: 0, z: 88.5 }, kind: 'socializing' },
   { id: 'research-centre', label: 'Research Centre', position: { x: 55.5, y: 0, z: 18 }, kind: 'reading' },
   { id: 'festival-amphitheatre', label: 'Festival Amphitheatre', position: { x: -66, y: 0, z: 8 }, kind: 'club-work' },
