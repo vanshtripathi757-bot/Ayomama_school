@@ -306,18 +306,19 @@ export function completeStoryPhaseProgress(
   phaseNumber: number
 ): MissionProgressState {
   const allStories = getAllStories(current.customStories ?? []);
-  const story = allStories.find((s) => s.id === storyId) ?? allStories[0];
-  const phase =
-    story.phases.find((p) => p.phaseNumber === phaseNumber) ?? story.phases[0];
+  const story = allStories.find((item) => item.id === storyId);
+  if (!story || !Number.isInteger(phaseNumber)) return current;
 
-  const phaseKey = `${story.id}:phase_${phase.phaseNumber}`;
+  const phase = story.phases.find((item) => item.phaseNumber === phaseNumber);
+  if (!phase) return current;
+
   const completedPhaseKeys = [...(current.completedPhaseKeys ?? [])];
-  const alreadyDone = completedPhaseKeys.includes(phaseKey);
-  if (!alreadyDone) {
-    completedPhaseKeys.push(phaseKey);
-  }
-
   const completedStoryIds = [...(current.completedStoryIds ?? [])];
+  const phaseKey = `${story.id}:phase_${phase.phaseNumber}`;
+  // Never grant rewards twice, and never skip a preceding phase or story.
+  if (completedPhaseKeys.includes(phaseKey)) return current;
+  if (!isPhaseUnlocked(storyId, phaseNumber, completedPhaseKeys, completedStoryIds, allStories)) return current;
+  completedPhaseKeys.push(phaseKey);
   let nextActiveStoryId = story.id;
   let nextActivePhaseNumber = phase.phaseNumber;
 
@@ -334,9 +335,9 @@ export function completeStoryPhaseProgress(
     }
   }
 
-  const xpGain = alreadyDone ? 10 : phase.rewardXp;
-  const cpGain = alreadyDone ? 5 : phase.rewardCp;
-  const ppGain = alreadyDone ? 20 : phase.rewardPp;
+  const xpGain = Math.max(0, phase.rewardXp);
+  const cpGain = Math.max(0, phase.rewardCp);
+  const ppGain = Math.max(0, phase.rewardPp);
 
   const playerClass: AcademyClassId =
     current.characterCustomization?.academyClass ?? 'Class D';
