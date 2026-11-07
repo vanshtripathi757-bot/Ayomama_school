@@ -1055,6 +1055,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         npcRole: active.target.role,
         playerMessage: trimmed,
         schoolPeriodLabel: periodLabel,
+        npcMemories: get().missionProgress.npcRelationships?.[active.target.id]?.memories ?? [],
       });
 
       let replyText = smartFallback.reply;
