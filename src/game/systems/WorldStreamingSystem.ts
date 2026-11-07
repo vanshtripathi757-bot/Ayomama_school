@@ -68,7 +68,10 @@ export function updateWorldStreaming(
       if (!budget) continue;
       const target = center ?? object.position;
       const distance = Math.hypot(playerX - target.x, playerZ - target.z);
-      object.visible = shouldRegionBeLoaded(distance, object.visible, budget);
+      const wasInitialized = object.userData.streamInitialized === true;
+      const currentlyLoaded = wasInitialized ? object.visible : false;
+      object.visible = shouldRegionBeLoaded(distance, currentlyLoaded, budget);
+      object.userData.streamInitialized = true;
     }
   }
 }
