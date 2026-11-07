@@ -307,6 +307,8 @@ export interface CampusInteractable {
   longTermGoal?: string;
   emotionalState?: string;
   currentActivity?: string;
+  activityObjectId?: string;
+  activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
   persona?: string;
   greetingText?: string;
   greetingAnim?: NpcGreetingAnimationType;
