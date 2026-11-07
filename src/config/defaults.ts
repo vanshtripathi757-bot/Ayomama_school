@@ -2013,6 +2013,11 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // South Hoshino Town District Multi-Story Buildings & Commuter Train at Station
   { id: 'west_town_shop', minX: -34.5, maxX: -17.5, minZ: 51.5, maxZ: 72.5 },
   { id: 'east_town_shop', minX: 17.5, maxX: 34.5, minZ: 51.5, maxZ: 72.5 },
+  // Hoshino residential neighbourhood homes.
+  { id: 'residential_home_west_south', minX: -53.2, maxX: -42.8, minZ: 56.2, maxZ: 65.8 },
+  { id: 'residential_home_east_south', minX: 42.8, maxX: 53.2, minZ: 56.2, maxZ: 65.8 },
+  { id: 'residential_home_west_north', minX: -53.2, maxX: -42.8, minZ: 75.2, maxZ: 84.8 },
+  { id: 'residential_home_east_north', minX: 42.8, maxX: 53.2, minZ: 75.2, maxZ: 84.8 },
   { id: 'station_train', minX: -28.5, maxX: 28.5, minZ: 98.8, maxZ: 102.6 },
 
   // East Aquatics 25m Swimming Pool Basin (players walk on the surrounding deck without entering deep water)
