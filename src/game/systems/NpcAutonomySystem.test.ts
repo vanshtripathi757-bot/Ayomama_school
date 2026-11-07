@@ -85,7 +85,13 @@ test('scheduled NPC object activities resolve to registered world object ids', (
 });
 
 test('daily schedules send NPCs to their concrete object activity positions', () => {
-  const interactables = [{
+  const interactables: Array<{
+    id: string;
+    patrolWaypoints: Array<{ x: number; y: number; z: number }>;
+    currentActivity: string;
+    activityObjectId?: string;
+    activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
+  }> = [{
     id: 'npc_takeda',
     patrolWaypoints: [{ x: 0, y: 0, z: 0 }],
     currentActivity: 'Old activity',
