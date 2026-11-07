@@ -613,9 +613,23 @@ export function buildAcademyEnvironment(
         bay.rotation.y = wx < 0 ? -Math.PI / 2 : Math.PI / 2;
         const pane = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.7, 2.0, 0.055)), glazingMat);
         bay.add(pane);
-        const frame = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.95, 2.18, 0.14)), windowFrameMat);
-        const cutout = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.7, 2.0, 0.18)), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.BackSide, transparent: true, opacity: 0 }));
-        void frame; void cutout;
+        const jambGeo = trackGeo(new THREE.BoxGeometry(0.12, 2.18, 0.14));
+        for (const side of [-1, 1]) {
+          const jamb = new THREE.Mesh(jambGeo, windowFrameMat);
+          jamb.position.x = side * 1.41;
+          bay.add(jamb);
+        }
+        const lintelGeo = trackGeo(new THREE.BoxGeometry(2.94, 0.12, 0.14));
+        for (const edge of [-1, 1]) {
+          const lintel = new THREE.Mesh(lintelGeo, windowFrameMat);
+          lintel.position.y = edge * 1.03;
+          bay.add(lintel);
+        }
+        const mullion = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.07, 2.0, 0.14)), windowFrameMat);
+        bay.add(mullion);
+        bay.traverse((node) => {
+          if (node instanceof THREE.Mesh) { node.castShadow = true; node.receiveShadow = true; }
+        });
         rootGroup.add(bay);
       }
     }
