@@ -25,6 +25,7 @@ export interface CharacterActorRig {
   glassesGroup?: THREE.Group;
   armbandGroup?: THREE.Group;
   headphonesGroup?: THREE.Group;
+  heldBookGroup?: THREE.Group;
   dispose: () => void;
 }
 
@@ -390,6 +391,25 @@ export function createAnimeCharacterRig(
   const rightHand = new THREE.Mesh(handGeo, skinMat);
   rightHand.position.y = -0.5;
   rightArmPivot.add(rightHand);
+
+  // Small procedural book prop attached to the articulated right hand.
+  const heldBookGroup = new THREE.Group();
+  heldBookGroup.visible = false;
+  const heldBookCoverMat = trackM(new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.72 }));
+  const heldBookPageMat = trackM(new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.92 }));
+  const heldBookCover = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.25, 0.34, 0.035)), heldBookCoverMat);
+  heldBookCover.castShadow = true;
+  heldBookGroup.add(heldBookCover);
+  const heldBookPages = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.235, 0.322, 0.026)), heldBookPageMat);
+  heldBookPages.position.z = 0.012;
+  heldBookGroup.add(heldBookPages);
+  const heldBookSpine = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.035, 0.34, 0.04)), darkTrimMat);
+  heldBookSpine.position.x = -0.108;
+  heldBookGroup.add(heldBookSpine);
+  heldBookGroup.position.set(0.035, -0.64, 0.105);
+  heldBookGroup.rotation.set(-0.18, 0, -0.12);
+  rightArmPivot.add(heldBookGroup);
+
   bodyScaleGroup.add(rightArmPivot);
 
   // 6. Head, Anime Hair Crown, Side Locks, Bangs & Detailed Anime Eyes
@@ -599,6 +619,7 @@ export function createAnimeCharacterRig(
     glassesGroup,
     armbandGroup,
     headphonesGroup,
+    heldBookGroup,
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
