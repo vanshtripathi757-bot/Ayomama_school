@@ -28,6 +28,7 @@ import { buildAcademyEnvironment } from '../environment/AcademyModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { createCampusWorldInteractionSystem } from '../systems/CampusWorldCatalog';
+import { applyNpcDailySchedules, getNpcActivityDirectives } from '../systems/NpcAutonomySystem';
 import { sharedInputBridge } from '../systems/InputBridge';
 
 const _petalDummy = new THREE.Object3D();
@@ -356,6 +357,9 @@ export function AcademyCanvas() {
     let isDisposed = false;
     let lastTime = performance.now();
     let elapsedTotal = 0;
+    let scheduledPeriod = stateRef.current.timeOfDay;
+    let scheduledInteractables = applyNpcDailySchedules(CAMPUS_INTERACTABLES, scheduledPeriod);
+    let npcActivityDirectives = getNpcActivityDirectives(scheduledPeriod);
 
     const handleResize = () => {
       if (!mountEl || isDisposed) return;
@@ -419,6 +423,11 @@ export function AcademyCanvas() {
         nearbyInteractableId,
         activeWorldInteraction,
       } = stateRef.current;
+      if (timeOfDay !== scheduledPeriod) {
+        scheduledPeriod = timeOfDay;
+        scheduledInteractables = applyNpcDailySchedules(CAMPUS_INTERACTABLES, scheduledPeriod);
+        npcActivityDirectives = getNpcActivityDirectives(scheduledPeriod);
+      }
       const isWorldInteracting = Boolean(activeWorldInteraction);
       if (activeWorldInteraction && activeWorldInteraction.objectId !== lastActiveWorldInteractionId) {
         const started = worldInteractionSystem.begin(
@@ -646,7 +655,7 @@ export function AcademyCanvas() {
           // Step autonomous NPC patrols before checking proximity
           npcStates = stepAutonomousNPCs(
             npcStates,
-            CAMPUS_INTERACTABLES,
+            scheduledInteractables,
             playerState.x,
             playerState.z,
             activeDialogue?.target.id ?? null,
@@ -691,7 +700,7 @@ export function AcademyCanvas() {
               : playerState.yaw;
           npcStates = stepAutonomousNPCs(
             npcStates,
-            CAMPUS_INTERACTABLES,
+            scheduledInteractables,
             999,
             999,
             null,
@@ -728,7 +737,8 @@ export function AcademyCanvas() {
             1,
             elapsedTotal + i * 1.1,
             Boolean(runtime.isGreetingPlayer),
-            runtime.greetingAnim
+            runtime.greetingAnim,
+            npcActivityDirectives[npcEntry.id]?.animation
           );
         }
 
