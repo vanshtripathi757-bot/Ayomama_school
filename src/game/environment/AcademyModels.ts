@@ -354,7 +354,7 @@ export function buildAcademyEnvironment(
   farEastWall.castShadow = true;
   interiorGroup.add(farEastWall);
 
-  // Interior Hallway Partition Walls (with wide 4.4m open doorways into Classroom 2-A & Library!)
+  // Interior Hallway Partition Walls (with wide 4.4m open doorways into Class A Classroom & Library!)
   [-5.6, 5.6].forEach((partX) => {
     const southSeg = new THREE.Mesh(
       trackGeo(new THREE.BoxGeometry(0.3, 4.5, 3.8)),
@@ -380,7 +380,7 @@ export function buildAcademyEnvironment(
     interiorGroup.add(locker);
   });
 
-  // 2D. West Classroom 2-A Interior (Chalkboard, Teacher Podium, 12 Student Desks & Chairs)
+  // 2D. West Class A Classroom Interior (Chalkboard, Teacher Podium, 12 Student Desks & Chairs)
   const chalkboardFrame = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(8.6, 2.15, 0.14)),
     woodMat
@@ -403,7 +403,7 @@ export function buildAcademyEnvironment(
   teacherPodium.castShadow = true;
   interiorGroup.add(teacherPodium);
 
-  // 12 Instanced Student Desks + Chairs in Classroom 2-A
+  // 12 Instanced Student Desks + Chairs in Class A Classroom
   const deskCols = [-18.2, -14.2, -10.2];
   const deskRows = [-17.2, -15.0, -12.8];
   const totalDesks = deskCols.length * deskRows.length;
@@ -470,7 +470,7 @@ export function buildAcademyEnvironment(
   archiveGoldSeal.position.set(21.02, 1.55, -15.8);
   interiorGroup.add(archiveGoldSeal);
 
-  // Warm Interior Ceiling Lights for Lobby, Classroom 2-A, and Library
+  // Warm Interior Ceiling Lights for Lobby, Class A Classroom, and Library
   const ceilingLightPositions: Array<[number, number, number]> = [
     [0, 4.2, -15.5],
     [-14.2, 4.2, -16.0],
