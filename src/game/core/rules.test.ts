@@ -589,3 +589,16 @@ test('mobile performance profile scales rendering for constrained devices', () =
   assert.equal(getMobilePerformanceProfile({ isMobile: false }).targetFps, 60);
   assert.equal(getMobilePerformanceProfile({ isMobile: false, isSoftwareGl: true }).shadowsAllowed, false);
 });
+
+test('NPC fallback dialogue recalls saved shared memories when asked', () => {
+  const reply = generateSmartNpcReply({
+    npcId: 'npc_hana',
+    npcName: 'Aiko',
+    npcRole: 'Class B Representative',
+    playerMessage: 'Do you remember what we discussed before?',
+    schoolPeriodLabel: 'After School',
+    npcMemories: ['We visited the old library archive together.'],
+  });
+  assert.match(reply.reply, /old library archive/i);
+  assert.ok(reply.affinityBonus > 0);
+});
