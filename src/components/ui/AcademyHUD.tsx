@@ -13,6 +13,7 @@ import {
   getSkyWeatherDescription,
   getStudentAcademicRank,
   getStoryPhaseObjectiveStatus,
+  getStoryObjectiveHint,
 } from '../../game/core/rules';
 import { audioManager } from '../../game/systems/AudioManager';
 import {
@@ -996,7 +997,7 @@ export function AcademyHUD() {
                 </ol>
                 {!phaseObjectiveStatus.quizUnlocked && phaseObjectiveStatus.nextObjective && (
                   <div className="rounded bg-amber-950/50 border border-amber-400/30 p-2 text-[11px] text-amber-100">
-                    <span className="font-bold">Next clue:</span> {phaseObjectiveStatus.nextObjective}
+                    <span className="font-bold">Next clue:</span> {getStoryObjectiveHint(missionProgress)}
                   </div>
                 )}
                 {phaseObjectiveStatus.quizUnlocked && (
