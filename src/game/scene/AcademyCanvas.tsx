@@ -192,9 +192,12 @@ export function AcademyCanvas() {
     sunLight.position.set(...initialAtmo.sunPosition);
     sunLight.castShadow = shadowsEnabled;
 
-    const initialShadowSize = Math.min(
-      getShadowMapSize(initialSettings.graphics.shadowQuality),
-      performanceProfile.maxShadowMapSize
+    const initialShadowSize = Math.max(
+      1,
+      Math.min(
+        getShadowMapSize(initialSettings.graphics.shadowQuality) || 512,
+        performanceProfile.maxShadowMapSize || 1
+      )
     );
     sunLight.shadow.mapSize.width = initialShadowSize;
     sunLight.shadow.mapSize.height = initialShadowSize;
