@@ -6,10 +6,10 @@ const chair: WorldInteractableDefinition = {
   id: 'class-a-seat-01',
   type: 'seat',
   displayName: 'Class A Student Chair',
-  position: [0, 0, 1.5],
+  position: { x: 0, y: 0, z: 1.5 },
   interactionRange: 2.4,
   actions: [{ id: 'sit', label: 'Sit' }, { id: 'study', label: 'Study' }],
-  anchor: { position: [0, 0, 1.1], yaw: 0 },
+  anchor: { position: { x: 0, y: 0, z: 1.1 }, yaw: 0 },
   roomId: 'class-a',
   floorId: 'academic-ground',
 };
@@ -25,11 +25,11 @@ test('target selection respects range, facing and line-of-sight checks', () => {
   const system = new WorldInteractionSystem();
   system.register(chair);
   const target = system.findTarget({
-    player: { position: [0, 0, 0], yaw: 0 },
+    player: { position: { x: 0, y: 0, z: 0 }, yaw: 0 },
     isOccluded: (_from, _to, id) => id === 'blocked-chair',
   });
   assert.equal(target?.object.id, chair.id);
-  assert.equal(system.findTarget({ player: { position: [0, 0, 8], yaw: 0 } }), null);
+  assert.equal(system.findTarget({ player: { position: { x: 0, y: 0, z: 8 }, yaw: 0 } }), null);
   assert.equal(system.findTarget({
     player: { position: [0, 0, 0], yaw: 0 },
     isOccluded: () => true,
