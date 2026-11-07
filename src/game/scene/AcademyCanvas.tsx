@@ -10,6 +10,7 @@ import { PlayerPhysicsState } from '../../types/game';
 import { AcademyCameraController } from '../camera/CameraController';
 import {
   computeEffectivePixelRatio,
+  getMobilePerformanceProfile,
   createInitialNPCRuntimeStates,
   findNearestInteractable,
   getSakuraPetalCount,
@@ -92,6 +93,17 @@ export function AcademyCanvas() {
       }
     })();
 
+    const deviceInfo = navigator as Navigator & { deviceMemory?: number };
+    const isMobileDevice =
+      (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) ||
+      window.innerWidth < 768;
+    const performanceProfile = getMobilePerformanceProfile({
+      isMobile: isMobileDevice,
+      deviceMemoryGb: deviceInfo.deviceMemory,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      isSoftwareGl,
+    });
+
     // 2. Initialize WebGLRenderer with resilient mobile/WebView fallback
     let renderer: THREE.WebGLRenderer;
     try {
@@ -121,14 +133,14 @@ export function AcademyCanvas() {
       initialSettings.graphics.resolutionScale,
       isSoftwareGl
     );
-    renderer.setPixelRatio(initialDpr);
+    renderer.setPixelRatio(Math.min(initialDpr, performanceProfile.maxPixelRatio));
     renderer.setSize(
       mountEl.clientWidth || window.innerWidth,
       mountEl.clientHeight || window.innerHeight
     );
 
     const shadowsEnabled =
-      !isSoftwareGl && initialSettings.graphics.shadowQuality !== 'off';
+      !isSoftwareGl && performanceProfile.shadowsAllowed && initialSettings.graphics.shadowQuality !== 'off';
     renderer.shadowMap.enabled = shadowsEnabled;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -180,7 +192,10 @@ export function AcademyCanvas() {
     sunLight.position.set(...initialAtmo.sunPosition);
     sunLight.castShadow = shadowsEnabled;
 
-    const initialShadowSize = getShadowMapSize(initialSettings.graphics.shadowQuality) || 1024;
+    const initialShadowSize = Math.min(
+      getShadowMapSize(initialSettings.graphics.shadowQuality),
+      performanceProfile.maxShadowMapSize
+    );
     sunLight.shadow.mapSize.width = initialShadowSize;
     sunLight.shadow.mapSize.height = initialShadowSize;
     const d = 38;
@@ -203,6 +218,10 @@ export function AcademyCanvas() {
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
     const textures = createProceduralTextureSet(maxAniso);
     const academyEnv = buildAcademyEnvironment(textures);
+    academyEnv.petalInstancedMesh.count = Math.min(
+      getSakuraPetalCount(initialSettings.graphics.preset),
+      performanceProfile.maxPetals
+    );
     scene.add(academyEnv.rootGroup);
     const expandedFacilities = buildExpandedFacilities();
     scene.add(expandedFacilities.rootGroup);
@@ -452,16 +471,16 @@ export function AcademyCanvas() {
           prevResScale,
           isSoftwareGl
         );
-        renderer.setPixelRatio(nextDpr);
+        renderer.setPixelRatio(Math.min(nextDpr, performanceProfile.maxPixelRatio));
         handleResize();
       }
 
       if (settings.graphics.shadowQuality !== prevShadowQuality) {
         prevShadowQuality = settings.graphics.shadowQuality;
-        const enableShad = !isSoftwareGl && prevShadowQuality !== 'off';
+        const enableShad = !isSoftwareGl && performanceProfile.shadowsAllowed && prevShadowQuality !== 'off';
         renderer.shadowMap.enabled = enableShad;
         sunLight.castShadow = enableShad;
-        const mapSz = getShadowMapSize(prevShadowQuality);
+        const mapSz = Math.min(getShadowMapSize(prevShadowQuality), performanceProfile.maxShadowMapSize);
         if (mapSz > 0 && sunLight.shadow.mapSize.width !== mapSz) {
           sunLight.shadow.mapSize.set(mapSz, mapSz);
           sunLight.shadow.map?.dispose();
@@ -472,7 +491,10 @@ export function AcademyCanvas() {
 
       if (settings.graphics.preset !== prevPreset) {
         prevPreset = settings.graphics.preset;
-        academyEnv.petalInstancedMesh.count = getSakuraPetalCount(prevPreset);
+        academyEnv.petalInstancedMesh.count = Math.min(
+          getSakuraPetalCount(prevPreset),
+          performanceProfile.maxPetals
+        );
       }
 
       if (activeViewpoint !== prevViewpoint) {
