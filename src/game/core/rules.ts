@@ -462,8 +462,10 @@ export function recordStoryObjectiveEvent(
     completed = Boolean(event.distanceDelta && current.distanceWalked + event.distanceDelta >= 8);
   } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
     completed = Boolean(event.enteredInterior);
-  } else if (/custom conversation|send a message|build trust|speak|talk|meet|greet|conversation/.test(objective)) {
-    completed = Boolean(event.customMessageSent || target?.kind === 'npc');
+  } else if (/custom conversation|send a message|build trust/.test(objective)) {
+    completed = Boolean(event.customMessageSent);
+  } else if (/speak|talk|meet|greet|conversation/.test(objective)) {
+    completed = Boolean(target?.kind === 'npc');
   } else {
     completed = Boolean(target || event.enteredInterior);
   }
