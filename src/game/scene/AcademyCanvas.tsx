@@ -694,6 +694,11 @@ export function AcademyCanvas() {
           sharedInputBridge.playerZ = playerState.z;
           sharedInputBridge.playerYaw = playerState.yaw;
 
+          // Show a hand-held book while the player is browsing the library shelves.
+          if (protagonistRig.heldBookGroup) {
+            protagonistRig.heldBookGroup.visible = activeWorldInteraction?.actionId === 'browse-books';
+          }
+
           // Update protagonist rig animation
           const isMoving = Math.hypot(playerState.vx, playerState.vz) > 0.25;
           const playerActivityIntent =
@@ -792,6 +797,12 @@ export function AcademyCanvas() {
 
           npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
           npcEntry.rig.root.rotation.y = runtime.yaw;
+
+          if (npcEntry.rig.heldBookGroup) {
+            npcEntry.rig.heldBookGroup.visible = Boolean(
+              runtime.usingObjectId && runtime.activityActionId === 'read'
+            );
+          }
 
           updateCharacterRigAnimation(
             npcEntry.rig,
