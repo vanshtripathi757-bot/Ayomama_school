@@ -25,6 +25,7 @@ import {
   updateCharacterRigAnimation,
 } from '../entities/AnimeCharacterBuilder';
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
+import { buildExpandedFacilities } from '../environment/ExpandedFacilityModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { createCampusWorldInteractionSystem } from '../systems/CampusWorldCatalog';
@@ -203,6 +204,8 @@ export function AcademyCanvas() {
     const textures = createProceduralTextureSet(maxAniso);
     const academyEnv = buildAcademyEnvironment(textures);
     scene.add(academyEnv.rootGroup);
+    const expandedFacilities = buildExpandedFacilities();
+    scene.add(expandedFacilities.rootGroup);
     const worldInteractionSystem = createCampusWorldInteractionSystem();
 
     // 7. Build Phase 2 Playable Anime Protagonist & Campus NPCs / Landmarks
@@ -933,6 +936,7 @@ export function AcademyCanvas() {
       for (const disposeLandmark of landmarkDisposers) {
         disposeLandmark();
       }
+      expandedFacilities.dispose();
       academyEnv.dispose();
       textures.disposeAll();
       envTarget?.dispose();
