@@ -439,7 +439,11 @@ export function recordStoryObjectiveEvent(
 
   const key = `${storyId}:phase_${phaseNumber}:objective_${objectiveIndex}`;
   const namedNpcIds = CAMPUS_INTERACTABLES
-    .filter((item) => item.kind === 'npc' && objective.includes(item.name.toLowerCase()))
+    .filter((item) => {
+      if (item.kind !== 'npc') return false;
+      const nameTokens = item.name.toLowerCase().split(/\\s+/).filter((token) => token.length > 2 && token !== 'sensei');
+      return nameTokens.some((token) => objective.includes(token));
+    })
     .map((item) => item.id);
   let objectiveNpcProgress = current.objectiveNpcProgress ?? {};
 
@@ -465,7 +469,6 @@ export function recordStoryObjectiveEvent(
   }
 
   if (!completed) return current;
-  const key = `${storyId}:phase_${phaseNumber}:objective_${objectiveIndex}`;
   const completedObjectiveKeys = [...(current.completedObjectiveKeys ?? [])];
   if (completedObjectiveKeys.includes(key)) return current;
   completedObjectiveKeys.push(key);
