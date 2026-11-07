@@ -1130,6 +1130,7 @@ export function stepAutonomousNPCs(
       currentActivity: config.currentActivity ?? npc.currentActivity,
       emotionalState: config.emotionalState ?? behavior.defaultEmotion,
       talkingWithNpcId: null,
+      usingObjectId: undefined,
     };
 
     // Build dynamic body colliders (Player body + all other NPCs) so NPCs never clip through the player or each other
@@ -1169,6 +1170,7 @@ export function stepAutonomousNPCs(
       distToPlayer < behavior.greetingRange
     ) {
       next.isMoving = false;
+      next.usingObjectId = undefined;
       next.isGreetingPlayer = true;
       next.currentActivity =
         activeDialogueTargetId === next.id
@@ -1204,8 +1206,10 @@ export function stepAutonomousNPCs(
 
     if (distToWp < 0.45) {
       next.waypointIndex = (next.waypointIndex + 1) % waypoints.length;
-      next.pauseTimer = behavior.pauseDuration;
+      next.pauseTimer = Math.max(behavior.pauseDuration, 2.5);
       next.isMoving = false;
+      next.usingObjectId = config.activityObjectId;
+      if (config.activityObjectId) next.currentActivity = config.currentActivity ?? next.currentActivity;
       return next;
     }
 
@@ -1230,6 +1234,7 @@ export function stepAutonomousNPCs(
     next.x = resolved.x;
     next.z = resolved.z;
     next.isMoving = movedDist > 0.0005;
+    if (next.isMoving) next.usingObjectId = undefined;
 
     if (next.isMoving) {
       const targetYaw = Math.atan2(dirX, dirZ);
