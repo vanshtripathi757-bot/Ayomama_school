@@ -314,10 +314,14 @@ test('upper dorm floors keep players inside while ground-floor entrance stays op
     isSprinting: false, walkPhase: 0, squashY: 1, squashXZ: 1,
   };
   const input = { moveX: 0, moveZ: 1, cameraYaw: 0, sprintHeld: false, jumpJustPressed: false, jumpHeld: false };
-  const ground = stepPlayerPhysics(base, input, 0.05);
-  const upper = stepPlayerPhysics({ ...base, y: 3.8 }, input, 0.05);
-  assert.ok(ground.nextState.z > -25.7, 'ground-floor doorway remains passable');
-  assert.ok(upper.nextState.z < -25.5, 'upper-floor guard rail blocks the open doorway');
+  let ground = base;
+  let upper = { ...base, y: 3.8 };
+  for (let frame = 0; frame < 36; frame += 1) {
+    ground = stepPlayerPhysics(ground, input, 0.05).nextState;
+    upper = stepPlayerPhysics(upper, input, 0.05).nextState;
+  }
+  assert.ok(ground.z > -25.0, 'ground-floor doorway remains passable');
+  assert.ok(upper.z < -25.5, 'upper-floor guard rail blocks the open doorway');
 });
 
 test('residential front doors are walkable while house wall panels remain solid', () => {
