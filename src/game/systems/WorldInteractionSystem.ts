@@ -3,7 +3,7 @@ import type { Vector3Tuple } from '../../types/game';
 export type WorldObjectType =
   | 'seat' | 'desk' | 'bed' | 'bookshelf' | 'book' | 'door'
   | 'computer' | 'notice-board' | 'counter' | 'vending-machine'
-  | 'locker' | 'wardrobe' | 'map-board' | 'sports-equipment'
+  | 'locker' | 'wardrobe' | 'map-board' | 'sports-equipment' | 'lab-equipment'
   | 'terminal' | 'water-dispenser' | 'return-station' | 'landmark';
 
 export type WorldActionId =
