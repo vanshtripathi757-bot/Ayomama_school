@@ -43,6 +43,7 @@ export function AcademyHUD() {
   const nearbyInteractable = useGameStore((s) => s.nearbyInteractable);
   const nearbyWorldObject = useGameStore((s) => s.nearbyWorldObject);
   const activeWorldInteraction = useGameStore((s) => s.activeWorldInteraction);
+  const isRidingTrain = useGameStore((s) => s.isRidingTrain);
   const activeDialogue = useGameStore((s) => s.activeDialogue);
   const missionProgress = useGameStore((s) => s.missionProgress);
   const isSprintingUI = useGameStore((s) => s.isSprintingUI);
@@ -60,6 +61,7 @@ export function AcademyHUD() {
   const openInteractionDialogue = useGameStore((s) => s.openInteractionDialogue);
   const beginWorldInteraction = useGameStore((s) => s.beginWorldInteraction);
   const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
+  const setIsRidingTrain = useGameStore((s) => s.setIsRidingTrain);
   const takeLibraryBook = useGameStore((s) => s.takeLibraryBook);
   const returnLibraryBook = useGameStore((s) => s.returnLibraryBook);
   const purchaseTownItem = useGameStore((s) => s.purchaseTownItem);
@@ -769,6 +771,25 @@ export function AcademyHUD() {
               <button type="button" onClick={() => { teleportToZone(-45, -30.5, Math.PI); endWorldInteraction(); }} className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-500">Enter Common Room</button>
               <button type="button" onClick={endWorldInteraction} className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Close</button>
             </div>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'station-platform-boarding-point' && (
+          <div data-testid="train-boarding-panel" role="dialog" aria-label="Hoshino Express boarding" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-sky-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-sky-300">Seiran Electric Railway</div>
+            <h2 className="mt-1 text-base font-bold text-white">Hoshino Express</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">Board the moving four-car commuter train for a short ride along the station rail corridor. You can disembark at any time.</p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => { setIsRidingTrain(true); endWorldInteraction(); }} className="flex-1 rounded-lg bg-sky-700 px-3 py-2 text-xs font-bold text-white hover:bg-sky-600">Board Train</button>
+              <button type="button" onClick={endWorldInteraction} className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Not Now</button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'playing' && isRidingTrain && (
+          <div data-testid="train-passenger-panel" className="pointer-events-auto fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-xl border border-sky-300/40 bg-[#081326]/95 px-4 py-3 text-slate-100 shadow-xl">
+            <div className="text-xs font-bold text-sky-200">Onboard · Hoshino Express</div>
+            <button type="button" onClick={() => setIsRidingTrain(false)} className="mt-2 w-full rounded-lg bg-sky-700 px-4 py-2 text-xs font-bold text-white hover:bg-sky-600">Disembark at Platform</button>
           </div>
         )}
 
