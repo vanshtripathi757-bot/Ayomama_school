@@ -78,6 +78,13 @@ test('regional facilities expose meaningful player interactions', () => {
   assert.ok(byId.get('station-timetable-board')?.actions.some((action) => action.id === 'view-map'));
 });
 
+test('science, computer and auditorium facilities expose usable interactions', () => {
+  assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('science-lab-bench-')).length, 3);
+  assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('computer-lab-workstation-')).length, 6);
+  assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('auditorium-seat-')).length, 20);
+  assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'auditorium-stage-podium')?.actions.some((action) => action.id === 'start-activity'));
+});
+
 test('every scheduled NPC object activity points to a registered world object', () => {
   const registeredIds = new Set(CAMPUS_WORLD_OBJECTS.map((object) => object.id));
   for (const activity of NPC_OBJECT_ACTIVITIES) {
