@@ -601,6 +601,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const prevPlayTime = state.savedSlot?.playTimeSeconds ?? 0;
       const now = Date.now();
       const { story, phase } = getActiveStoryAndPhase(state.missionProgress);
+      const savedPlayerPosition = {
+        x: Number(sharedInputBridge.playerX.toFixed(2)),
+        y: state.isRidingTrain ? 0 : Number(sharedInputBridge.playerY.toFixed(2)),
+        z: state.isRidingTrain ? 98.0 : Number(sharedInputBridge.playerZ.toFixed(2)),
+      };
 
       const optimistic: SaveSlotData = {
         id: 'slot_primary',
@@ -614,11 +619,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         timeOfDay: state.timeOfDay,
         cameraViewpoint: state.activeViewpoint,
         playTimeSeconds: prevPlayTime + elapsedSec,
-        playerPosition: {
-          x: Number(sharedInputBridge.playerX.toFixed(2)),
-          y: Number(sharedInputBridge.playerY.toFixed(2)),
-          z: Number(sharedInputBridge.playerZ.toFixed(2)),
-        },
+        playerPosition: savedPlayerPosition,
         playerYaw: Number(sharedInputBridge.playerYaw.toFixed(2)),
         missionProgress: state.missionProgress,
       };
