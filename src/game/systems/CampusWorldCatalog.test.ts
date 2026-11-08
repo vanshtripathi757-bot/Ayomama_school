@@ -27,6 +27,17 @@ test('all four academy classes have registered walk-in seating and teacher desks
   }
 });
 
+test('each upper dormitory floor exposes rest and study interactions', () => {
+  for (const floor of [1, 2, 3]) {
+    assert.equal(
+      CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith(`dormitory-floor-${floor}-bed-`)).length,
+      2,
+    );
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `dormitory-floor-${floor}-study-desk`));
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `dormitory-elevator-floor-${floor}`));
+  }
+});
+
 test('all four residential homes expose usable furniture interactions', () => {
   for (const homeId of ['west-south', 'east-south', 'west-north', 'east-north']) {
     assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `residential-${homeId}-sofa`));
