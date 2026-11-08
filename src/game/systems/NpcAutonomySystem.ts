@@ -109,7 +109,7 @@ export const NPC_DAILY_SCHEDULES: Record<string, DailySchedule> = {
     twilight: { anchor: 'west-cafeteria', activity: 'Taking a break after practice', animation: 'sitting' },
   },
   npc_ren: {
-    morning: { anchor: 'courtyard-fountain', activity: 'Talking with classmates between lessons', animation: 'idle' },
+    morning: { anchor: 'courtyard-fountain', activity: 'Working at the computer lab terminal', animation: 'working' },
     golden_hour: { anchor: 'east-sports-court', activity: 'Training with the sports club', animation: 'working' },
     twilight: { anchor: 'east-sports-court', activity: 'Cooling down after sports practice', animation: 'sitting' },
   },
