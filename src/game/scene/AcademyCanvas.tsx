@@ -861,7 +861,7 @@ export function AcademyCanvas() {
           }
           if (npcEntry.rig.heldClipboardGroup) {
             npcEntry.rig.heldClipboardGroup.visible = isUsingScheduledObject && (
-              runtime.activityActionId === 'teach' || runtime.activityActionId === 'socialize'
+              runtime.activityActionId === 'teach' || runtime.activityActionId === 'socialize' || runtime.activityActionId === 'work'
             );
           }
           if (npcEntry.rig.heldSportsBallGroup) {
