@@ -54,6 +54,7 @@ export function AcademyCanvas() {
     activeDialogue: useGameStore.getState().activeDialogue,
     nearbyInteractableId: useGameStore.getState().nearbyInteractable?.id ?? null,
     activeWorldInteraction: useGameStore.getState().activeWorldInteraction,
+    isRidingTrain: useGameStore.getState().isRidingTrain,
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
     hasLibraryBook: (useGameStore.getState().missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
@@ -70,6 +71,7 @@ export function AcademyCanvas() {
         activeDialogue: state.activeDialogue,
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
         activeWorldInteraction: state.activeWorldInteraction,
+        isRidingTrain: state.isRidingTrain,
         characterCustomization: state.missionProgress.characterCustomization,
         hasLibraryBook: (state.missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
       };
@@ -646,21 +648,53 @@ export function AcademyCanvas() {
           sharedInputBridge.mobileJumpJustPressed = false;
 
           const wasGrounded = playerState.isGrounded;
+          let stepResult: ReturnType<typeof stepPlayerPhysics>;
 
-          const stepResult = stepPlayerPhysics(
-            playerState,
-            {
-              moveX: combinedMoveX,
-              moveZ: combinedMoveZ,
-              cameraYaw: cameraController.getCameraYaw(),
-              sprintHeld,
-              jumpJustPressed,
-              jumpHeld,
-            },
-            dt,
-            npcStates
-          );
-          playerState = stepResult.nextState;
+          if (sharedInputBridge.disembarkTrainRequest) {
+            sharedInputBridge.disembarkTrainRequest = false;
+            playerState = {
+              ...playerState,
+              x: academyEnv.commuterTrain.position.x - 7,
+              y: 0,
+              z: 98.0,
+              vx: 0,
+              vy: 0,
+              vz: 0,
+              yaw: Math.PI,
+              isGrounded: true,
+              isSprinting: false,
+            };
+            stepResult = { nextState: playerState, distanceDelta: 0, landedThisFrame: false };
+          } else if (stateRef.current.isRidingTrain) {
+            playerState = {
+              ...playerState,
+              x: academyEnv.commuterTrain.position.x - 7,
+              y: 0.65,
+              z: 100.5,
+              vx: 0,
+              vy: 0,
+              vz: 0,
+              yaw: Math.PI / 2,
+              isGrounded: true,
+              isSprinting: false,
+            };
+            stepResult = { nextState: playerState, distanceDelta: 0, landedThisFrame: false };
+          } else {
+            stepResult = stepPlayerPhysics(
+              playerState,
+              {
+                moveX: combinedMoveX,
+                moveZ: combinedMoveZ,
+                cameraYaw: cameraController.getCameraYaw(),
+                sprintHeld,
+                jumpJustPressed,
+                jumpHeld,
+              },
+              dt,
+              npcStates
+            );
+            playerState = stepResult.nextState;
+          }
 
           // Update protagonist 3D transform & real-time customization
           applyCharacterCustomizationToRig(
