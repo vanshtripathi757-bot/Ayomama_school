@@ -5,9 +5,9 @@ import {
   SCHOOL_PERIODS,
 } from '../../config/defaults';
 import {
-  getActiveStoryAndPhase,
   getCampusZoneLabel,
   getPhaseObjectiveState,
+  getCurrentStoryChapter,
   getSkyWeatherDescription,
   getStudentAcademicRank,
 } from '../../game/core/rules';
@@ -583,23 +583,12 @@ export function AcademyHUD() {
                   {inventoryItems[inventoryItems.length - 1]}
                 </span>
               </div>
-              <div className="grid grid-cols-2 gap-1.5 pt-1">
-                <button
-                  type="button"
-                  data-testid="open-story-director-btn"
-                  onClick={() => {
-                    setHubOpen(false);
-                    setStoryModalOpen(true);
-                  }}
-                  className="py-1.5 px-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] text-center cursor-pointer transition-colors"
-                >
-                  📖 Story &amp; Quiz
-                </button>
+              <div className="pt-1">
                 <button
                   type="button"
                   data-testid="claim-diploma-btn"
                   onClick={() => claimHonorDiploma()}
-                  className="py-1.5 px-2 rounded bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-[11px] text-center cursor-pointer transition-colors truncate"
+                  className="w-full py-2 px-2 rounded bg-amber-500/90 hover:bg-amber-400 text-slate-950 font-bold text-[11px] text-center cursor-pointer transition-colors truncate"
                 >
                   {inventoryItems.includes('Hoshikaze Archive Medal')
                     ? '🏆 Medal Claimed'
