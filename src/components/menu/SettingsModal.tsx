@@ -31,9 +31,6 @@ export function SettingsModal() {
   const setCameraInvertY = useGameStore((s) => s.setCameraInvertY);
   const resetSettingsToDefault = useGameStore((s) => s.resetSettingsToDefault);
 
-  // Keep every Hook unconditional and in the same order on every render.
-  // The modal is mounted continuously by App, so this state must be declared
-  // before the visibility guard to avoid React error #310.
   const [activeTab, setActiveTab] = useState<SettingsTab>('graphics');
 
   if (activeModal !== 'settings') return null;
