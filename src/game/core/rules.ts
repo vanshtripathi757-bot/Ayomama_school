@@ -774,8 +774,12 @@ export function clampCameraPositionAgainstWalls(
   playerZ: number,
   camX: number,
   camZ: number,
-  aabbs: AABBCollider2D[] = CAMPUS_AABB_COLLIDERS
+  aabbs: AABBCollider2D[] = CAMPUS_AABB_COLLIDERS,
+  playerY = 0
 ): { x: number; z: number } {
+  const activeAabbs = aabbs === CAMPUS_AABB_COLLIDERS
+    ? getCampusAabbCollidersAtHeight(playerY)
+    : aabbs;
   const dx = camX - playerX;
   const dz = camZ - playerZ;
   const segLen = Math.hypot(dx, dz);
@@ -784,7 +788,7 @@ export function clampCameraPositionAgainstWalls(
   let minT = 1.0;
   const margin = 0.28; // Keep camera 28cm away from wall surface
 
-  for (const box of aabbs) {
+  for (const box of activeAabbs) {
     const minX = box.minX - margin;
     const maxX = box.maxX + margin;
     const minZ = box.minZ - margin;
