@@ -841,6 +841,17 @@ export function clampCameraPositionAgainstWalls(
  * and 4-substep swept spatial collision resolution against walls, furniture, AND live NPC bodies
  * so the player never walks through walls or NPCs!
  */
+/** Returns the walkable floor height for the current dormitory level. */
+export function getCampusFloorHeight(x: number, z: number, playerY: number): number {
+  const insideDormitory = x >= -54.0 && x <= -36.0 && z >= -44.0 && z <= -25.0;
+  if (!insideDormitory) return 0;
+  let floorHeight = 0;
+  for (const level of [3.8, 7.6, 11.4]) {
+    if (level <= playerY + 0.12) floorHeight = level;
+  }
+  return floorHeight;
+}
+
 export function stepPlayerPhysics(
   state: PlayerPhysicsState,
   input: {
@@ -919,6 +930,11 @@ export function stepPlayerPhysics(
   next.x = curX;
   next.z = curZ;
 
+  const supportHeight = getCampusFloorHeight(next.x, next.z, next.y);
+  if (next.isGrounded && Math.abs(next.y - supportHeight) > 0.12) {
+    next.isGrounded = false;
+  }
+
   const distanceDelta = Math.hypot(next.x - prevX, next.z - prevZ);
 
   if (mag > 0.08) {
@@ -963,8 +979,8 @@ export function stepPlayerPhysics(
     next.vy += GRAVITY * clampedDt;
     next.y += next.vy * clampedDt;
 
-    if (next.y <= 0) {
-      next.y = 0;
+    if (next.y <= supportHeight) {
+      next.y = supportHeight;
       next.vy = 0;
       if (!next.isGrounded) {
         landedThisFrame = true;
