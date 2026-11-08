@@ -19,7 +19,7 @@ The project is an actively developed game prototype. The automated checks cover 
 - **NPC autonomy:** daily schedules, object-use targets, reading/teaching/work/practice activity states, simple hand-held props and relationship memory.
 - **NPC voice:** manual Speak and opt-in Auto Voice controls use built-in browser speech synthesis. Voice availability and quality depend on the device's installed voices.
 - **Mission progression:** sequential phase objectives, contextual clues and gated completion.
-- **World interactions:** stable object IDs, proximity/facing checks, contextual prompts, cooldowns and an explicit enter/exit lifecycle.
+- **World interactions:** stable object IDs, proximity/facing checks, scene-raycast line-of-sight blocking, contextual prompts, cooldowns and an explicit enter/exit lifecycle.
 - **World visibility management:** region-based visibility toggles with hysteresis.
 - **Mobile graphics profile:** adaptive pixel ratio, shadow and particle budgets with frame-rate throttling.
 
@@ -128,7 +128,7 @@ The GitHub Actions verification workflow runs:
 ## Known limitations and release checklist
 
 - Dormitory floors are reached using the elevator interaction; continuous stair traversal and full multi-level navigation are not implemented.
-- Region streaming currently toggles tagged scene groups by distance. It is not asynchronous asset streaming, occlusion culling or a full LOD system.
+- Region streaming currently toggles tagged scene groups by distance. It is not asynchronous asset streaming, occlusion culling or a full LOD system. Interaction line-of-sight raycasts are separate from rendering occlusion culling.
 - NPC props and gestures are procedural and limited; there is no full skeletal hand attachment, motion capture or autonomous multi-agent simulation.
 - NPC speech uses the browser/device voice engine, not recorded character voice acting. Some mobile browsers may have limited voice availability.
 - The train ride is a moving passenger experience along the station corridor, not a full network with multiple stations and route schedules.
