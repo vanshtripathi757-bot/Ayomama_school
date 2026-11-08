@@ -27,6 +27,7 @@ import {
   updateCharacterRigAnimation,
 } from '../entities/AnimeCharacterBuilder';
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
+import { ImportedStudentRig, loadImportedStudentRig } from '../entities/ImportedStudentRig';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { sharedInputBridge } from '../systems/InputBridge';
@@ -303,6 +304,31 @@ export function AcademyCanvas() {
         entitiesGroup.add(board.root);
         landmarkDisposers.push(board.dispose);
       }
+    }
+
+    // Upgrade Aiko's visual actor to the supplied Sketchfab student model when the
+    // asset is present. Keep the existing procedural actor as a safe 404/error fallback.
+    let importedStudentRig: ImportedStudentRig | null = null;
+    let sceneDisposed = false;
+    const aikoFallbackRig = npcRigs.find((entry) => entry.id === 'npc_hana')?.rig;
+    if (aikoFallbackRig) {
+      void loadImportedStudentRig()
+        .then((rig) => {
+          if (sceneDisposed) {
+            rig.dispose();
+            return;
+          }
+          importedStudentRig = rig;
+          rig.root.position.copy(aikoFallbackRig.root.position);
+          rig.root.rotation.y = aikoFallbackRig.root.rotation.y;
+          entitiesGroup.add(rig.root);
+          aikoFallbackRig.root.visible = false;
+        })
+        .catch((error: unknown) => {
+          // Keep the procedural Aiko actor visible if the optional GLB is not installed.
+          aikoFallbackRig.root.visible = true;
+          console.info('Imported student model unavailable; using procedural NPC fallback.', error);
+        });
     }
 
     // Homeroom visual attendance: populate every class with background classmates.
@@ -822,21 +848,26 @@ export function AcademyCanvas() {
           const runtime = npcStates[i];
           if (!runtime) continue;
 
-          npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
-          npcEntry.rig.root.rotation.y = runtime.yaw;
-
-          updateCharacterRigAnimation(
-            npcEntry.rig,
-            runtime.walkPhase,
-            runtime.isMoving,
-            false,
-            1,
-            1,
-            elapsedTotal + i * 1.1,
-            Boolean(runtime.isGreetingPlayer),
-            runtime.greetingAnim,
-            runtime.objectPosture ?? 'none'
-          );
+          if (npcEntry.id === 'npc_hana' && importedStudentRig) {
+            importedStudentRig.root.position.set(runtime.x, runtime.y, runtime.z);
+            importedStudentRig.root.rotation.y = runtime.yaw;
+            importedStudentRig.update(elapsedTotal + i * 1.1, runtime.isMoving);
+          } else {
+            npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
+            npcEntry.rig.root.rotation.y = runtime.yaw;
+            updateCharacterRigAnimation(
+              npcEntry.rig,
+              runtime.walkPhase,
+              runtime.isMoving,
+              false,
+              1,
+              1,
+              elapsedTotal + i * 1.1,
+              Boolean(runtime.isGreetingPlayer),
+              runtime.greetingAnim,
+              runtime.objectPosture ?? 'none'
+            );
+          }
         }
 
         // Automatic Sky Weather & Time-of-Day Cycle (smoothly transitions every 75 seconds)
@@ -1025,6 +1056,8 @@ export function AcademyCanvas() {
       window.removeEventListener('blur', onBlur);
 
       protagonistRig.dispose();
+      sceneDisposed = true;
+      importedStudentRig?.dispose();
       for (const npc of npcRigs) {
         npc.rig.dispose();
       }
