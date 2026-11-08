@@ -175,7 +175,7 @@ interface GameStoreState {
   closeDialogue: () => void;
   recordMovementDistance: (distanceDelta: number) => void;
   recordInteriorVisit: () => void;
-  teleportToZone: (x: number, z: number, yaw?: number) => void;
+  teleportToZone: (x: number, z: number, yaw?: number, y?: number) => void;
   claimHonorDiploma: () => void;
   setIsSprintingUI: (sprinting: boolean) => void;
   setStoryModalOpen: (open: boolean) => void;
@@ -1205,10 +1205,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       }
     },
 
-    teleportToZone: (x: number, z: number, yaw = Math.PI) => {
-      sharedInputBridge.teleportRequest = { x, z, yaw };
+    teleportToZone: (x: number, z: number, yaw = Math.PI, y = 0) => {
+      sharedInputBridge.teleportRequest = { x, y, z, yaw };
       sharedInputBridge.playerX = x;
-      sharedInputBridge.playerY = 0;
+      sharedInputBridge.playerY = y;
       sharedInputBridge.playerZ = z;
       sharedInputBridge.playerYaw = yaw;
       const inside = x >= -22.8 && x <= 22.8 && z <= -9.6 && z >= -22.4;
