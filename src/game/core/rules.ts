@@ -984,6 +984,9 @@ export function createInitialNPCRuntimeStates(
         talkingWithNpcId: null,
         objectPosture: 'none',
         usingObjectId: null,
+        academicProgress: Math.min(92, 38 + (item.personalityType === 'Intelligent' ? 24 : item.personalityType === 'Competitive' ? 20 : item.personalityType === 'Curious' ? 14 : 0) + (idx % 5) * 3),
+        motivation: item.personalityType === 'Competitive' ? 88 : item.personalityType === 'Intelligent' ? 82 : 68 + (idx % 4) * 4,
+        classRank: 0,
       };
     });
 }
@@ -1025,6 +1028,35 @@ export function getNpcScheduledActivity(
 }
 
 /**
+ * Returns stable class ranks from each student's academic progress.
+ * Faculty and town NPCs are deliberately excluded from student standings.
+ */
+export function getNpcClassCompetitionRanks(
+  npcStates: NPCRuntimeState[],
+  interactables: CampusInteractable[]
+): Record<string, number> {
+  const ranks: Record<string, number> = {};
+  const classes: AcademyClassId[] = ['Class A', 'Class B', 'Class C', 'Class D'];
+
+  for (const academyClass of classes) {
+    const students = npcStates
+      .map((state) => ({
+        id: state.id,
+        score: state.academicProgress ?? 0,
+        config: interactables.find((item) => item.id === state.id),
+      }))
+      .filter((entry) => entry.config?.academyClass === academyClass)
+      .sort((a, b) => b.score - a.score || a.id.localeCompare(b.id));
+
+    students.forEach((student, index) => {
+      ranks[student.id] = index + 1;
+    });
+  }
+
+  return ranks;
+}
+
+/**
  * Advances autonomous NPC movement and personality-driven behavior across Hoshino Academy.
  * - Physically separates NPCs from the Player body and from other NPC bodies so no character
  *   ever walks through another character.
@@ -1041,6 +1073,7 @@ export function stepAutonomousNPCs(
   schoolPeriod: SchoolPeriodId = 'club_activities'
 ): NPCRuntimeState[] {
   const clampedDt = Math.min(Math.max(dt, 0.001), 0.05);
+  const classRanks = getNpcClassCompetitionRanks(npcStates, interactables);
 
   return npcStates.map((npc, idx) => {
     const config = interactables.find((i) => i.id === npc.id);
@@ -1054,7 +1087,31 @@ export function stepAutonomousNPCs(
       currentActivity: getNpcScheduledActivity(config, schoolPeriod),
       emotionalState: config.emotionalState ?? behavior.defaultEmotion,
       talkingWithNpcId: null,
+      academicProgress: Math.min(
+        100,
+        (npc.academicProgress ?? 40) +
+          (config.academyClass && config.academyClass !== 'Faculty' && config.academyClass !== 'Town'
+            ? clampedDt *
+              (schoolPeriod === 'homeroom'
+                ? config.personalityType === 'Intelligent' ? 0.055 : 0.035
+                : schoolPeriod === 'club_activities'
+                  ? config.personalityType === 'Curious' || config.personalityType === 'Competitive' ? 0.045 : 0.025
+                  : 0)
+            : 0)
+      ),
+      classRank: classRanks[npc.id] ?? 0,
+      motivation: Math.max(
+        20,
+        Math.min(
+          100,
+          (npc.motivation ?? 70) +
+            ((classRanks[npc.id] ?? 0) === 1 ? clampedDt * 0.12 : (classRanks[npc.id] ?? 0) >= 3 ? clampedDt * 0.035 : 0)
+        )
+      ),
     };
+    if (next.classRank > 0 && config.academyClass && config.academyClass !== 'Faculty' && config.academyClass !== 'Town') {
+      next.currentActivity += ` · Class rank #${next.classRank} · Academic ${Math.round(next.academicProgress ?? 0)}`;
+    }
 
     // Build dynamic body colliders (Player body + all other NPCs) so NPCs never clip through the player or each other
     const dynamicBodyCircles: CircleCollider2D[] = [
