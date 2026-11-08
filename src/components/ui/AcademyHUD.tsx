@@ -757,7 +757,7 @@ export function AcademyHUD() {
                 { label: '2', y: 7.6 },
                 { label: '3', y: 11.4 },
               ].map((floor) => (
-                <button key={floor.label} type="button" onClick={() => { teleportToZone(-45, -28.5, Math.PI, floor.y); endWorldInteraction(); }} className="rounded-lg bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-500">
+                <button key={floor.label} type="button" onClick={() => { teleportToZone(-43.2, -26.8, Math.PI, floor.y); endWorldInteraction(); }} className="rounded-lg bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-500">
                   {floor.label}
                 </button>
               ))}
