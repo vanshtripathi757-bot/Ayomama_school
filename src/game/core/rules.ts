@@ -1251,7 +1251,7 @@ export function stepAutonomousNPCs(
       stepX,
       stepZ,
       NPC_BODY_RADIUS,
-      CAMPUS_AABB_COLLIDERS,
+      getCampusAabbCollidersAtHeight(next.y),
       dynamicBodyCircles,
       next.x,
       next.z
