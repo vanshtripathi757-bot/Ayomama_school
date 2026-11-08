@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 export interface ImportedStudentRig {
   root: THREE.Group;
-  update: (time: number, moving: boolean, speed?: number) => void;
+  update: (time: number, moving: boolean, speed?: number, greeting?: boolean, greetingType?: string, posture?: string) => void;
   dispose: () => void;
 }
 
@@ -100,27 +100,38 @@ export async function loadImportedStudentRig(
     }
   });
 
-  const update = (time: number, moving: boolean, speed = 1) => {
+  const update = (time: number, moving: boolean, speed = 1, greeting = false, greetingType = 'wave', posture = 'none') => {
     const gait = moving ? Math.sin(time * 9.5) * Math.min(1, Math.max(0.25, speed)) : 0;
+    const waving = greeting && greetingType === 'wave';
+    const bowing = greeting && greetingType === 'bow';
+    const seated = posture === 'sit';
     segmentPivots.leftArm.rotation.x = gait * 0.42;
-    segmentPivots.rightArm.rotation.x = -gait * 0.42;
-    segmentPivots.leftLeg.rotation.x = -gait * 0.48;
-    segmentPivots.rightLeg.rotation.x = gait * 0.48;
-    segmentPivots.head.rotation.x = Math.sin(time * 1.7) * 0.025;
+    segmentPivots.rightArm.rotation.x = waving
+      ? -0.95 + Math.sin(time * 10) * 0.24
+      : -gait * 0.42;
+    segmentPivots.rightArm.rotation.z = waving ? -0.18 : 0;
+    segmentPivots.leftLeg.rotation.x = seated ? -1.05 : -gait * 0.48;
+    segmentPivots.rightLeg.rotation.x = seated ? -1.05 : gait * 0.48;
+    segmentPivots.head.rotation.x = bowing ? 0.32 : Math.sin(time * 1.7) * 0.025;
     segmentPivots.head.rotation.y = Math.sin(time * 0.7) * 0.045;
     segmentPivots.torso.position.y = torsoBaseY + (moving ? Math.abs(gait) * 0.012 / scale : Math.sin(time * 1.8) * 0.004 / scale);
+    segmentPivots.torso.rotation.x = bowing ? 0.16 : 0;
     segmentPivots.torso.rotation.z = moving ? gait * 0.025 : Math.sin(time * 0.9) * 0.012;
   };
 
   const dispose = () => {
+    const geometries = new Set<THREE.BufferGeometry>();
+    const materials = new Set<THREE.Material>();
     group.traverse((object) => {
       if ((object as THREE.Mesh).isMesh) {
         const mesh = object as THREE.Mesh;
-        mesh.geometry.dispose();
-        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
-        materials.forEach((material) => material.dispose());
+        geometries.add(mesh.geometry);
+        const meshMaterials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        meshMaterials.forEach((material) => materials.add(material));
       }
     });
+    geometries.forEach((geometry) => geometry.dispose());
+    materials.forEach((material) => material.dispose());
   };
 
   return { root: group, update, dispose };
