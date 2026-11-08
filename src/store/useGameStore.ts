@@ -102,6 +102,7 @@ interface GameStoreState {
   nearbyInteractable: CampusInteractable | null;
   nearbyWorldObject: WorldInteractableDefinition | null;
   activeWorldInteraction: { objectId: string; actionId: WorldActionId; displayName: string; actionLabel: string } | null;
+  isRidingTrain: boolean;
   activeDialogue: ActiveDialogueSession | null;
   missionProgress: MissionProgressState;
   isSprintingUI: boolean;
@@ -161,6 +162,7 @@ interface GameStoreState {
   setNearbyWorldObject: (target: WorldInteractableDefinition | null) => void;
   beginWorldInteraction: (objectId: string, actionId: WorldActionId) => void;
   endWorldInteraction: () => void;
+  setIsRidingTrain: (riding: boolean) => void;
   takeLibraryBook: (bookId: string) => void;
   returnLibraryBook: (bookId: string) => void;
   purchaseTownItem: (itemId: string) => boolean;
@@ -213,6 +215,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     nearbyInteractable: null,
     nearbyWorldObject: null,
     activeWorldInteraction: null,
+    isRidingTrain: false,
     activeDialogue: null,
     missionProgress: initialMission,
     isSprintingUI: false,
@@ -888,6 +891,13 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         set({ activeWorldInteraction: null });
         audioManager.playCancel();
       }
+    },
+
+    setIsRidingTrain: (riding: boolean) => {
+      if (get().isRidingTrain === riding) return;
+      if (!riding) sharedInputBridge.disembarkTrainRequest = true;
+      set({ isRidingTrain: riding });
+      audioManager.playConfirmChime();
     },
 
     takeLibraryBook: (bookId: string) => {
