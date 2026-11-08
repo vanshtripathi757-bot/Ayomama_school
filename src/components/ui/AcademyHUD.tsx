@@ -745,6 +745,27 @@ export function AcademyHUD() {
           </div>
         )}
 
+        {phase === 'playing' && activeWorldInteraction?.objectId.startsWith('dormitory-elevator-') && (
+          <div data-testid="dormitory-elevator-panel" role="dialog" aria-label="Dormitory elevator" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-indigo-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-300">Hoshino Residence Lift</div>
+            <h2 className="mt-1 text-base font-bold text-white">Choose a Dormitory Floor</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">The elevator connects the common room and all three furnished resident floors.</p>
+            <div className="mt-3 grid grid-cols-4 gap-2">
+              {[
+                { label: 'G', y: 0 },
+                { label: '1', y: 3.8 },
+                { label: '2', y: 7.6 },
+                { label: '3', y: 11.4 },
+              ].map((floor) => (
+                <button key={floor.label} type="button" onClick={() => { teleportToZone(-45, -28.5, Math.PI, floor.y); endWorldInteraction(); }} className="rounded-lg bg-indigo-600 px-3 py-3 text-sm font-bold text-white hover:bg-indigo-500">
+                  {floor.label}
+                </button>
+              ))}
+            </div>
+            <button type="button" onClick={endWorldInteraction} className="mt-3 w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Close</button>
+          </div>
+        )}
+
         {phase === 'playing' && activeWorldInteraction?.objectId === 'medical-room-reception' && (
           <div data-testid="medical-checkin-panel" role="dialog" aria-label="Medical room reception" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-rose-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
             <div className="text-[10px] font-mono uppercase tracking-widest text-rose-300">Campus Medical Room</div>
