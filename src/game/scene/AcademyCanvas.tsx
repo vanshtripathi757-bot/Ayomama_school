@@ -27,7 +27,8 @@ import {
   updateCharacterRigAnimation,
 } from '../entities/AnimeCharacterBuilder';
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
-import { ImportedStudentRig, loadImportedStudentRig } from '../entities/ImportedStudentRig';
+import { loadImportedStudentRig } from '../entities/ImportedStudentRig';
+import type { ImportedStudentRig } from '../entities/ImportedStudentRig';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { sharedInputBridge } from '../systems/InputBridge';
