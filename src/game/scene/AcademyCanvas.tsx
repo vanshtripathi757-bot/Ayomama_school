@@ -852,7 +852,7 @@ export function AcademyCanvas() {
           if (npcEntry.id === 'npc_hana' && importedStudentRig) {
             importedStudentRig.root.position.set(runtime.x, runtime.y, runtime.z);
             importedStudentRig.root.rotation.y = runtime.yaw;
-            importedStudentRig.update(elapsedTotal + i * 1.1, runtime.isMoving);
+            importedStudentRig.update(elapsedTotal + i * 1.1, runtime.isMoving, 1, Boolean(runtime.isGreetingPlayer), runtime.greetingAnim, runtime.objectPosture ?? 'none');
           } else {
             npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
             npcEntry.rig.root.rotation.y = runtime.yaw;
