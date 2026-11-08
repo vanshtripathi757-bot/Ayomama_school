@@ -265,6 +265,25 @@ export function AcademyCanvas() {
 
     // Instantiate Campus NPCs & Notice Board Landmark
     let npcStates = createInitialNPCRuntimeStates(CAMPUS_INTERACTABLES);
+    let academicSessionId: number | null = null;
+    let lastAcademicCheckpoint = 0;
+    const checkpointNpcAcademics = () => {
+      const store = useGameStore.getState();
+      if (store.phase !== 'playing') return;
+      const npcAcademicRecords = Object.fromEntries(
+        npcStates.map((npc) => [
+          npc.id,
+          {
+            academicProgress: Number((npc.academicProgress ?? 0).toFixed(3)),
+            motivation: Number((npc.motivation ?? 0).toFixed(3)),
+          },
+        ])
+      );
+      useGameStore.setState({
+        missionProgress: { ...store.missionProgress, npcAcademicRecords },
+      });
+      void useGameStore.getState().saveCurrentSession();
+    };
     const npcRigs: Array<{
       id: string;
       rig: CharacterActorRig;
@@ -757,6 +776,29 @@ export function AcademyCanvas() {
             'wave',
             activeObjectInteraction?.posture ?? 'none'
           );
+
+          // Restore saved student standings once per play session; checkpoint at most every 30s.
+          // New games have a different session start and therefore reset their academic records.
+          const academicStore = useGameStore.getState();
+          if (academicSessionId !== academicStore.sessionStartTime) {
+            academicSessionId = academicStore.sessionStartTime;
+            const records = academicStore.missionProgress.npcAcademicRecords ?? {};
+            npcStates = npcStates.map((npc) => {
+              const record = records[npc.id];
+              return record
+                ? {
+                    ...npc,
+                    academicProgress: Math.max(0, Math.min(100, record.academicProgress)),
+                    motivation: Math.max(0, Math.min(100, record.motivation)),
+                  }
+                : npc;
+            });
+            lastAcademicCheckpoint = performance.now();
+          }
+          if (performance.now() - lastAcademicCheckpoint >= 30000) {
+            lastAcademicCheckpoint = performance.now();
+            checkpointNpcAcademics();
+          }
 
           // Step autonomous NPC patrols before checking proximity
           npcStates = stepAutonomousNPCs(
