@@ -78,6 +78,12 @@ test('regional facilities expose meaningful player interactions', () => {
   assert.ok(byId.get('station-timetable-board')?.actions.some((action) => action.id === 'view-map'));
 });
 
+test('railway platform exposes a train boarding interaction', () => {
+  const boardingPoint = CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'station-platform-boarding-point');
+  assert.ok(boardingPoint);
+  assert.ok(boardingPoint.actions.some((action) => action.id === 'use'));
+});
+
 test('science, computer and auditorium facilities expose usable interactions', () => {
   assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('science-lab-bench-')).length, 3);
   assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('computer-lab-workstation-')).length, 6);
