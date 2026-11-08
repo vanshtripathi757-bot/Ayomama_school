@@ -10,6 +10,23 @@ test('campus catalog has unique stable ids and useful actions', () => {
   assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.type === 'seat' && object.roomId === 'class-a').length, 9);
 });
 
+test('all four academy classes have registered walk-in seating and teacher desks', () => {
+  const expected = [
+    { roomId: 'class-a', seats: 9 },
+    { roomId: 'class-b', seats: 6 },
+    { roomId: 'class-c', seats: 6 },
+    { roomId: 'class-d', seats: 6 },
+  ];
+  for (const room of expected) {
+    assert.equal(
+      CAMPUS_WORLD_OBJECTS.filter((object) => object.type === 'seat' && object.roomId === room.roomId).length,
+      room.seats,
+      `${room.roomId} seat registry`,
+    );
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `${room.roomId}-teacher-desk`));
+  }
+});
+
 test('campus catalog creates a registry with access-controlled archive objects', () => {
   const system = createCampusWorldInteractionSystem();
   assert.equal(system.getAll().length, CAMPUS_WORLD_OBJECTS.length);
