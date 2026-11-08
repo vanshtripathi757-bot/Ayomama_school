@@ -2100,8 +2100,8 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
     id: `auditorium_seat_${row}_${col}`,
     minX: dx - 0.62,
     maxX: dx + 0.62,
-    minZ: 57 + dz - 0.55,
-    maxZ: 57 + dz + 0.55,
+    minZ: 50 + dz - 0.55,
+    maxZ: 50 + dz + 0.55,
   }))),
   // Medical room shell with a 6m south entrance kept open.
   { id: 'medical_room_north_wall', minX: 27.0, maxX: 41.0, minZ: -34.0, maxZ: -33.45 },
