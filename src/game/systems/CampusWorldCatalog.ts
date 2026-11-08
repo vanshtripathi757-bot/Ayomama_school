@@ -376,6 +376,17 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
     floorId: 'outdoor',
     priority: 3,
   },
+  {
+    id: 'station-platform-boarding-point',
+    type: 'terminal',
+    displayName: 'Hoshino Express Boarding Point',
+    position: point(0, 1.0, 98.0),
+    interactionRange: 3.2,
+    actions: [{ id: 'use', label: 'Board Hoshino Express' }],
+    roomId: 'station-platform',
+    floorId: 'outdoor',
+    priority: 4,
+  },
   ...[-5, 0, 5].map((dx, index) => ({
     id: `science-lab-bench-${index + 1}`,
     type: 'sports-equipment' as const,
