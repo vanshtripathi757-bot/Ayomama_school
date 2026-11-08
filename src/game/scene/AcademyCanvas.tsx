@@ -341,10 +341,12 @@ export function AcademyCanvas() {
       phase: number;
     }> = [];
     const classroomLayouts = [
-      { classId: 'A', color: 0x172554, accent: 0x38bdf8, cols: [-18.2, -14.2, -10.2], rows: [-17.2, -15.0, -12.8], count: 4 },
-      { classId: 'B', color: 0x1e293b, accent: 0x38bdf8, cols: [-23.5, -20.5], rows: [-4.6, -2.2, 0.2], count: 3 },
-      { classId: 'C', color: 0x1e293b, accent: 0xa855f7, cols: [18.9, 21.9], rows: [-4.6, -2.2, 0.2], count: 3 },
-      { classId: 'D', color: 0x1e293b, accent: 0x10b981, cols: [-32.5, -29.5, -26.5], rows: [-17.2, -15.0, -12.8], count: 4 },
+      // Nine seated classmates per room (three columns by three rows) make all four
+      // homerooms read as active classes instead of sparsely populated demo spaces.
+      { classId: 'A', color: 0x172554, accent: 0x38bdf8, cols: [-18.2, -14.2, -10.2], rows: [-17.2, -15.0, -12.8], count: 9 },
+      { classId: 'B', color: 0x1e293b, accent: 0x38bdf8, cols: [-24.5, -20.5, -16.5], rows: [-4.6, -2.2, 0.2], count: 9 },
+      { classId: 'C', color: 0x1e293b, accent: 0xa855f7, cols: [16.5, 20.5, 24.5], rows: [-4.6, -2.2, 0.2], count: 9 },
+      { classId: 'D', color: 0x1e293b, accent: 0x10b981, cols: [-34.0, -30.0, -26.0], rows: [-17.2, -15.0, -12.8], count: 9 },
     ] as const;
     const crowdHair = [0x312e81, 0x7c2d12, 0x0f766e, 0x334155, 0x9d174d, 0x4c1d95];
     let crowdIndex = 0;
