@@ -389,7 +389,7 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
   },
   ...[-5, 0, 5].map((dx, index) => ({
     id: `science-lab-bench-${index + 1}`,
-    type: 'sports-equipment' as const,
+    type: 'lab-equipment' as const,
     displayName: `Science Laboratory Bench ${index + 1}`,
     position: point(-70 + dx, 1.1, -61.2),
     interactionRange: 2.6,
