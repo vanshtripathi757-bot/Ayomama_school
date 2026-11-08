@@ -319,9 +319,10 @@ export function getActiveStoryAndPhase(
 export function completeStoryPhaseProgress(
   current: MissionProgressState,
   storyId: string,
-  phaseNumber: number
+  phaseNumber: number,
+  suppliedStories?: StoryLibraryItem[]
 ): MissionProgressState {
-  const allStories = getAllStories(current.customStories ?? []);
+  const allStories = suppliedStories ?? getAllStories(current.customStories ?? []);
   const story = allStories.find((item) => item.id === storyId);
   if (!story || !Number.isInteger(phaseNumber)) return current;
 
@@ -334,6 +335,16 @@ export function completeStoryPhaseProgress(
   // Never grant rewards twice, and never skip a preceding phase or story.
   if (completedPhaseKeys.includes(phaseKey)) return current;
   if (!isPhaseUnlocked(storyId, phaseNumber, completedPhaseKeys, completedStoryIds, allStories)) return current;
+
+  // A phase can only award rewards after every sequential gameplay objective
+  // has been validated. UI buttons, quiz answers and direct store calls cannot
+  // skip the six mandatory world interactions.
+  const objectiveState = getPhaseObjectiveState(
+    { ...current, activeStoryId: storyId, activePhaseNumber: phaseNumber },
+    allStories
+  );
+  if (!objectiveState.isPhaseAllObjectivesComplete) return current;
+
   completedPhaseKeys.push(phaseKey);
   let nextActiveStoryId = story.id;
   let nextActivePhaseNumber = phase.phaseNumber;
