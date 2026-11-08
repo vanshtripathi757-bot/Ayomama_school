@@ -150,10 +150,11 @@ export function buildAcademyEnvironment(
       color: 0xbae6fd,
       emissive: 0x0369a1,
       emissiveIntensity: 0.28,
-      roughness: 0.14,
-      metalness: 0.55,
+      roughness: 0.28,
+      metalness: 0.12,
       transparent: true,
-      opacity: 0.68,
+      opacity: 0.28,
+      depthWrite: false,
     })
   );
 
