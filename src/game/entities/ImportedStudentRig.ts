@@ -36,7 +36,6 @@ export async function loadImportedStudentRig(
 
   const scaledBounds = new THREE.Box3().setFromObject(root);
   const scaledSize = scaledBounds.getSize(new THREE.Vector3());
-  const rootInverse = root.matrixWorld.clone().invert();
   const segmentPivots: Record<Segment, THREE.Group> = {
     head: new THREE.Group(),
     leftArm: new THREE.Group(),
@@ -49,7 +48,7 @@ export async function loadImportedStudentRig(
   const pivotAt = (segment: Segment, x: number, y: number, z: number) => {
     const pivot = segmentPivots[segment];
     pivot.name = `ImportedStudent_${segment}`;
-    pivot.position.set(x, y, z);
+    pivot.position.copy(root.worldToLocal(new THREE.Vector3(x, y, z)));
     root.add(pivot);
   };
   pivotAt('head', 0, scaledSize.y * 0.82, 0);
@@ -68,9 +67,8 @@ export async function loadImportedStudentRig(
     mesh.updateWorldMatrix(true, false);
     const meshBounds = new THREE.Box3().setFromObject(mesh);
     const worldCenter = meshBounds.getCenter(new THREE.Vector3());
-    const localCenter = worldCenter.applyMatrix4(rootInverse);
-    const nx = localCenter.x / Math.max(0.001, scaledSize.x);
-    const ny = localCenter.y / Math.max(0.001, scaledSize.y);
+    const nx = worldCenter.x / Math.max(0.001, scaledSize.x);
+    const ny = worldCenter.y / Math.max(0.001, scaledSize.y);
     let segment: Segment = 'torso';
 
     if (ny > 0.78) segment = 'head';
