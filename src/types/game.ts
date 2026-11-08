@@ -217,6 +217,8 @@ export interface MissionProgressState {
   activePhaseNumber?: number;
   completedPhaseKeys?: string[]; // format: `${storyId}:phase_${phaseNumber}`
   completedStoryIds?: string[];
+  completedObjectiveKeys?: string[]; // `${storyId}:phase_${phaseNumber}:objective_${index}`
+  objectiveNpcProgress?: Record<string, string[]>; // NPC IDs collected for the current objective
   npcRelationships?: Record<string, NPCRelationshipState>;
   customStories?: StoryLibraryItem[];
 }
@@ -305,6 +307,8 @@ export interface CampusInteractable {
   longTermGoal?: string;
   emotionalState?: string;
   currentActivity?: string;
+  activityObjectId?: string;
+  activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
   persona?: string;
   greetingText?: string;
   greetingAnim?: NpcGreetingAnimationType;
@@ -327,6 +331,8 @@ export interface NPCRuntimeState {
   isGreetingPlayer?: boolean;
   greetingAnim?: NpcGreetingAnimationType;
   currentActivity?: string;
+  usingObjectId?: string;
+  activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
   emotionalState?: string;
   talkingWithNpcId?: string | null;
 }

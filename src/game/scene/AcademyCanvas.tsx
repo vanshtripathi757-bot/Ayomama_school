@@ -10,6 +10,7 @@ import { PlayerPhysicsState } from '../../types/game';
 import { AcademyCameraController } from '../camera/CameraController';
 import {
   computeEffectivePixelRatio,
+  getMobilePerformanceProfile,
   createInitialNPCRuntimeStates,
   findNearestInteractable,
   getSakuraPetalCount,
@@ -25,8 +26,12 @@ import {
   updateCharacterRigAnimation,
 } from '../entities/AnimeCharacterBuilder';
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
+import { buildExpandedFacilities } from '../environment/ExpandedFacilityModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
+import { createCampusWorldInteractionSystem } from '../systems/CampusWorldCatalog';
+import { updateWorldStreaming } from '../systems/WorldStreamingSystem';
+import { applyNpcDailySchedules, getNpcActivityDirectives } from '../systems/NpcAutonomySystem';
 import { sharedInputBridge } from '../systems/InputBridge';
 
 const _petalDummy = new THREE.Object3D();
@@ -47,8 +52,10 @@ export function AcademyCanvas() {
     settings: useGameStore.getState().settings,
     activeDialogue: useGameStore.getState().activeDialogue,
     nearbyInteractableId: useGameStore.getState().nearbyInteractable?.id ?? null,
+    activeWorldInteraction: useGameStore.getState().activeWorldInteraction,
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
+    hasLibraryBook: (useGameStore.getState().missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
   });
 
   useEffect(() => {
@@ -61,7 +68,9 @@ export function AcademyCanvas() {
         settings: state.settings,
         activeDialogue: state.activeDialogue,
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
+        activeWorldInteraction: state.activeWorldInteraction,
         characterCustomization: state.missionProgress.characterCustomization,
+        hasLibraryBook: (state.missionProgress.inventoryItems ?? []).some((item) => item.startsWith('library-book:')),
       };
     });
     return unsub;
@@ -86,6 +95,17 @@ export function AcademyCanvas() {
         return true;
       }
     })();
+
+    const deviceInfo = navigator as Navigator & { deviceMemory?: number };
+    const isMobileDevice =
+      (typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches) ||
+      window.innerWidth < 768;
+    const performanceProfile = getMobilePerformanceProfile({
+      isMobile: isMobileDevice,
+      deviceMemoryGb: deviceInfo.deviceMemory,
+      hardwareConcurrency: navigator.hardwareConcurrency,
+      isSoftwareGl,
+    });
 
     // 2. Initialize WebGLRenderer with resilient mobile/WebView fallback
     let renderer: THREE.WebGLRenderer;
@@ -116,14 +136,14 @@ export function AcademyCanvas() {
       initialSettings.graphics.resolutionScale,
       isSoftwareGl
     );
-    renderer.setPixelRatio(initialDpr);
+    renderer.setPixelRatio(Math.min(initialDpr, performanceProfile.maxPixelRatio));
     renderer.setSize(
       mountEl.clientWidth || window.innerWidth,
       mountEl.clientHeight || window.innerHeight
     );
 
     const shadowsEnabled =
-      !isSoftwareGl && initialSettings.graphics.shadowQuality !== 'off';
+      !isSoftwareGl && performanceProfile.shadowsAllowed && initialSettings.graphics.shadowQuality !== 'off';
     renderer.shadowMap.enabled = shadowsEnabled;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -175,7 +195,13 @@ export function AcademyCanvas() {
     sunLight.position.set(...initialAtmo.sunPosition);
     sunLight.castShadow = shadowsEnabled;
 
-    const initialShadowSize = getShadowMapSize(initialSettings.graphics.shadowQuality) || 1024;
+    const initialShadowSize = Math.max(
+      1,
+      Math.min(
+        getShadowMapSize(initialSettings.graphics.shadowQuality) || 512,
+        performanceProfile.maxShadowMapSize || 1
+      )
+    );
     sunLight.shadow.mapSize.width = initialShadowSize;
     sunLight.shadow.mapSize.height = initialShadowSize;
     const d = 38;
@@ -198,7 +224,14 @@ export function AcademyCanvas() {
     const maxAniso = renderer.capabilities.getMaxAnisotropy();
     const textures = createProceduralTextureSet(maxAniso);
     const academyEnv = buildAcademyEnvironment(textures);
+    academyEnv.petalInstancedMesh.count = Math.min(
+      getSakuraPetalCount(initialSettings.graphics.preset),
+      performanceProfile.maxPetals
+    );
     scene.add(academyEnv.rootGroup);
+    const expandedFacilities = buildExpandedFacilities();
+    scene.add(expandedFacilities.rootGroup);
+    const worldInteractionSystem = createCampusWorldInteractionSystem();
 
     // 7. Build Phase 2 Playable Anime Protagonist & Campus NPCs / Landmarks
     const entitiesGroup = new THREE.Group();
@@ -345,12 +378,19 @@ export function AcademyCanvas() {
     let unsavedWalkDistance = 0;
     let stepCount = 0;
     let wasInsideSchool = false;
+    let lastActiveWorldInteractionId: string | null = null;
 
     // 9. Animation Loop State & Responsive ResizeObserver
     let frameId = 0;
     let isDisposed = false;
     let lastTime = performance.now();
     let elapsedTotal = 0;
+    let previousTrainX = academyEnv.commuterTrain.position.x;
+    let lastStreamCheckX = Number.NaN;
+    let lastStreamCheckZ = Number.NaN;
+    let scheduledPeriod = stateRef.current.timeOfDay;
+    let scheduledInteractables = applyNpcDailySchedules(CAMPUS_INTERACTABLES, scheduledPeriod);
+    let npcActivityDirectives = getNpcActivityDirectives(scheduledPeriod);
 
     const handleResize = () => {
       if (!mountEl || isDisposed) return;
@@ -400,6 +440,11 @@ export function AcademyCanvas() {
     function tick() {
       if (isDisposed) return;
       const now = performance.now();
+      const targetFrameInterval = 1000 / performanceProfile.targetFps;
+      if (!isSoftwareGl && now - lastTime < targetFrameInterval) {
+        frameId = requestAnimationFrame(tick);
+        return;
+      }
       const rawDt = (now - lastTime) / 1000;
       lastTime = now;
       const dt = Math.min(Math.max(rawDt, 0.001), 0.05);
@@ -412,7 +457,44 @@ export function AcademyCanvas() {
         settings,
         activeDialogue,
         nearbyInteractableId,
+        activeWorldInteraction,
+        hasLibraryBook,
       } = stateRef.current;
+      if (timeOfDay !== scheduledPeriod) {
+        scheduledPeriod = timeOfDay;
+        scheduledInteractables = applyNpcDailySchedules(CAMPUS_INTERACTABLES, scheduledPeriod);
+        npcActivityDirectives = getNpcActivityDirectives(scheduledPeriod);
+      }
+      const isWorldInteracting = Boolean(activeWorldInteraction);
+      if (activeWorldInteraction && activeWorldInteraction.objectId !== lastActiveWorldInteractionId) {
+        const started = worldInteractionSystem.begin(
+          activeWorldInteraction.objectId,
+          activeWorldInteraction.actionId,
+        );
+        lastActiveWorldInteractionId = started ? activeWorldInteraction.objectId : null;
+        if (!started) {
+          useGameStore.getState().endWorldInteraction();
+        } else if (['sit', 'rest'].includes(activeWorldInteraction.actionId)) {
+          const targetObject = worldInteractionSystem.get(activeWorldInteraction.objectId);
+          const anchor = targetObject?.anchor;
+          if (anchor) {
+            playerState.x = anchor.position.x;
+            playerState.y = anchor.position.y;
+            playerState.z = anchor.position.z;
+            playerState.vx = 0;
+            playerState.vy = 0;
+            playerState.vz = 0;
+            playerState.yaw = anchor.yaw;
+            sharedInputBridge.playerX = playerState.x;
+            sharedInputBridge.playerY = playerState.y;
+            sharedInputBridge.playerZ = playerState.z;
+            sharedInputBridge.playerYaw = playerState.yaw;
+          }
+        }
+      } else if (!activeWorldInteraction && lastActiveWorldInteractionId) {
+        worldInteractionSystem.exit();
+        lastActiveWorldInteractionId = null;
+      }
 
       // Sync dynamic Graphics Settings changes immediately
       if (settings.graphics.resolutionScale !== prevResScale) {
@@ -422,16 +504,16 @@ export function AcademyCanvas() {
           prevResScale,
           isSoftwareGl
         );
-        renderer.setPixelRatio(nextDpr);
+        renderer.setPixelRatio(Math.min(nextDpr, performanceProfile.maxPixelRatio));
         handleResize();
       }
 
       if (settings.graphics.shadowQuality !== prevShadowQuality) {
         prevShadowQuality = settings.graphics.shadowQuality;
-        const enableShad = !isSoftwareGl && prevShadowQuality !== 'off';
+        const enableShad = !isSoftwareGl && performanceProfile.shadowsAllowed && prevShadowQuality !== 'off';
         renderer.shadowMap.enabled = enableShad;
         sunLight.castShadow = enableShad;
-        const mapSz = getShadowMapSize(prevShadowQuality);
+        const mapSz = Math.min(getShadowMapSize(prevShadowQuality), performanceProfile.maxShadowMapSize);
         if (mapSz > 0 && sunLight.shadow.mapSize.width !== mapSz) {
           sunLight.shadow.mapSize.set(mapSz, mapSz);
           sunLight.shadow.map?.dispose();
@@ -442,7 +524,10 @@ export function AcademyCanvas() {
 
       if (settings.graphics.preset !== prevPreset) {
         prevPreset = settings.graphics.preset;
-        academyEnv.petalInstancedMesh.count = getSakuraPetalCount(prevPreset);
+        academyEnv.petalInstancedMesh.count = Math.min(
+          getSakuraPetalCount(prevPreset),
+          performanceProfile.maxPetals
+        );
       }
 
       if (activeViewpoint !== prevViewpoint) {
@@ -453,6 +538,15 @@ export function AcademyCanvas() {
       // Advance simulation clock when not paused
       if (phase !== 'paused') {
         elapsedTotal += dt;
+
+        // The four-car train travels along the visible rail corridor and reverses smoothly at each end.
+        const nextTrainX = Math.sin(elapsedTotal * 0.12) * 14;
+        const trainDeltaX = nextTrainX - previousTrainX;
+        academyEnv.commuterTrain.position.x = nextTrainX;
+        for (const wheel of academyEnv.commuterTrainWheels) {
+          wheel.rotation.z -= trainDeltaX / 0.48;
+        }
+        previousTrainX = nextTrainX;
 
         if (phase === 'playing') {
           // Consume any requested quick-zone teleport (e.g., Classroom 2-A, Library, North Track)
@@ -473,7 +567,7 @@ export function AcademyCanvas() {
           // Consume one-shot mobile interact press
           if (sharedInputBridge.mobileInteractJustPressed) {
             sharedInputBridge.mobileInteractJustPressed = false;
-            if (!activeDialogue) {
+            if (!activeDialogue && !isWorldInteracting) {
               useGameStore.getState().openInteractionDialogue();
             }
           }
@@ -482,7 +576,7 @@ export function AcademyCanvas() {
           // Note: moveZ < 0 is forward (-Z), moveZ > 0 is backward (+Z)
           let kbMoveX = 0;
           let kbMoveZ = 0;
-          if (!activeDialogue) {
+          if (!activeDialogue && !isWorldInteracting) {
             if (heldKeys.has('KeyA')) kbMoveX -= 1;
             if (heldKeys.has('KeyD')) kbMoveX += 1;
             if (heldKeys.has('KeyW')) kbMoveZ -= 1;
@@ -513,10 +607,10 @@ export function AcademyCanvas() {
           }
 
           // Combine keyboard & mobile virtual thumbstick (joystickY > 0 is up on screen -> negative moveZ)
-          const combinedMoveX = activeDialogue
+          const combinedMoveX = activeDialogue || isWorldInteracting
             ? 0
             : Math.max(-1, Math.min(1, kbMoveX + sharedInputBridge.joystickX));
-          const combinedMoveZ = activeDialogue
+          const combinedMoveZ = activeDialogue || isWorldInteracting
             ? 0
             : Math.max(-1, Math.min(1, kbMoveZ - sharedInputBridge.joystickY));
 
@@ -529,17 +623,17 @@ export function AcademyCanvas() {
           }
 
           const sprintHeld =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (heldKeys.has('ShiftLeft') ||
               heldKeys.has('ShiftRight') ||
               sharedInputBridge.mobileSprintHeld ||
               sharedInputBridge.mobileSprintToggle);
 
           const jumpJustPressed =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (jumpKeyJustPressed || sharedInputBridge.mobileJumpJustPressed);
           const jumpHeld =
-            !activeDialogue &&
+            !activeDialogue && !isWorldInteracting &&
             (heldKeys.has('Space') || sharedInputBridge.mobileJumpHeld);
 
           jumpKeyJustPressed = false;
@@ -613,8 +707,23 @@ export function AcademyCanvas() {
           sharedInputBridge.playerZ = playerState.z;
           sharedInputBridge.playerYaw = playerState.yaw;
 
+          // Show a hand-held book while the player is browsing the library shelves.
+          if (protagonistRig.heldBookGroup) {
+            protagonistRig.heldBookGroup.visible = Boolean(
+              activeWorldInteraction?.actionId === 'browse-books' && hasLibraryBook
+            );
+          }
+
           // Update protagonist rig animation
           const isMoving = Math.hypot(playerState.vx, playerState.vz) > 0.25;
+          const playerActivityIntent =
+            activeWorldInteraction?.actionId === 'sit' || activeWorldInteraction?.actionId === 'rest'
+              ? 'sitting'
+              : activeWorldInteraction?.actionId === 'study' || activeWorldInteraction?.actionId === 'read' || activeWorldInteraction?.actionId === 'browse-books'
+                ? 'reading'
+                : activeWorldInteraction
+                  ? 'working'
+                  : 'idle';
           updateCharacterRigAnimation(
             protagonistRig,
             playerState.walkPhase,
@@ -622,13 +731,16 @@ export function AcademyCanvas() {
             playerState.isSprinting,
             playerState.squashY,
             playerState.squashXZ,
-            elapsedTotal
+            elapsedTotal,
+            false,
+            'wave',
+            playerActivityIntent
           );
 
           // Step autonomous NPC patrols before checking proximity
           npcStates = stepAutonomousNPCs(
             npcStates,
-            CAMPUS_INTERACTABLES,
+            scheduledInteractables,
             playerState.x,
             playerState.z,
             activeDialogue?.target.id ?? null,
@@ -646,6 +758,20 @@ export function AcademyCanvas() {
           if (nearestId !== nearbyInteractableId) {
             useGameStore.getState().setNearbyInteractable(nearest.target);
           }
+
+          // Shared world-object targeting: nearest valid object in range, biased toward the player's facing.
+          // NPC conversations retain priority so the two contextual prompts never compete.
+          if (nearest.target || isWorldInteracting || activeDialogue) {
+            useGameStore.getState().setNearbyWorldObject(null);
+          } else {
+            const worldTarget = worldInteractionSystem.findTarget({
+              player: {
+                position: { x: playerState.x, y: playerState.y, z: playerState.z },
+                yaw: playerState.yaw,
+              },
+            });
+            useGameStore.getState().setNearbyWorldObject(worldTarget?.object ?? null);
+          }
         } else {
           // Even on title / character-creation screen, sync customization & let NPCs stroll around the courtyard!
           applyCharacterCustomizationToRig(
@@ -659,7 +785,7 @@ export function AcademyCanvas() {
               : playerState.yaw;
           npcStates = stepAutonomousNPCs(
             npcStates,
-            CAMPUS_INTERACTABLES,
+            scheduledInteractables,
             999,
             999,
             null,
@@ -687,6 +813,12 @@ export function AcademyCanvas() {
           npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
           npcEntry.rig.root.rotation.y = runtime.yaw;
 
+          if (npcEntry.rig.heldBookGroup) {
+            npcEntry.rig.heldBookGroup.visible = Boolean(
+              runtime.usingObjectId && runtime.activityActionId === 'read'
+            );
+          }
+
           updateCharacterRigAnimation(
             npcEntry.rig,
             runtime.walkPhase,
@@ -696,7 +828,8 @@ export function AcademyCanvas() {
             1,
             elapsedTotal + i * 1.1,
             Boolean(runtime.isGreetingPlayer),
-            runtime.greetingAnim
+            runtime.greetingAnim,
+            npcActivityDirectives[npcEntry.id]?.animation
           );
         }
 
@@ -858,6 +991,20 @@ export function AcademyCanvas() {
         dt
       );
 
+      // Region streaming runs only after meaningful player movement, not every rendered frame.
+      if (
+        !Number.isFinite(lastStreamCheckX) ||
+        Math.hypot(playerState.x - lastStreamCheckX, playerState.z - lastStreamCheckZ) >= 2.5
+      ) {
+        updateWorldStreaming(
+          [academyEnv.rootGroup, expandedFacilities.rootGroup],
+          playerState.x,
+          playerState.z
+        );
+        lastStreamCheckX = playerState.x;
+        lastStreamCheckZ = playerState.z;
+      }
+
       // Render frame
       renderer.render(scene, camera);
 
@@ -891,6 +1038,7 @@ export function AcademyCanvas() {
       for (const disposeLandmark of landmarkDisposers) {
         disposeLandmark();
       }
+      expandedFacilities.dispose();
       academyEnv.dispose();
       textures.disposeAll();
       envTarget?.dispose();

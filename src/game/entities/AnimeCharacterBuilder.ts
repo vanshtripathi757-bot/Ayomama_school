@@ -25,6 +25,7 @@ export interface CharacterActorRig {
   glassesGroup?: THREE.Group;
   armbandGroup?: THREE.Group;
   headphonesGroup?: THREE.Group;
+  heldBookGroup?: THREE.Group;
   dispose: () => void;
 }
 
@@ -390,6 +391,25 @@ export function createAnimeCharacterRig(
   const rightHand = new THREE.Mesh(handGeo, skinMat);
   rightHand.position.y = -0.5;
   rightArmPivot.add(rightHand);
+
+  // Small procedural book prop attached to the articulated right hand.
+  const heldBookGroup = new THREE.Group();
+  heldBookGroup.visible = false;
+  const heldBookCoverMat = trackM(new THREE.MeshStandardMaterial({ color: 0x7c2d12, roughness: 0.72 }));
+  const heldBookPageMat = trackM(new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.92 }));
+  const heldBookCover = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.25, 0.34, 0.035)), heldBookCoverMat);
+  heldBookCover.castShadow = true;
+  heldBookGroup.add(heldBookCover);
+  const heldBookPages = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.235, 0.322, 0.026)), heldBookPageMat);
+  heldBookPages.position.z = 0.012;
+  heldBookGroup.add(heldBookPages);
+  const heldBookSpine = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.035, 0.34, 0.04)), heldBookCoverMat);
+  heldBookSpine.position.x = -0.108;
+  heldBookGroup.add(heldBookSpine);
+  heldBookGroup.position.set(0.035, -0.64, 0.105);
+  heldBookGroup.rotation.set(-0.18, 0, -0.12);
+  rightArmPivot.add(heldBookGroup);
+
   bodyScaleGroup.add(rightArmPivot);
 
   // 6. Head, Anime Hair Crown, Side Locks, Bangs & Detailed Anime Eyes
@@ -599,6 +619,7 @@ export function createAnimeCharacterRig(
     glassesGroup,
     armbandGroup,
     headphonesGroup,
+    heldBookGroup,
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
@@ -618,7 +639,8 @@ export function updateCharacterRigAnimation(
   squashXZ: number,
   elapsedTime: number,
   isGreetingPlayer: boolean = false,
-  greetingAnim: NpcGreetingAnimationType = 'wave'
+  greetingAnim: NpcGreetingAnimationType = 'wave',
+  activityIntent: 'idle' | 'reading' | 'working' | 'sitting' | 'teaching' = 'idle'
 ): void {
   rig.bodyScaleGroup.scale.set(squashXZ, squashY, squashXZ);
 
@@ -708,6 +730,36 @@ export function updateCharacterRigAnimation(
       rig.leftArmPivot.rotation.x *= 0.85;
       rig.leftArmPivot.rotation.z = 0;
       rig.headGroup.rotation.set(0, 0, Math.sin(elapsedTime * 3.2) * 0.09);
+    }
+  } else if (activityIntent !== 'idle') {
+    // Small, readable task gestures make scheduled object use visible without a full mocap rig.
+    const cycle = Math.sin(elapsedTime * 2.1);
+    if (activityIntent === 'sitting') {
+      rig.leftLegPivot.rotation.x = THREE.MathUtils.lerp(rig.leftLegPivot.rotation.x, -1.05, 0.14);
+      rig.rightLegPivot.rotation.x = THREE.MathUtils.lerp(rig.rightLegPivot.rotation.x, -1.05, 0.14);
+    } else {
+      rig.leftLegPivot.rotation.x *= 0.82;
+      rig.rightLegPivot.rotation.x *= 0.82;
+    }
+    rig.bodyScaleGroup.position.y = activityIntent === 'sitting' ? -0.08 : Math.sin(elapsedTime * 1.8) * 0.008;
+    rig.bodyScaleGroup.rotation.x = THREE.MathUtils.lerp(rig.bodyScaleGroup.rotation.x, activityIntent === 'reading' ? 0.08 : 0, 0.12);
+    rig.headGroup.rotation.set(activityIntent === 'reading' ? 0.16 + cycle * 0.025 : 0, 0, cycle * 0.025);
+    if (activityIntent === 'reading') {
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, -0.92, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, -0.92, 0.12);
+      rig.leftArmPivot.rotation.z = 0.12;
+      rig.rightArmPivot.rotation.z = -0.12;
+    } else if (activityIntent === 'teaching') {
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, -0.35, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, -1.25 + cycle * 0.12, 0.12);
+      rig.leftArmPivot.rotation.z = 0.08;
+      rig.rightArmPivot.rotation.z = -0.18;
+    } else {
+      const workingMotion = activityIntent === 'sitting' ? -0.42 : -0.68;
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(rig.leftArmPivot.rotation.x, workingMotion + cycle * 0.08, 0.12);
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(rig.rightArmPivot.rotation.x, workingMotion - cycle * 0.08, 0.12);
+      rig.leftArmPivot.rotation.z = 0.08;
+      rig.rightArmPivot.rotation.z = -0.08;
     }
   } else {
     // Natural Breathing & Subtle Head Look-Around Idle

@@ -47,6 +47,10 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
   const name = safeText(body.npcName, 80) || 'Aiko Hoshino';
   const role = safeText(body.npcRole, 100) || 'Hoshino Academy student';
   const persona = safeText(body.npcPersona, 400) || 'Friendly, observant school student';
+  const memories = Array.isArray(body.npcMemories)
+    ? body.npcMemories.slice(-8).map((entry) => safeText(entry, 160)).filter(Boolean)
+    : [];
+  const memoryContext = memories.length ? `Known shared memories with this student:\\n- ${memories.join('\\n- ')}` : 'No shared memories have been recorded yet.';
   const history = Array.isArray(body.history) ? body.history.slice(-6).map((entry) => {
     const item = entry && typeof entry === 'object' ? entry as Record<string, unknown> : {};
     return `${item.sender === 'player' ? 'Student' : name}: ${safeText(item.text, 300)}`;
@@ -57,7 +61,7 @@ export default async function handler(req: RequestLike, res: ResponseLike) {
     const ai = new GoogleGenAI({ apiKey });
     const result = await ai.models.generateContent({
       model: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
-      contents: `${history}\nStudent says: ${message}\nReply as ${name}.`,
+      contents: `${memoryContext}\n\nRecent conversation:\n${history}\nStudent says: ${message}\nReply as ${name}.`,
       config: {
         systemInstruction: `You are ${name}, ${role} at Hoshino Academy. Persona: ${persona}. Reply naturally to the student's message in their language (English or Hinglish). Keep it age-appropriate, friendly, non-romantic, and under 55 words. Never ask for personal contact details.`,
         thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },

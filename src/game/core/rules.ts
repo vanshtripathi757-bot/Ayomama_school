@@ -120,6 +120,34 @@ export function computeEffectivePixelRatio(
   return Number(Math.max(0.5, Math.min(2.0, baseDpr * resolutionScale)).toFixed(2));
 }
 
+export interface MobilePerformanceProfile {
+  maxPixelRatio: number;
+  shadowsAllowed: boolean;
+  maxShadowMapSize: number;
+  maxPetals: number;
+  targetFps: number;
+}
+
+export function getMobilePerformanceProfile(input: {
+  isMobile: boolean;
+  deviceMemoryGb?: number;
+  hardwareConcurrency?: number;
+  isSoftwareGl?: boolean;
+}): MobilePerformanceProfile {
+  if (input.isSoftwareGl) {
+    return { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 24, targetFps: 30 };
+  }
+  if (!input.isMobile) {
+    return { maxPixelRatio: 2, shadowsAllowed: true, maxShadowMapSize: 1024, maxPetals: 150, targetFps: 60 };
+  }
+  const memory = input.deviceMemoryGb ?? 4;
+  const cores = input.hardwareConcurrency ?? 4;
+  const constrained = memory <= 4 || cores <= 4;
+  return constrained
+    ? { maxPixelRatio: 1, shadowsAllowed: false, maxShadowMapSize: 0, maxPetals: 40, targetFps: 30 }
+    : { maxPixelRatio: 1.25, shadowsAllowed: true, maxShadowMapSize: 512, maxPetals: 75, targetFps: 45 };
+}
+
 export function dampValue(
   current: number,
   target: number,
@@ -378,6 +406,134 @@ export function completeStoryPhaseProgress(
     completedPhaseKeys,
     completedStoryIds,
   };
+}
+
+/**
+ * Returns the active phase and its required objective checklist.
+ */
+export function getStoryPhaseObjectiveStatus(progress: MissionProgressState): {
+  objectives: string[];
+  completedIndexes: number[];
+  completedCount: number;
+  total: number;
+  quizUnlocked: boolean;
+  nextObjective: string | null;
+} {
+  const storyId = progress.activeStoryId ?? 'story_01';
+  const phaseNumber = progress.activePhaseNumber ?? 1;
+  const story = getAllStories(progress.customStories ?? []).find((item) => item.id === storyId);
+  const phase = story?.phases.find((item) => item.phaseNumber === phaseNumber);
+  const objectives = phase?.mainObjectives ?? [];
+  const completed = new Set(progress.completedObjectiveKeys ?? []);
+  const completedIndexes = objectives
+    .map((_, index) => index)
+    .filter((index) => completed.has(`${storyId}:phase_${phaseNumber}:objective_${index}`));
+  const nextIndex = objectives.findIndex((_, index) => !completedIndexes.includes(index));
+  return {
+    objectives,
+    completedIndexes,
+    completedCount: completedIndexes.length,
+    total: objectives.length,
+    quizUnlocked: objectives.length > 0 && completedIndexes.length === objectives.length,
+    nextObjective: nextIndex >= 0 ? objectives[nextIndex] : null,
+  };
+}
+
+/**
+ * Produces a short, actionable clue for the next objective without revealing later steps.
+ */
+export function getStoryObjectiveHint(progress: MissionProgressState): string {
+  const status = getStoryPhaseObjectiveStatus(progress);
+  const objective = status.nextObjective;
+  if (!objective) return 'All main objectives are complete. Return to the Story Chronicle to take the phase quiz.';
+  const normalized = objective.toLowerCase();
+  if (/report|arrive/.test(normalized)) {
+    return 'Head toward the central courtyard and walk around the fountain near the main academy entrance.';
+  }
+  const namedNpcIds = CAMPUS_INTERACTABLES
+    .filter((item) => item.kind === 'npc')
+    .filter((item) => item.name.toLowerCase().split(/\s+/).some((token) => token.length > 2 && token !== 'sensei' && normalized.includes(token)))
+    .map((item) => item.name);
+  if (namedNpcIds.length > 0) {
+    return 'Find and speak with ' + namedNpcIds.join(' and ') + '. Each named classmate must be met for this clue to advance.';
+  }
+  if (/inspect|examine|investigate|read/.test(normalized)) {
+    return 'Look for a nearby campus landmark or noticeboard and interact with it to inspect the clue.';
+  }
+  if (/visit|enter|walk through|attend|explore/.test(normalized)) {
+    return 'Go to the area named in this objective and cross its entrance. The visit will register when you enter the interior.';
+  }
+  if (/custom conversation|send a message|build trust/.test(normalized)) {
+    return 'Open a classmate conversation and send a friendly custom message to complete this step.';
+  }
+  return 'Follow this objective: ' + objective + '. Interact with the relevant classmate or campus feature to progress.';
+}
+/**
+ * Records one verified gameplay event against the next active story objective.
+ * Only one objective can advance per event, preventing one interaction from
+ * accidentally completing an entire phase.
+ */
+export function recordStoryObjectiveEvent(
+  current: MissionProgressState,
+  event: {
+    interactedId?: string;
+    customMessageSent?: boolean;
+    enteredInterior?: boolean;
+    distanceDelta?: number;
+  }
+): MissionProgressState {
+  const status = getStoryPhaseObjectiveStatus(current);
+  if (!status.nextObjective) return current;
+
+  const storyId = current.activeStoryId ?? 'story_01';
+  const phaseNumber = current.activePhaseNumber ?? 1;
+  const objectiveIndex = status.objectives.indexOf(status.nextObjective);
+  const objective = status.nextObjective.toLowerCase();
+  const target = event.interactedId
+    ? CAMPUS_INTERACTABLES.find((item) => item.id === event.interactedId)
+    : undefined;
+  let completed = false;
+
+  const key = `${storyId}:phase_${phaseNumber}:objective_${objectiveIndex}`;
+  const namedNpcIds = CAMPUS_INTERACTABLES
+    .filter((item) => {
+      if (item.kind !== 'npc') return false;
+      const nameTokens = item.name.toLowerCase().split(/\\s+/).filter((token) => token.length > 2 && token !== 'sensei');
+      return nameTokens.some((token) => objective.includes(token));
+    })
+    .map((item) => item.id);
+  let objectiveNpcProgress = current.objectiveNpcProgress ?? {};
+
+  if (namedNpcIds.length > 0) {
+    if (!target || target.kind !== 'npc' || !namedNpcIds.includes(target.id)) return current;
+    const collected = new Set(objectiveNpcProgress[key] ?? []);
+    collected.add(target.id);
+    objectiveNpcProgress = { ...objectiveNpcProgress, [key]: [...collected] };
+    if (!namedNpcIds.every((id) => collected.has(id))) {
+      return { ...current, objectiveNpcProgress };
+    }
+    completed = true;
+  } else if (/inspect|examine|investigate|read/.test(objective)) {
+    completed = Boolean(target?.kind === 'landmark');
+  } else if (/report|arrive/.test(objective)) {
+    completed = Boolean(event.distanceDelta && current.distanceWalked + event.distanceDelta >= 8);
+  } else if (/visit|enter|walk through|attend|explore/.test(objective)) {
+    completed = Boolean(event.enteredInterior);
+  } else if (/custom conversation|send a message|build trust/.test(objective)) {
+    completed = Boolean(event.customMessageSent);
+  } else if (/speak|talk|meet|greet|conversation/.test(objective)) {
+    completed = Boolean(target?.kind === 'npc');
+  } else {
+    completed = Boolean(target || event.enteredInterior);
+  }
+
+  if (!completed) return current;
+  const completedObjectiveKeys = [...(current.completedObjectiveKeys ?? [])];
+  if (completedObjectiveKeys.includes(key)) return current;
+  completedObjectiveKeys.push(key);
+  const nextObjectiveNpcProgress = { ...objectiveNpcProgress };
+  delete nextObjectiveNpcProgress[key];
+  return { ...current, completedObjectiveKeys, objectiveNpcProgress: nextObjectiveNpcProgress };
 }
 
 /**
@@ -974,6 +1130,8 @@ export function stepAutonomousNPCs(
       currentActivity: config.currentActivity ?? npc.currentActivity,
       emotionalState: config.emotionalState ?? behavior.defaultEmotion,
       talkingWithNpcId: null,
+      usingObjectId: undefined,
+      activityActionId: undefined,
     };
 
     // Build dynamic body colliders (Player body + all other NPCs) so NPCs never clip through the player or each other
@@ -1013,6 +1171,8 @@ export function stepAutonomousNPCs(
       distToPlayer < behavior.greetingRange
     ) {
       next.isMoving = false;
+      next.usingObjectId = undefined;
+      next.activityActionId = undefined;
       next.isGreetingPlayer = true;
       next.currentActivity =
         activeDialogueTargetId === next.id
@@ -1048,8 +1208,11 @@ export function stepAutonomousNPCs(
 
     if (distToWp < 0.45) {
       next.waypointIndex = (next.waypointIndex + 1) % waypoints.length;
-      next.pauseTimer = behavior.pauseDuration;
+      next.pauseTimer = Math.max(behavior.pauseDuration, 2.5);
       next.isMoving = false;
+      next.usingObjectId = config.activityObjectId;
+      next.activityActionId = config.activityActionId;
+      if (config.activityObjectId) next.currentActivity = config.currentActivity ?? next.currentActivity;
       return next;
     }
 
@@ -1074,6 +1237,10 @@ export function stepAutonomousNPCs(
     next.x = resolved.x;
     next.z = resolved.z;
     next.isMoving = movedDist > 0.0005;
+    if (next.isMoving) {
+      next.usingObjectId = undefined;
+      next.activityActionId = undefined;
+    }
 
     if (next.isMoving) {
       const targetYaw = Math.atan2(dirX, dirZ);
@@ -1520,13 +1687,22 @@ export function generateSmartNpcReply(params: {
   npcRole: string;
   playerMessage: string;
   schoolPeriodLabel: string;
+  npcMemories?: string[];
 }): { reply: string; affinityBonus: number } {
-  const { npcId, npcName, npcRole, playerMessage, schoolPeriodLabel } = params;
+  const { npcId, npcName, npcRole, playerMessage, schoolPeriodLabel, npcMemories = [] } = params;
   const msg = playerMessage.trim();
   const lower = msg.toLowerCase();
   const npcConfig = CAMPUS_INTERACTABLES.find((i) => i.id === npcId);
   const classTag = npcConfig?.academyClass ?? 'Hoshino Academy';
   const personality = npcConfig?.personalityType ?? 'Friendly';
+
+  if (/\b(remember|last time|previous|before|yaad|pichli baar|pehle)\b/i.test(playerMessage) && npcMemories.length > 0) {
+    const remembered = npcMemories.slice(-2).join('; ');
+    return {
+      reply: `Of course, I remember our earlier conversation: ${remembered}. What would you like to explore next?`,
+      affinityBonus: 6,
+    };
+  }
 
   const isHinglish =
     /\b(kya|kaise|kaisa|kaisi|kaha|kahan|tum|aap|naam|bhai|dost|chalo|batao|accha|theek|haan|nahi|kar|rahe|ho|hai|mera|mujhe|kab|kyu|kyun|aur|sab|badhiya|sensei|sir)\b/i.test(

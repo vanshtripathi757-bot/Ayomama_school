@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { WorldActionId, WorldInteractableDefinition } from '../game/systems/WorldInteractionSystem';
 import {
   ActiveModal,
   CameraMode,
@@ -28,6 +29,8 @@ import {
   getCampusZoneLabel,
   getCurrentStoryChapter,
   getDeterministicStoryPack,
+  getStoryPhaseObjectiveStatus,
+  recordStoryObjectiveEvent,
   getLoadingMessageForProgress,
   getNextCameraViewpoint,
   getNextSchoolPeriod,
@@ -48,6 +51,9 @@ import {
   SCHOOL_PERIODS,
 } from '../config/defaults';
 import { sharedInputBridge } from '../game/systems/InputBridge';
+import { LIBRARY_BOOKS, takeLibraryBook as addLibraryBook, returnLibraryBook as removeLibraryBook } from '../game/systems/LibraryBookSystem';
+import { appendNpcRelationshipMemory } from '../game/systems/NpcAutonomySystem';
+import { purchaseTownItem as buyTownItem } from '../game/systems/TownShopSystem';
 
 export interface ActiveDialogueSession {
   target: CampusInteractable;
@@ -94,6 +100,8 @@ interface GameStoreState {
   // V7.0 Story Library, Phase Selection & Gameplay State
   selectedStoryId: string;
   nearbyInteractable: CampusInteractable | null;
+  nearbyWorldObject: WorldInteractableDefinition | null;
+  activeWorldInteraction: { objectId: string; actionId: WorldActionId; displayName: string; actionLabel: string } | null;
   activeDialogue: ActiveDialogueSession | null;
   missionProgress: MissionProgressState;
   isSprintingUI: boolean;
@@ -150,6 +158,12 @@ interface GameStoreState {
   cycleSchoolPeriod: () => void;
   toggleHudCollapsed: () => void;
   setNearbyInteractable: (target: CampusInteractable | null) => void;
+  setNearbyWorldObject: (target: WorldInteractableDefinition | null) => void;
+  beginWorldInteraction: (objectId: string, actionId: WorldActionId) => void;
+  endWorldInteraction: () => void;
+  takeLibraryBook: (bookId: string) => void;
+  returnLibraryBook: (bookId: string) => void;
+  purchaseTownItem: (itemId: string) => boolean;
   openInteractionDialogue: (target?: CampusInteractable) => void;
   selectDialogueChoice: (
     choiceLabel: string,
@@ -197,6 +211,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     selectedStoryId: 'story_01',
     nearbyInteractable: null,
+    nearbyWorldObject: null,
+    activeWorldInteraction: null,
     activeDialogue: null,
     missionProgress: initialMission,
     isSprintingUI: false,
@@ -392,6 +408,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     completeCurrentStoryPhase: () => {
       const mp = get().missionProgress;
+      if (!getStoryPhaseObjectiveStatus(mp).quizUnlocked) return;
       const storyId = mp.activeStoryId ?? 'story_01';
       const phaseNum = mp.activePhaseNumber ?? 1;
       audioManager.playConfirmChime();
@@ -843,6 +860,68 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       }
     },
 
+    setNearbyWorldObject: (nearbyWorldObject: WorldInteractableDefinition | null) => {
+      if (get().nearbyWorldObject?.id !== nearbyWorldObject?.id) {
+        set({ nearbyWorldObject });
+      }
+    },
+
+    beginWorldInteraction: (objectId: string, actionId: WorldActionId) => {
+      const target = get().nearbyWorldObject;
+      if (!target || target.id !== objectId || get().activeWorldInteraction) return;
+      const action = target.actions.find((item) => item.id === actionId && item.enabled !== false);
+      if (!action) return;
+      set({
+        activeWorldInteraction: {
+          objectId,
+          actionId,
+          displayName: target.displayName,
+          actionLabel: action.label,
+        },
+        nearbyWorldObject: null,
+      });
+      audioManager.playClick();
+    },
+
+    endWorldInteraction: () => {
+      if (get().activeWorldInteraction) {
+        set({ activeWorldInteraction: null });
+        audioManager.playCancel();
+      }
+    },
+
+    takeLibraryBook: (bookId: string) => {
+      if (!LIBRARY_BOOKS.some((book) => book.id === bookId)) return;
+      const mp = get().missionProgress;
+      const inventoryItems = addLibraryBook(mp.inventoryItems ?? [], bookId);
+      if (inventoryItems.length === (mp.inventoryItems ?? []).length) return;
+      set({ missionProgress: { ...mp, inventoryItems } });
+      audioManager.playConfirmChime();
+      void get().saveCurrentSession();
+    },
+
+    returnLibraryBook: (bookId: string) => {
+      const mp = get().missionProgress;
+      const currentItems = mp.inventoryItems ?? [];
+      const inventoryItems = removeLibraryBook(currentItems, bookId);
+      if (inventoryItems.length === currentItems.length) return;
+      set({ missionProgress: { ...mp, inventoryItems } });
+      audioManager.playClick();
+      void get().saveCurrentSession();
+    },
+
+    purchaseTownItem: (itemId: string) => {
+      const result = buyTownItem(get().missionProgress, itemId);
+      if (!result.success) {
+        audioManager.playCancel();
+        return false;
+      }
+      set({ missionProgress: result.progress });
+      audioManager.playConfirmChime();
+      void get().saveCurrentSession();
+      return true;
+    },
+
     openInteractionDialogue: (explicitTarget?: CampusInteractable) => {
       let target = explicitTarget ?? get().nearbyInteractable;
       if (!target) {
@@ -861,10 +940,18 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       if (!target) return;
       audioManager.playDialogueBlip();
       const firstLine = target.dialogue[0];
-      const nextMission = advanceMissionProgress(get().missionProgress, {
+      const baseMission = advanceMissionProgress(get().missionProgress, {
         interactedId: target.id,
         rewardItemName: target.rewardItemName,
       });
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          target.id,
+          `First meeting with ${target.name} at Hoshino Academy.`
+        ),
+      };
       set({
         activeDialogue: {
           target,
@@ -892,10 +979,18 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const active = get().activeDialogue;
       if (!active) return;
       audioManager.playDialogueBlip();
-      const nextMission = advanceMissionProgress(get().missionProgress, {
+      const baseMission = advanceMissionProgress(get().missionProgress, {
         interactedId: active.target.id,
         reputationDelta: reputationBonus ?? 10,
       });
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          active.target.id,
+          `Student asked: ${choiceLabel}`
+        ),
+      };
 
       const targetLine =
         active.target.dialogue[nextLineIndex] ??
@@ -960,6 +1055,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         npcRole: active.target.role,
         playerMessage: trimmed,
         schoolPeriodLabel: periodLabel,
+        npcMemories: get().missionProgress.npcRelationships?.[active.target.id]?.memories ?? [],
       });
 
       let replyText = smartFallback.reply;
@@ -979,6 +1075,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
             npcPersona: active.target.persona,
             playerMessage: trimmed,
             schoolPeriod: periodLabel,
+            npcMemories: get().missionProgress.npcRelationships?.[active.target.id]?.memories ?? [],
             history: historySnapshot.slice(-6).map((m) => ({
               sender: m.sender,
               text: m.text,
@@ -1010,13 +1107,24 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const currentActive = get().activeDialogue;
       if (!currentActive || currentActive.target.id !== active.target.id) return;
 
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        interactedId: active.target.id,
-        reputationDelta: bonus,
-        customMessageSent: true,
-        customMessageText: trimmed,
-        rewardItemName: active.target.rewardItemName,
-      });
+      const baseMission = recordStoryObjectiveEvent(
+        advanceMissionProgress(get().missionProgress, {
+          interactedId: active.target.id,
+          reputationDelta: bonus,
+          customMessageSent: true,
+          customMessageText: trimmed,
+          rewardItemName: active.target.rewardItemName,
+        }),
+        { interactedId: active.target.id, customMessageSent: true }
+      );
+      const nextMission = {
+        ...baseMission,
+        npcRelationships: appendNpcRelationshipMemory(
+          baseMission.npcRelationships,
+          active.target.id,
+          `Student: ${trimmed} | ${active.target.name}: ${replyText}`
+        ),
+      };
 
       set({
         activeDialogue: {
@@ -1074,19 +1182,27 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     recordMovementDistance: (distanceDelta: number) => {
       if (distanceDelta <= 0) return;
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        distanceDelta,
-      });
+      const currentMission = get().missionProgress;
+      const nextMission = recordStoryObjectiveEvent(
+        advanceMissionProgress(currentMission, { distanceDelta }),
+        { distanceDelta }
+      );
       set({ missionProgress: nextMission });
+      if (nextMission.completedObjectiveKeys !== currentMission.completedObjectiveKeys) {
+        void get().saveCurrentSession();
+      }
     },
 
     recordInteriorVisit: () => {
-      if (get().missionProgress.visitedInterior) return;
-      const nextMission = advanceMissionProgress(get().missionProgress, {
-        enteredInterior: true,
-      });
-      set({ missionProgress: nextMission });
-      void get().saveCurrentSession();
+      const currentMission = get().missionProgress;
+      const baseMission = currentMission.visitedInterior
+        ? currentMission
+        : advanceMissionProgress(currentMission, { enteredInterior: true });
+      const nextMission = recordStoryObjectiveEvent(baseMission, { enteredInterior: true });
+      if (nextMission !== currentMission) {
+        set({ missionProgress: nextMission });
+        void get().saveCurrentSession();
+      }
     },
 
     teleportToZone: (x: number, z: number, yaw = Math.PI) => {
@@ -1097,7 +1213,10 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       sharedInputBridge.playerYaw = yaw;
       const inside = x >= -22.8 && x <= 22.8 && z <= -9.6 && z >= -22.4;
       const nextMission = inside
-        ? advanceMissionProgress(get().missionProgress, { enteredInterior: true })
+        ? recordStoryObjectiveEvent(
+            advanceMissionProgress(get().missionProgress, { enteredInterior: true }),
+            { enteredInterior: true }
+          )
         : get().missionProgress;
       set({
         cameraMode: 'follow',
@@ -1136,6 +1255,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     submitStoryPackAnswer: (optionIndex: number) => {
       const pack = get().activeStoryPack;
+      if (!getStoryPhaseObjectiveStatus(get().missionProgress).quizUnlocked) {
+        set({
+          lastQuizFeedback: {
+            selectedOption: optionIndex,
+            isCorrect: false,
+            explanation: 'Complete every required mission objective before taking this phase quiz. Follow the current clue in your Mission Tracker.',
+          },
+        });
+        return;
+      }
       const isCorrect = optionIndex === pack.correctOption;
       if (isCorrect) {
         audioManager.playConfirmChime();

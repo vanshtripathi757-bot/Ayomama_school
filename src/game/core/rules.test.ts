@@ -7,6 +7,7 @@ import {
   completeStoryPhaseProgress,
   computeAudioGain,
   computeEffectivePixelRatio,
+  getMobilePerformanceProfile,
   createInitialNPCRuntimeStates,
   dampValue,
   findNearestInteractable,
@@ -23,6 +24,9 @@ import {
   getShadowMapSize,
   getSkyWeatherDescription,
   getStoryCompletionPercentage,
+  getStoryPhaseObjectiveStatus,
+  getStoryObjectiveHint,
+  recordStoryObjectiveEvent,
   getStudentAcademicRank,
   isInsideSchoolBuilding,
   isPhaseUnlocked,
@@ -507,4 +511,94 @@ test('story phase completion rejects invalid, skipped, and repeated phases witho
   assert.equal(repeated, first);
   assert.equal(repeated.reputationPoints, first.reputationPoints);
   assert.equal(repeated.cpPoints, first.cpPoints);
+});
+
+test('sequential mission objectives require ordered gameplay events before the phase quiz unlocks', () => {
+  let progress = structuredClone(INITIAL_MISSION_PROGRESS);
+  let status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 0);
+  assert.equal(status.quizUnlocked, false);
+  assert.match(status.nextObjective ?? '', /Report to the Hoshino Academy Courtyard/i);
+  assert.match(getStoryObjectiveHint(progress), /central courtyard/i);
+
+  progress = recordStoryObjectiveEvent(progress, { distanceDelta: 9 });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 1);
+  assert.match(status.nextObjective ?? '', /Aiko Hoshino.*Sora Amamiya/i);
+  assert.match(getStoryObjectiveHint(progress), /Aiko Hoshino.*Sora Amamiya/i);
+
+  const afterAiko = advanceMissionProgress(progress, { interactedId: 'npc_hana' });
+  progress = recordStoryObjectiveEvent(afterAiko, { interactedId: 'npc_hana' });
+  assert.equal(getStoryPhaseObjectiveStatus(progress).completedCount, 1, 'both named classmates are required');
+
+  const afterSora = advanceMissionProgress(progress, { interactedId: 'npc_sora' });
+  progress = recordStoryObjectiveEvent(afterSora, { interactedId: 'npc_sora' });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 2);
+  assert.match(status.nextObjective ?? '', /Inspect the Faded Star-and-Chronicle Emblem/i);
+  assert.match(getStoryObjectiveHint(progress), /landmark or noticeboard/i);
+
+  const afterLandmark = advanceMissionProgress(progress, { interactedId: 'landmark_notice_board' });
+  progress = recordStoryObjectiveEvent(afterLandmark, { interactedId: 'landmark_notice_board' });
+  status = getStoryPhaseObjectiveStatus(progress);
+  assert.equal(status.completedCount, 3);
+  assert.equal(status.quizUnlocked, true);
+  assert.equal(status.nextObjective, null);
+
+  const repeated = recordStoryObjectiveEvent(progress, { interactedId: 'landmark_notice_board' });
+  assert.deepEqual(repeated.completedObjectiveKeys, progress.completedObjectiveKeys, 'repeated events do not duplicate objective keys');
+});
+
+test('custom-conversation objectives require a sent player message, not just opening NPC dialogue', () => {
+  const progress = {
+    ...structuredClone(INITIAL_MISSION_PROGRESS),
+    activePhaseNumber: 2,
+    completedObjectiveKeys: [
+      'story_01:phase_2:objective_0',
+      'story_01:phase_2:objective_1',
+    ],
+  };
+  const openedDialogue = recordStoryObjectiveEvent(progress, { interactedId: 'npc_sora' });
+  assert.equal(getStoryPhaseObjectiveStatus(openedDialogue).completedCount, 2);
+  const sentMessage = recordStoryObjectiveEvent(progress, { interactedId: 'npc_sora', customMessageSent: true });
+  assert.equal(getStoryPhaseObjectiveStatus(sentMessage).completedCount, 3);
+  assert.equal(getStoryPhaseObjectiveStatus(sentMessage).quizUnlocked, true);
+});
+
+test('mobile performance profile scales rendering for constrained devices', () => {
+  assert.deepEqual(getMobilePerformanceProfile({
+    isMobile: true,
+    deviceMemoryGb: 3,
+    hardwareConcurrency: 4,
+  }), {
+    maxPixelRatio: 1,
+    shadowsAllowed: false,
+    maxShadowMapSize: 0,
+    maxPetals: 40,
+    targetFps: 30,
+  });
+  const capableMobile = getMobilePerformanceProfile({
+    isMobile: true,
+    deviceMemoryGb: 8,
+    hardwareConcurrency: 8,
+  });
+  assert.equal(capableMobile.maxPixelRatio, 1.25);
+  assert.equal(capableMobile.maxShadowMapSize, 512);
+  assert.equal(capableMobile.targetFps, 45);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false }).maxPixelRatio, 2);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false }).targetFps, 60);
+  assert.equal(getMobilePerformanceProfile({ isMobile: false, isSoftwareGl: true }).shadowsAllowed, false);
+});
+
+test('NPC fallback dialogue recalls saved shared memories when asked', () => {
+  const reply = generateSmartNpcReply({
+    npcId: 'npc_hana',
+    npcName: 'Aiko',
+    npcRole: 'Class B Representative',
+    playerMessage: 'Do you remember what we discussed before?',
+    schoolPeriodLabel: 'After School',
+    npcMemories: ['We visited the old library archive together.'],
+  });
+  assert.match(reply.reply, /old library archive/i);
+  assert.ok(reply.affinityBonus > 0);
 });

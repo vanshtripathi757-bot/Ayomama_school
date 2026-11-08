@@ -12,6 +12,8 @@ import {
   getCurrentStoryChapter,
   getSkyWeatherDescription,
   getStudentAcademicRank,
+  getStoryPhaseObjectiveStatus,
+  getStoryObjectiveHint,
 } from '../../game/core/rules';
 import { audioManager } from '../../game/systems/AudioManager';
 import {
@@ -25,6 +27,9 @@ import {
 } from '../../game/systems/InputBridge';
 import { useGameStore } from '../../store/useGameStore';
 import { CameraViewpointId } from '../../types/game';
+import { LIBRARY_BOOKS, getOwnedLibraryBookIds } from '../../game/systems/LibraryBookSystem';
+import { TRANSIT_DESTINATIONS } from '../../game/systems/TransitSystem';
+import { getOwnedTownItemIds, getTownShopItems } from '../../game/systems/TownShopSystem';
 
 export function AcademyHUD() {
   const phase = useGameStore((s) => s.phase);
@@ -36,6 +41,8 @@ export function AcademyHUD() {
   const muted = useGameStore((s) => s.settings.audio.muted);
   const showMobileControls = useGameStore((s) => s.settings.display.showMobileControls);
   const nearbyInteractable = useGameStore((s) => s.nearbyInteractable);
+  const nearbyWorldObject = useGameStore((s) => s.nearbyWorldObject);
+  const activeWorldInteraction = useGameStore((s) => s.activeWorldInteraction);
   const activeDialogue = useGameStore((s) => s.activeDialogue);
   const missionProgress = useGameStore((s) => s.missionProgress);
   const isSprintingUI = useGameStore((s) => s.isSprintingUI);
@@ -51,6 +58,12 @@ export function AcademyHUD() {
   const toggleMute = useGameStore((s) => s.toggleMute);
   const returnToMainMenu = useGameStore((s) => s.returnToMainMenu);
   const openInteractionDialogue = useGameStore((s) => s.openInteractionDialogue);
+  const beginWorldInteraction = useGameStore((s) => s.beginWorldInteraction);
+  const endWorldInteraction = useGameStore((s) => s.endWorldInteraction);
+  const takeLibraryBook = useGameStore((s) => s.takeLibraryBook);
+  const returnLibraryBook = useGameStore((s) => s.returnLibraryBook);
+  const purchaseTownItem = useGameStore((s) => s.purchaseTownItem);
+  const teleportToZone = useGameStore((s) => s.teleportToZone);
   const selectDialogueChoice = useGameStore((s) => s.selectDialogueChoice);
   const sendCustomDialogueMessage = useGameStore((s) => s.sendCustomDialogueMessage);
   const closeDialogue = useGameStore((s) => s.closeDialogue);
@@ -71,6 +84,7 @@ export function AcademyHUD() {
 
   // Custom typed message state for NPC chat
   const [customMessageInput, setCustomMessageInput] = useState('');
+  const [readingBookId, setReadingBookId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
   // Subtle, tap-to-dismiss Ambient NPC-to-NPC conversation toast
@@ -117,6 +131,14 @@ export function AcademyHUD() {
         return;
       }
 
+      if (activeWorldInteraction) {
+        if (e.code === 'Escape') {
+          e.preventDefault();
+          endWorldInteraction();
+        }
+        return;
+      }
+
       if (isTypingInInput) return;
 
       if (e.code === 'Escape' || e.code === 'KeyP') {
@@ -127,6 +149,10 @@ export function AcademyHUD() {
         if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && nearbyInteractable) {
           e.preventDefault();
           openInteractionDialogue();
+        } else if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && nearbyWorldObject) {
+          e.preventDefault();
+          const action = nearbyWorldObject.actions.find((item) => item.enabled !== false);
+          if (action) beginWorldInteraction(nearbyWorldObject.id, action.id);
         } else if (e.code === 'KeyC') {
           setCameraMode(cameraMode === 'follow' ? 'overview' : 'follow');
         } else if (e.code === 'KeyH') {
@@ -155,26 +181,39 @@ export function AcademyHUD() {
     activeModal,
     activeDialogue,
     nearbyInteractable,
+    nearbyWorldObject,
+    activeWorldInteraction,
     setPhase,
     setCameraMode,
     setActiveModal,
     toggleMute,
     setActiveViewpoint,
     openInteractionDialogue,
+    beginWorldInteraction,
+    endWorldInteraction,
     closeDialogue,
   ]);
 
   // Reset mobile joystick if phase changes or dialogue opens
   useEffect(() => {
-    if (phase !== 'playing' || activeDialogue !== null) {
+    if (phase !== 'playing' || activeDialogue !== null || activeWorldInteraction !== null) {
       setKnobOffset({ x: 0, y: 0 });
       resetMobileInputBridge();
       setMobileSprintHeld(false);
       setIsSprintingUI(false);
     }
-  }, [phase, activeDialogue, setIsSprintingUI]);
+  }, [phase, activeDialogue, activeWorldInteraction, setIsSprintingUI]);
 
   if (phase !== 'playing' && phase !== 'paused') return null;
+
+  const activeTownShopId =
+    activeWorldInteraction?.objectId === 'town-manga-shop-counter'
+      ? 'manga-shop'
+      : activeWorldInteraction?.objectId === 'town-konbini-counter'
+        ? 'konbini'
+        : null;
+  const ownedTownItemIds = getOwnedTownItemIds(missionProgress.inventoryItems);
+  const currentCpBalance = missionProgress.cpPoints ?? 0;
 
   const atmo = ATMOSPHERE_PRESETS[timeOfDay];
   const periodCfg = SCHOOL_PERIODS[schoolPeriod];
@@ -191,6 +230,7 @@ export function AcademyHUD() {
 
   // Hoshino Academy Story Chapter & Active Sequential Phase
   const activeChapter = getCurrentStoryChapter(missionProgress.reputationPoints);
+  const phaseObjectiveStatus = getStoryPhaseObjectiveStatus(missionProgress);
   const { story: activeStoryObj, phase: activePhaseObj } =
     getActiveStoryAndPhase(missionProgress);
   const playerClass =
@@ -366,6 +406,19 @@ export function AcademyHUD() {
         </div>
       </div>
 
+      {phase === 'playing' && !storyModalOpen && !activeDialogue && (
+        <div data-testid="live-mission-clue" className="pointer-events-auto absolute top-14 left-3 z-10 w-[min(82vw,280px)] rounded-lg bg-[#071426]/90 border border-emerald-400/35 px-3 py-2 shadow-lg backdrop-blur-sm">
+          <div className="text-[9px] font-mono uppercase tracking-widest text-emerald-300">Current Mission · {phaseObjectiveStatus.completedCount}/{phaseObjectiveStatus.total}</div>
+          {phaseObjectiveStatus.nextObjective ? (
+            <>
+              <div className="mt-1 text-[11px] font-semibold text-white">{phaseObjectiveStatus.nextObjective}</div>
+              <div className="mt-1 text-[10px] leading-relaxed text-amber-100">{getStoryObjectiveHint(missionProgress)}</div>
+            </>
+          ) : (
+            <div className="mt-1 text-[11px] text-emerald-200">All objectives complete. Open Story &amp; Quiz to finish this phase.</div>
+          )}
+        </div>
+      )}
       {/* Upper-Right Expandable Menu Panel (Cleanly Organized · No Manual Weather or Teleport Cheats) */}
       {hubOpen && (
         <div
@@ -628,6 +681,213 @@ export function AcademyHUD() {
                   : ''}
               </span>
             </button>
+          </div>
+        )}
+
+        {/* Contextual world-object action: shown only for a registered nearby target. */}
+        {phase === 'playing' && nearbyWorldObject && !nearbyInteractable && !activeDialogue && !activeWorldInteraction && (
+          <div
+            data-testid="world-object-interaction-prompt"
+            className="pointer-events-auto flex items-center gap-2 rounded-full border border-cyan-300/55 bg-[#081326]/90 px-3 py-1.5 shadow-lg backdrop-blur-sm"
+          >
+            <span className="text-[10px] font-mono font-bold text-cyan-200">OBJECT</span>
+            <span className="max-w-[150px] truncate text-[11px] font-semibold text-white">
+              {nearbyWorldObject.displayName}
+            </span>
+            <button
+              type="button"
+              data-testid="world-object-action-button"
+              onClick={() => {
+                const action = nearbyWorldObject.actions.find((item) => item.enabled !== false);
+                if (action) beginWorldInteraction(nearbyWorldObject.id, action.id);
+              }}
+              className="rounded-full bg-cyan-600 px-3 py-1 text-[11px] font-bold text-white transition-colors hover:bg-cyan-500"
+            >
+              {nearbyWorldObject.actions.find((item) => item.enabled !== false)?.label ?? 'Interact'}
+            </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction && (
+          <div
+            data-testid="active-world-interaction"
+            role="status"
+            className="pointer-events-auto flex items-center gap-3 rounded-lg border border-cyan-300/45 bg-[#07111f]/95 px-3 py-2 shadow-xl backdrop-blur-md"
+          >
+            <div className="min-w-0">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-cyan-200">
+                Interaction mode
+              </div>
+              <div className="max-w-[210px] truncate text-xs font-semibold text-white">
+                {activeWorldInteraction.actionLabel} · {activeWorldInteraction.displayName}
+              </div>
+            </div>
+            <button
+              type="button"
+              data-testid="exit-world-interaction"
+              onClick={endWorldInteraction}
+              className="shrink-0 rounded-md border border-slate-400/40 bg-slate-800 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-slate-700"
+            >
+              Exit
+            </button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'dormitory-main-entry' && (
+          <div data-testid="dormitory-entry-panel" role="dialog" aria-label="Dormitory entry" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-indigo-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-indigo-300">Hoshino Academy Residence</div>
+            <h2 className="mt-1 text-base font-bold text-white">Student Dormitory</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">The ground-floor common room is open. Residents can rest, use the shared study desk and visit their lockers.</p>
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={() => { teleportToZone(-45, -30.5, Math.PI); endWorldInteraction(); }} className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-500">Enter Common Room</button>
+              <button type="button" onClick={endWorldInteraction} className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Close</button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'medical-room-reception' && (
+          <div data-testid="medical-checkin-panel" role="dialog" aria-label="Medical room reception" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-rose-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-rose-300">Campus Medical Room</div>
+            <h2 className="mt-1 text-base font-bold text-white">Reception Check-In</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-300">You have reached the campus medical room. A staff member can assist with routine student support. The rest beds are available inside.</p>
+            <button type="button" onClick={endWorldInteraction} className="mt-3 w-full rounded-lg bg-rose-700 px-3 py-2 text-xs font-bold text-white hover:bg-rose-600">Finish Check-In</button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeTownShopId && (
+          <div
+            data-testid="town-shop-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Hoshino town shop"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,520px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-amber-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Hoshino Town · Shopping Street</div>
+                <h2 className="text-base font-bold text-white">
+                  {activeTownShopId === 'manga-shop' ? 'Manga, Books & Keepsakes' : 'Konbini Mart'}
+                </h2>
+                <p className="text-[11px] text-slate-300">Available Class Points: {currentCpBalance} CP</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="space-y-2">
+              {getTownShopItems(activeTownShopId).map((item) => {
+                const owned = ownedTownItemIds.includes(item.id);
+                const canAfford = currentCpBalance >= item.priceCp;
+                return (
+                  <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-900/80 p-3">
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold text-white">{item.name}</div>
+                      <div className="mt-1 text-[10px] text-slate-400">{item.description}</div>
+                      <div className="mt-1 text-[10px] font-mono text-amber-300">{item.priceCp} CP</div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={owned || !canAfford}
+                      onClick={() => purchaseTownItem(item.id)}
+                      className="shrink-0 rounded-md bg-amber-600 px-3 py-2 text-[10px] font-bold text-white disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                    >
+                      {owned ? 'Owned' : canAfford ? 'Buy' : 'Need CP'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'station-ticket-terminal' && (
+          <div
+            data-testid="railway-destinations-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Hoshino railway destinations"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,520px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-cyan-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">Hoshino Electric Railway</div>
+                <h2 className="text-base font-bold text-white">Choose your destination</h2>
+                <p className="text-[11px] text-slate-300">Select a district to travel there instantly.</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {TRANSIT_DESTINATIONS.map((destination) => (
+                <button
+                  key={destination.id}
+                  type="button"
+                  data-testid={`transit-${destination.id}`}
+                  onClick={() => {
+                    teleportToZone(destination.position.x, destination.position.z, destination.yaw);
+                    endWorldInteraction();
+                  }}
+                  className="rounded-lg border border-slate-700 bg-slate-900/80 p-3 text-left transition-colors hover:border-cyan-400/70 hover:bg-slate-800"
+                >
+                  <span className="block text-xs font-bold text-white">{destination.label}</span>
+                  <span className="mt-1 block text-[10px] leading-relaxed text-slate-400">{destination.description}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.actionId === 'browse-books' && (
+          <div
+            data-testid="library-books-panel"
+            role="dialog"
+            aria-modal="false"
+            aria-label="Academy library books"
+            className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,560px)] max-h-[78vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl border border-amber-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl"
+          >
+            <div className="mb-3 flex items-start justify-between gap-3 border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Seiran Academy · Library</div>
+                <h2 className="text-base font-bold text-white">Browse the shelves</h2>
+                <p className="text-[11px] text-slate-300">Take a book to keep it in your saved bag. Open it here to read.</p>
+              </div>
+              <button type="button" onClick={endWorldInteraction} className="rounded bg-slate-800 px-3 py-1.5 text-xs font-semibold hover:bg-slate-700">Close</button>
+            </div>
+            <div className="space-y-2">
+              {LIBRARY_BOOKS.map((book) => {
+                const owned = getOwnedLibraryBookIds(inventoryItems).includes(book.id);
+                const isReading = readingBookId === book.id;
+                return (
+                  <article key={book.id} className="rounded-lg border border-slate-700 bg-[#101d33] p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-wide text-cyan-300">{book.category} · {book.author}</div>
+                        <h3 className="text-sm font-semibold text-white">{book.title}</h3>
+                        <p className="mt-1 text-[11px] text-slate-300">{book.summary}</p>
+                      </div>
+                      <span className="shrink-0 rounded bg-slate-800 px-2 py-1 text-[10px] text-slate-300">{owned ? 'In bag' : 'On shelf'}</span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {!owned ? (
+                        <button type="button" data-testid={`take-book-${book.id}`} onClick={() => takeLibraryBook(book.id)} className="rounded bg-cyan-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-cyan-600">Take book</button>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => setReadingBookId(isReading ? null : book.id)} className="rounded bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500">{isReading ? 'Close reading' : 'Read book'}</button>
+                          <button type="button" onClick={() => { returnLibraryBook(book.id); if (isReading) setReadingBookId(null); }} className="rounded border border-amber-300/40 bg-amber-950/50 px-3 py-1.5 text-[11px] font-semibold text-amber-100 hover:bg-amber-900/60">Return book</button>
+                        </>
+                      )}
+                    </div>
+                    {isReading && (
+                      <div data-testid={`book-reading-${book.id}`} className="mt-3 space-y-2 rounded bg-[#050b17] p-3 text-xs leading-relaxed text-slate-200">
+                        <div className="font-semibold text-amber-200">{book.title}</div>
+                        {book.content.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
+            </div>
+            <div className="mt-3 flex items-center justify-between border-t border-slate-700 pt-2 text-[10px] text-slate-400">
+              <span>Books in bag: {getOwnedLibraryBookIds(inventoryItems).length}</span>
+              <span>Progress is saved with your session</span>
+            </div>
           </div>
         )}
 
@@ -974,8 +1234,35 @@ export function AcademyHUD() {
                 {activeStoryPack.storyText}
               </p>
 
+              <div data-testid="phase-objective-tracker" className="rounded-lg bg-[#071426] border border-emerald-400/30 p-3 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Phase Mission Objectives</span>
+                  <span className="text-[10px] font-mono text-slate-300">{phaseObjectiveStatus.completedCount}/{phaseObjectiveStatus.total} complete</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                  <div className="h-full bg-emerald-400 transition-all" style={{ width: `${phaseObjectiveStatus.total ? (phaseObjectiveStatus.completedCount / phaseObjectiveStatus.total) * 100 : 0}%` }} />
+                </div>
+                <ol className="space-y-1.5 text-[11px]">
+                  {phaseObjectiveStatus.objectives.map((objective, index) => {
+                    const done = phaseObjectiveStatus.completedIndexes.includes(index);
+                    return (
+                      <li key={`${activeStoryObj.id}_${activePhaseObj.phaseNumber}_obj_${index}`} className={done ? 'text-emerald-300' : 'text-slate-200'}>
+                        <span className="font-mono mr-1.5">{done ? '✓' : `${index + 1}.`}</span>{objective}
+                      </li>
+                    );
+                  })}
+                </ol>
+                {!phaseObjectiveStatus.quizUnlocked && phaseObjectiveStatus.nextObjective && (
+                  <div className="rounded bg-amber-950/50 border border-amber-400/30 p-2 text-[11px] text-amber-100">
+                    <span className="font-bold">Next clue:</span> {getStoryObjectiveHint(missionProgress)}
+                  </div>
+                )}
+                {phaseObjectiveStatus.quizUnlocked && (
+                  <div className="text-[11px] font-semibold text-emerald-300">All required objectives complete. Phase quiz unlocked.</div>
+                )}
+              </div>
               {/* 4-Option Quiz / Activity Decision */}
-              <div className="pt-2 border-t border-slate-700/70 space-y-1.5">
+              <div className={phaseObjectiveStatus.quizUnlocked ? 'pt-2 border-t border-slate-700/70 space-y-1.5' : 'hidden'}>
                 <div className="text-xs font-semibold text-indigo-200">
                   ❓ {activeStoryPack.question}
                 </div>

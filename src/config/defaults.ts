@@ -1981,6 +1981,26 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'desk_c2_r1', minX: -10.9, maxX: -9.5, minZ: -15.45, maxZ: -13.95 },
   { id: 'desk_c2_r2', minX: -10.9, maxX: -9.5, minZ: -13.25, maxZ: -11.75 },
 
+  // Satellite walk-in homerooms: Class B (-40,-18), Class C (40,-18), Class D (17,-57).
+  ...[
+    { id: 'class-b', x: -40, z: -18 },
+    { id: 'class-c', x: 40, z: -18 },
+    { id: 'class-d', x: 17, z: -57 },
+  ].flatMap((room) => [
+    { id: `${room.id}_west_wall`, minX: room.x - 7.8, maxX: room.x - 7.48, minZ: room.z - 5.8, maxZ: room.z + 5.8 },
+    { id: `${room.id}_east_wall`, minX: room.x + 7.48, maxX: room.x + 7.8, minZ: room.z - 5.8, maxZ: room.z + 5.8 },
+    { id: `${room.id}_back_wall`, minX: room.x - 7.8, maxX: room.x + 7.8, minZ: room.z - 5.8, maxZ: room.z - 5.48 },
+    { id: `${room.id}_front_left`, minX: room.x - 7.8, maxX: room.x - 2.55, minZ: room.z + 5.48, maxZ: room.z + 5.8 },
+    { id: `${room.id}_front_right`, minX: room.x + 2.55, maxX: room.x + 7.8, minZ: room.z + 5.48, maxZ: room.z + 5.8 },
+    { id: `${room.id}_teacher_desk`, minX: room.x - 1.7, maxX: room.x + 1.7, minZ: room.z - 4.35, maxZ: room.z - 2.95 },
+    ...[-4.2, 0, 4.2].flatMap((dx, col) => [-1.0, 1.5].map((dz, row) => ({
+      id: `${room.id}_desk_${col}_${row}`,
+      minX: room.x + dx - 0.9,
+      maxX: room.x + dx + 0.9,
+      minZ: room.z + dz - 0.6,
+      maxZ: room.z + dz + 0.6,
+    }))),
+  ]),
   // Courtyard Benches (Full 3.2m x 0.85m rectangular colliders) & Notice Board
   { id: 'bench_west_box', minX: -6.95, maxX: -6.05, minZ: 8.35, maxZ: 11.65 },
   { id: 'bench_east_box', minX: 6.05, maxX: 6.95, minZ: 8.35, maxZ: 11.65 },
@@ -1995,7 +2015,15 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // Enlarged East Gymnasium Arena, West Cafeteria Hall, and Northwest 4-Story Student Dormitory Hall
   { id: 'gym_annex', minX: 30.2, maxX: 46.8, minZ: -3.2, maxZ: 19.2 },
   { id: 'cafe_pavilion', minX: -46.8, maxX: -30.8, minZ: -1.6, maxZ: 17.6 },
-  { id: 'student_dormitory', minX: -54.5, maxX: -35.5, minZ: -44.0, maxZ: -25.0 },
+  // Dormitory exterior shell split around its south entrance.
+  { id: 'student_dormitory_west_wall', minX: -54.5, maxX: -54.0, minZ: -44.0, maxZ: -25.0 },
+  { id: 'student_dormitory_east_wall', minX: -36.0, maxX: -35.5, minZ: -44.0, maxZ: -25.0 },
+  { id: 'student_dormitory_north_wall', minX: -54.5, maxX: -35.5, minZ: -44.0, maxZ: -43.5 },
+  { id: 'student_dormitory_front_left', minX: -54.5, maxX: -48.0, minZ: -25.5, maxZ: -25.0 },
+  { id: 'student_dormitory_front_right', minX: -42.0, maxX: -35.5, minZ: -25.5, maxZ: -25.0 },
+  { id: 'dormitory_bed_west', minX: -51.6, maxX: -49.2, minZ: -37.9, maxZ: -34.5 },
+  { id: 'dormitory_bed_east', minX: -40.8, maxX: -38.4, minZ: -37.9, maxZ: -34.5 },
+  { id: 'dormitory_lounge_desk', minX: -48.0, maxX: -42.0, minZ: -41.6, maxZ: -40.4 },
 
   // South Perimeter Walls & Gate Pillars (leaving central gate open between -4.2 and +4.2)
   { id: 'south_wall_west', minX: -38.0, maxX: -4.2, minZ: 34.0, maxZ: 36.0 },
@@ -2005,6 +2033,11 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // South Hoshino Town District Multi-Story Buildings & Commuter Train at Station
   { id: 'west_town_shop', minX: -34.5, maxX: -17.5, minZ: 51.5, maxZ: 72.5 },
   { id: 'east_town_shop', minX: 17.5, maxX: 34.5, minZ: 51.5, maxZ: 72.5 },
+  // Hoshino residential neighbourhood homes.
+  { id: 'residential_home_west_south', minX: -53.2, maxX: -42.8, minZ: 56.2, maxZ: 65.8 },
+  { id: 'residential_home_east_south', minX: 42.8, maxX: 53.2, minZ: 56.2, maxZ: 65.8 },
+  { id: 'residential_home_west_north', minX: -53.2, maxX: -42.8, minZ: 75.2, maxZ: 84.8 },
+  { id: 'residential_home_east_north', minX: 42.8, maxX: 53.2, minZ: 75.2, maxZ: 84.8 },
   { id: 'station_train', minX: -28.5, maxX: 28.5, minZ: 98.8, maxZ: 102.6 },
 
   // East Aquatics 25m Swimming Pool Basin (players walk on the surrounding deck without entering deep water)
@@ -2019,6 +2052,16 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
 
   // North Mountain Shrine Grand Hall
   { id: 'north_shrine_hall', minX: -9.5, maxX: 9.5, minZ: -95.5, maxZ: -85.0 },
+  // Medical room shell with a 6m south entrance kept open.
+  { id: 'medical_room_north_wall', minX: 27.0, maxX: 41.0, minZ: -34.0, maxZ: -33.45 },
+  { id: 'medical_room_west_wall', minX: 26.9, maxX: 27.45, minZ: -33.75, maxZ: -20.25 },
+  { id: 'medical_room_east_wall', minX: 40.55, maxX: 41.1, minZ: -33.75, maxZ: -20.25 },
+  { id: 'medical_room_front_left', minX: 27.0, maxX: 31.0, minZ: -20.55, maxZ: -20.0 },
+  { id: 'medical_room_front_right', minX: 37.0, maxX: 41.0, minZ: -20.55, maxZ: -20.0 },
+  { id: 'medical_bed_west', minX: 30.1, maxX: 32.3, minZ: -30.35, maxZ: -27.25 },
+  { id: 'medical_bed_east', minX: 35.7, maxX: 37.9, minZ: -30.35, maxZ: -27.25 },
+  { id: 'medical_reception_counter', minX: 31.8, maxX: 36.2, minZ: -23.35, maxZ: -22.05 },
+  { id: 'medical_storage_cabinet', minX: 28.2, maxX: 29.0, minZ: -31.0, maxZ: -30.3 },
 ];
 
 export const CAMPUS_CIRCLE_COLLIDERS: CircleCollider2D[] = [
