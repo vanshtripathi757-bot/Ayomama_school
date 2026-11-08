@@ -27,6 +27,15 @@ test('all four academy classes have registered walk-in seating and teacher desks
   }
 });
 
+test('all four residential homes expose usable furniture interactions', () => {
+  for (const homeId of ['west-south', 'east-south', 'west-north', 'east-north']) {
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `residential-${homeId}-sofa`));
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `residential-${homeId}-bed`));
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `residential-${homeId}-desk`));
+    assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === `residential-${homeId}-mailbox`));
+  }
+});
+
 test('campus catalog creates a registry with access-controlled archive objects', () => {
   const system = createCampusWorldInteractionSystem();
   assert.equal(system.getAll().length, CAMPUS_WORLD_OBJECTS.length);
