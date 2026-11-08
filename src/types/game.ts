@@ -332,7 +332,7 @@ export interface NPCRuntimeState {
   greetingAnim?: NpcGreetingAnimationType;
   currentActivity?: string;
   usingObjectId?: string;
-  activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
+  activityActionId?: 'read' | 'teach' | 'sit' | 'practice' | 'socialize' | 'work';
   emotionalState?: string;
   talkingWithNpcId?: string | null;
 }
