@@ -1223,7 +1223,12 @@ export function stepAutonomousNPCs(
     }
 
     const baseSpeed = config.walkSpeed ?? 1.9;
-    const speed = baseSpeed * behavior.speedMultiplier;
+    // Academic leaders are a little more purposeful; students falling behind slow
+    // down to study more often rather than receiving an arbitrary score penalty.
+    const academicDrive =
+      next.classRank === 1 ? 1.06 : next.classRank >= 3 ? 0.96 : 1.0;
+    const motivationDrive = 0.96 + (next.motivation ?? 70) / 100 * 0.08;
+    const speed = baseSpeed * behavior.speedMultiplier * academicDrive * motivationDrive;
     const dirX = dx / distToWp;
     const dirZ = dz / distToWp;
 
