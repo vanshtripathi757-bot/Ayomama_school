@@ -40,6 +40,10 @@ const _sunColor = new THREE.Color();
 const _hemiSkyColor = new THREE.Color();
 const _hemiGroundColor = new THREE.Color();
 const _fogColor = new THREE.Color();
+const _interactionRaycaster = new THREE.Raycaster();
+const _interactionRayOrigin = new THREE.Vector3();
+const _interactionRayDirection = new THREE.Vector3();
+const _interactionTargetPoint = new THREE.Vector3();
 
 export function AcademyCanvas() {
   const canvasMountRef = useRef<HTMLDivElement | null>(null);
@@ -810,6 +814,23 @@ export function AcademyCanvas() {
               player: {
                 position: { x: playerState.x, y: playerState.y, z: playerState.z },
                 yaw: playerState.yaw,
+              },
+              // Use real scene geometry to prevent interaction prompts through walls.
+              // The small end tolerance allows the target's own mesh to be hit.
+              isOccluded: (from, to) => {
+                _interactionRayOrigin.set(from.x, from.y + 1.25, from.z);
+                _interactionTargetPoint.set(to.x, to.y, to.z);
+                _interactionRayDirection.subVectors(_interactionTargetPoint, _interactionRayOrigin);
+                const targetDistance = _interactionRayDirection.length();
+                if (targetDistance < 0.001) return false;
+                _interactionRayDirection.multiplyScalar(1 / targetDistance);
+                _interactionRaycaster.set(_interactionRayOrigin, _interactionRayDirection);
+                _interactionRaycaster.far = Math.max(0, targetDistance - 0.65);
+                const blockers = _interactionRaycaster.intersectObjects(
+                  [academyEnv.rootGroup, expandedFacilities.rootGroup, advancedFacilities.rootGroup],
+                  true
+                );
+                return blockers.length > 0;
               },
             });
             useGameStore.getState().setNearbyWorldObject(worldTarget?.object ?? null);
