@@ -852,6 +852,14 @@ export function getCampusFloorHeight(x: number, z: number, playerY: number): num
   return floorHeight;
 }
 
+const GROUND_LEVEL_CAMPUS_COLLIDERS = CAMPUS_AABB_COLLIDERS.filter(
+  (collider) => collider.id !== 'dormitory_upper_front_rail'
+);
+
+function getCampusAabbCollidersAtHeight(playerY: number): AABBCollider2D[] {
+  return playerY > 1.0 ? CAMPUS_AABB_COLLIDERS : GROUND_LEVEL_CAMPUS_COLLIDERS;
+}
+
 export function stepPlayerPhysics(
   state: PlayerPhysicsState,
   input: {
@@ -918,7 +926,7 @@ export function stepPlayerPhysics(
       candX,
       candZ,
       PLAYER_RADIUS,
-      CAMPUS_AABB_COLLIDERS,
+      getCampusAabbCollidersAtHeight(next.y),
       combinedCircles,
       curX,
       curZ
@@ -1169,7 +1177,7 @@ export function stepAutonomousNPCs(
       next.x,
       next.z,
       NPC_BODY_RADIUS,
-      CAMPUS_AABB_COLLIDERS,
+      getCampusAabbCollidersAtHeight(next.y),
       dynamicBodyCircles,
       next.x,
       next.z
