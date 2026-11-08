@@ -214,6 +214,22 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
     floorId: 'ground-floor',
     priority: 3,
   },
+  ...[
+    { id: 'dormitory-elevator-ground', floorId: 'ground-floor', y: 1.35 },
+    { id: 'dormitory-elevator-floor-1', floorId: 'floor-1', y: 5.15 },
+    { id: 'dormitory-elevator-floor-2', floorId: 'floor-2', y: 8.95 },
+    { id: 'dormitory-elevator-floor-3', floorId: 'floor-3', y: 12.75 },
+  ].map((lift) => ({
+    id: lift.id,
+    type: 'terminal' as const,
+    displayName: 'Dormitory Elevator Control',
+    position: point(-42.8, lift.y, -26.1),
+    interactionRange: 2.5,
+    actions: [{ id: 'use' as const, label: 'Select Dormitory Floor' }],
+    roomId: 'dormitory',
+    floorId: lift.floorId,
+    priority: 4,
+  })),
   {
     id: 'dormitory-bed-west',
     type: 'bed',
