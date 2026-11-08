@@ -307,6 +307,19 @@ test('stepPlayerPhysics moves player, triggers jump, and blocks walking through 
   assert.ok(distToNpc >= 0.90);
 });
 
+test('upper dorm floors keep players inside while ground-floor entrance stays open', () => {
+  const base: PlayerPhysicsState = {
+    x: -45, y: 0, z: -26.0, vx: 0, vy: 0, vz: 0, yaw: 0,
+    isGrounded: true, coyoteTimer: 0.1, jumpBufferTimer: 0,
+    isSprinting: false, walkPhase: 0, squashY: 1, squashXZ: 1,
+  };
+  const input = { moveX: 0, moveZ: 1, cameraYaw: 0, sprintHeld: false, jumpJustPressed: false, jumpHeld: false };
+  const ground = stepPlayerPhysics(base, input, 0.05);
+  const upper = stepPlayerPhysics({ ...base, y: 3.8 }, input, 0.05);
+  assert.ok(ground.nextState.z > -25.7, 'ground-floor doorway remains passable');
+  assert.ok(upper.nextState.z < -25.5, 'upper-floor guard rail blocks the open doorway');
+});
+
 test('findNearestInteractable and advanceMissionProgress track objectives, chapters, clues, and items', () => {
   const found = findNearestInteractable(-3.2, 15.0);
   assert.ok(found.target);
