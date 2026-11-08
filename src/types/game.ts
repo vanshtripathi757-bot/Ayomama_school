@@ -283,6 +283,7 @@ export interface MissionProgressState {
   completedPhaseKeys?: string[]; // format: `${storyId}:phase_${phaseNumber}`
   completedStoryIds?: string[];
   npcRelationships?: Record<string, NPCRelationshipState>;
+  npcAcademicRecords?: Record<string, { academicProgress: number; motivation: number }>;
   customStories?: StoryLibraryItem[];
   // V8.0 Universal Object Interaction & Library State
   borrowedBookIds?: string[];
