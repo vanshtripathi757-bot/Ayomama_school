@@ -906,6 +906,12 @@ export function buildAcademyEnvironment(
     const liftDoor = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.2, 2.35, 0.12)), darkTrimMat);
     liftDoor.position.set(-45.0, floorY + 1.2, -26.2);
     dormitoryGroup.add(liftDoor);
+    const liftCallPanel = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.42, 0.86, 0.1)), darkTrimMat);
+    liftCallPanel.position.set(-42.8, floorY + 1.25, -26.1);
+    dormitoryGroup.add(liftCallPanel);
+    const liftCallButton = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.12, 0.12, 0.035)), lanternBulbMaterial);
+    liftCallButton.position.set(-42.8, floorY + 1.43, -26.02);
+    dormitoryGroup.add(liftCallButton);
   }
 
   // Visible elevator control panel inside the ground-floor lobby.
