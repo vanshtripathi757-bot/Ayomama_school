@@ -296,6 +296,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       sharedInputBridge.playerYaw = 0;
       syncBodyDataset('character-creation');
       set({
+        isRidingTrain: false,
         phase: 'character-creation',
         activeModal: 'none',
         missionProgress: freshMission,
@@ -645,6 +646,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       audioManager.playCancel();
       syncBodyDataset('title');
       set({
+        isRidingTrain: false,
         phase: 'title',
         activeModal: 'none',
         activeDialogue: null,
