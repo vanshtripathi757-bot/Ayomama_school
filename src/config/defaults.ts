@@ -2015,6 +2015,8 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // Enlarged East Gymnasium Arena, West Cafeteria Hall, and Northwest 4-Story Student Dormitory Hall
   { id: 'gym_annex', minX: 30.2, maxX: 46.8, minZ: -3.2, maxZ: 19.2 },
   { id: 'cafe_pavilion', minX: -46.8, maxX: -30.8, minZ: -1.6, maxZ: 17.6 },
+  // Upper-floor dormitory railing blocks the open ground-floor entrance only when the player is above level G.
+  { id: 'dormitory_upper_front_rail', minX: -48.0, maxX: -42.0, minZ: -25.55, maxZ: -25.0 },
   // Dormitory exterior shell split around its south entrance.
   { id: 'student_dormitory_west_wall', minX: -54.5, maxX: -54.0, minZ: -44.0, maxZ: -25.0 },
   { id: 'student_dormitory_east_wall', minX: -36.0, maxX: -35.5, minZ: -44.0, maxZ: -25.0 },
