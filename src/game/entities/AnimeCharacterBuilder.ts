@@ -1,5 +1,9 @@
 import * as THREE from 'three';
-import { CharacterCustomization, NpcGreetingAnimationType } from '../../types/game';
+import {
+  CharacterCustomization,
+  EquippedHandItem,
+  NpcGreetingAnimationType,
+} from '../../types/game';
 
 export interface CharacterActorRig {
   root: THREE.Group;
@@ -25,6 +29,10 @@ export interface CharacterActorRig {
   glassesGroup?: THREE.Group;
   armbandGroup?: THREE.Group;
   headphonesGroup?: THREE.Group;
+  heldBookGroup?: THREE.Group;
+  heldNotebookGroup?: THREE.Group;
+  heldStudyPenGroup?: THREE.Group;
+  heldBentoGroup?: THREE.Group;
   dispose: () => void;
 }
 
@@ -576,6 +584,122 @@ export function createAnimeCharacterRig(
 
   bodyScaleGroup.add(headGroup);
 
+  // ==========================================================================
+  // 3D Hand-Held Props (Attached to Left & Right Hands for Object Interactions)
+  // ==========================================================================
+  const bookCoverMat = trackM(
+    new THREE.MeshStandardMaterial({
+      color: 0x4f46e5,
+      roughness: 0.45,
+      metalness: 0.1,
+    })
+  );
+  const bookPageMat = trackM(
+    new THREE.MeshStandardMaterial({
+      color: 0xfffbeb,
+      roughness: 0.75,
+    })
+  );
+  const penBodyMat = trackM(
+    new THREE.MeshStandardMaterial({
+      color: 0xfbbf24,
+      roughness: 0.3,
+      metalness: 0.6,
+    })
+  );
+  const bentoBoxMat = trackM(
+    new THREE.MeshStandardMaterial({
+      color: 0xb91c1c,
+      roughness: 0.4,
+      metalness: 0.15,
+    })
+  );
+
+  // 1) Held Open Book Group (in Right Hand)
+  const heldBookGroup = new THREE.Group();
+  heldBookGroup.position.set(0.06, -0.45, 0.12);
+  heldBookGroup.rotation.set(0.35, -0.2, 0.15);
+  heldBookGroup.visible = false;
+
+  const bookCoverLeft = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.14, 0.2, 0.018)),
+    bookCoverMat
+  );
+  bookCoverLeft.position.set(-0.065, 0, 0);
+  bookCoverLeft.rotation.y = 0.25;
+  heldBookGroup.add(bookCoverLeft);
+
+  const bookCoverRight = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.14, 0.2, 0.018)),
+    bookCoverMat
+  );
+  bookCoverRight.position.set(0.065, 0, 0);
+  bookCoverRight.rotation.y = -0.25;
+  heldBookGroup.add(bookCoverRight);
+
+  const bookPagesLeft = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.13, 0.185, 0.022)),
+    bookPageMat
+  );
+  bookPagesLeft.position.set(-0.06, 0, 0.012);
+  bookPagesLeft.rotation.y = 0.25;
+  heldBookGroup.add(bookPagesLeft);
+
+  const bookPagesRight = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.13, 0.185, 0.022)),
+    bookPageMat
+  );
+  bookPagesRight.position.set(0.06, 0, 0.012);
+  bookPagesRight.rotation.y = -0.25;
+  heldBookGroup.add(bookPagesRight);
+
+  rightArmPivot.add(heldBookGroup);
+
+  // 2) Held Notebook (Left Hand) & Study Pen (Right Hand) for Desk Study
+  const heldNotebookGroup = new THREE.Group();
+  heldNotebookGroup.position.set(-0.04, -0.45, 0.1);
+  heldNotebookGroup.rotation.set(0.45, 0.15, -0.1);
+  heldNotebookGroup.visible = false;
+
+  const notebookBase = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.18, 0.22, 0.02)),
+    bookPageMat
+  );
+  heldNotebookGroup.add(notebookBase);
+  leftArmPivot.add(heldNotebookGroup);
+
+  const heldStudyPenGroup = new THREE.Group();
+  heldStudyPenGroup.position.set(0.01, -0.46, 0.08);
+  heldStudyPenGroup.rotation.set(0.75, 0, 0.2);
+  heldStudyPenGroup.visible = false;
+
+  const penShaft = new THREE.Mesh(
+    trackG(new THREE.CylinderGeometry(0.009, 0.007, 0.16, 8)),
+    penBodyMat
+  );
+  heldStudyPenGroup.add(penShaft);
+  rightArmPivot.add(heldStudyPenGroup);
+
+  // 3) Held Bento Box / Meal Tray (Left Hand) for Eating Posture
+  const heldBentoGroup = new THREE.Group();
+  heldBentoGroup.position.set(-0.06, -0.45, 0.12);
+  heldBentoGroup.rotation.set(0.5, 0.1, -0.1);
+  heldBentoGroup.visible = false;
+
+  const bentoTray = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.22, 0.16, 0.045)),
+    bentoBoxMat
+  );
+  heldBentoGroup.add(bentoTray);
+
+  const bentoRice = new THREE.Mesh(
+    trackG(new THREE.BoxGeometry(0.09, 0.12, 0.052)),
+    bookPageMat
+  );
+  bentoRice.position.set(-0.045, 0, 0.005);
+  heldBentoGroup.add(bentoRice);
+  leftArmPivot.add(heldBentoGroup);
+
   return {
     root,
     bodyScaleGroup,
@@ -599,6 +723,10 @@ export function createAnimeCharacterRig(
     glassesGroup,
     armbandGroup,
     headphonesGroup,
+    heldBookGroup,
+    heldNotebookGroup,
+    heldStudyPenGroup,
+    heldBentoGroup,
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
@@ -607,7 +735,7 @@ export function createAnimeCharacterRig(
 }
 
 /**
- * Updates character limb swing, torso bob, and proximity-based NPC greeting / idle animations.
+ * Updates character limb swing, torso bob, 3D hand-held props, and proximity-based NPC greeting / seated animations.
  */
 export function updateCharacterRigAnimation(
   rig: CharacterActorRig,
@@ -618,9 +746,129 @@ export function updateCharacterRigAnimation(
   squashXZ: number,
   elapsedTime: number,
   isGreetingPlayer: boolean = false,
-  greetingAnim: NpcGreetingAnimationType = 'wave'
+  greetingAnim: NpcGreetingAnimationType = 'wave',
+  objectPosture: 'none' | 'sit' | 'study' | 'read' | 'use_computer' | 'eat' = 'none',
+  equippedHandItem: EquippedHandItem = 'none'
 ): void {
   rig.bodyScaleGroup.scale.set(squashXZ, squashY, squashXZ);
+
+  // Update 3D hand-held prop visibility based on active posture and equipped hand item
+  const showBook =
+    objectPosture === 'read' ||
+    (objectPosture === 'study' && equippedHandItem === 'book') ||
+    (objectPosture === 'none' && equippedHandItem === 'book');
+  const showStudySet =
+    objectPosture === 'study' && equippedHandItem !== 'book';
+  const showBento =
+    objectPosture === 'eat' ||
+    (objectPosture === 'none' && equippedHandItem === 'bento');
+
+  if (rig.heldBookGroup) {
+    rig.heldBookGroup.visible = showBook;
+  }
+  if (rig.heldNotebookGroup) {
+    rig.heldNotebookGroup.visible = showStudySet;
+  }
+  if (rig.heldStudyPenGroup) {
+    rig.heldStudyPenGroup.visible = showStudySet || objectPosture === 'eat';
+  }
+  if (rig.heldBentoGroup) {
+    rig.heldBentoGroup.visible = showBento;
+  }
+
+  if (objectPosture !== 'none' && !isMoving) {
+    if (objectPosture === 'read') {
+      // Standing while holding and reading an open 3D book in hands
+      rig.leftLegPivot.rotation.x = THREE.MathUtils.lerp(
+        rig.leftLegPivot.rotation.x,
+        0,
+        0.2
+      );
+      rig.rightLegPivot.rotation.x = THREE.MathUtils.lerp(
+        rig.rightLegPivot.rotation.x,
+        0,
+        0.2
+      );
+      rig.bodyScaleGroup.position.y = THREE.MathUtils.lerp(
+        rig.bodyScaleGroup.position.y,
+        Math.sin(elapsedTime * 2.2) * 0.012,
+        0.2
+      );
+      rig.bodyScaleGroup.rotation.x = THREE.MathUtils.lerp(
+        rig.bodyScaleGroup.rotation.x,
+        0.06,
+        0.2
+      );
+      rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(
+        rig.leftArmPivot.rotation.x,
+        -1.08,
+        0.2
+      );
+      rig.leftArmPivot.rotation.z = -0.22;
+      rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(
+        rig.rightArmPivot.rotation.x,
+        -1.12,
+        0.2
+      );
+      rig.rightArmPivot.rotation.z = 0.22;
+      rig.headGroup.rotation.set(0.22, Math.sin(elapsedTime * 1.4) * 0.08, 0);
+      return;
+    }
+
+    // Seated postures ('sit' | 'study' | 'use_computer' | 'eat'): bend legs 90 degrees and lower pelvis onto chair
+    rig.leftLegPivot.rotation.x = THREE.MathUtils.lerp(
+      rig.leftLegPivot.rotation.x,
+      -1.48,
+      0.22
+    );
+    rig.rightLegPivot.rotation.x = THREE.MathUtils.lerp(
+      rig.rightLegPivot.rotation.x,
+      -1.48,
+      0.22
+    );
+    rig.bodyScaleGroup.position.y = THREE.MathUtils.lerp(
+      rig.bodyScaleGroup.position.y,
+      -0.25,
+      0.22
+    );
+    rig.bodyScaleGroup.rotation.x = THREE.MathUtils.lerp(
+      rig.bodyScaleGroup.rotation.x,
+      objectPosture === 'study' || objectPosture === 'use_computer' ? 0.08 : 0.0,
+      0.18
+    );
+
+    if (objectPosture === 'study') {
+      // Writing notes or reading book at classroom/library desk
+      rig.leftArmPivot.rotation.x = -0.98;
+      rig.leftArmPivot.rotation.z = -0.16;
+      rig.rightArmPivot.rotation.x = -1.06 + Math.sin(elapsedTime * 5.5) * 0.07;
+      rig.rightArmPivot.rotation.z = 0.16 + Math.cos(elapsedTime * 5.5) * 0.05;
+      rig.headGroup.rotation.set(0.18, Math.sin(elapsedTime * 1.8) * 0.06, 0);
+    } else if (objectPosture === 'use_computer') {
+      // Typing at computer keyboard on desk
+      rig.leftArmPivot.rotation.x = -1.04 + Math.sin(elapsedTime * 9.0) * 0.07;
+      rig.leftArmPivot.rotation.z = -0.12;
+      rig.rightArmPivot.rotation.x = -1.04 + Math.cos(elapsedTime * 9.0) * 0.07;
+      rig.rightArmPivot.rotation.z = 0.12;
+      rig.headGroup.rotation.set(0.05, Math.sin(elapsedTime * 1.2) * 0.05, 0);
+    } else if (objectPosture === 'eat') {
+      // Eating meal at cafeteria table with bento in left hand
+      const eatCycle = Math.max(0, Math.sin(elapsedTime * 2.8));
+      rig.leftArmPivot.rotation.x = -0.92;
+      rig.leftArmPivot.rotation.z = -0.16;
+      rig.rightArmPivot.rotation.x = -0.95 - eatCycle * 0.52;
+      rig.rightArmPivot.rotation.z = 0.18;
+      rig.headGroup.rotation.set(0.12 * eatCycle, 0, 0);
+    } else {
+      // Relaxed sitting on chair or bench
+      rig.leftArmPivot.rotation.x = -0.45;
+      rig.leftArmPivot.rotation.z = 0.06;
+      rig.rightArmPivot.rotation.x = -0.45;
+      rig.rightArmPivot.rotation.z = -0.06;
+      rig.headGroup.rotation.set(0, Math.sin(elapsedTime * 1.1) * 0.1, 0);
+    }
+    return;
+  }
 
   if (isMoving) {
     const swingAmp = isSprinting ? 0.78 : 0.52;
@@ -628,10 +876,10 @@ export function updateCharacterRigAnimation(
     const legSwing = Math.sin(walkPhase) * (swingAmp * 1.05);
     const bob = Math.abs(Math.cos(walkPhase)) * (isSprinting ? 0.065 : 0.038);
 
-    rig.leftArmPivot.rotation.x = armSwing;
-    rig.leftArmPivot.rotation.z = 0;
-    rig.rightArmPivot.rotation.x = -armSwing;
-    rig.rightArmPivot.rotation.z = 0;
+    rig.leftArmPivot.rotation.x = showBento ? -0.68 + armSwing * 0.15 : armSwing;
+    rig.leftArmPivot.rotation.z = showBento ? -0.12 : 0;
+    rig.rightArmPivot.rotation.x = showBook ? -0.75 - armSwing * 0.15 : -armSwing;
+    rig.rightArmPivot.rotation.z = showBook ? 0.14 : 0;
     rig.leftLegPivot.rotation.x = -legSwing;
     rig.rightLegPivot.rotation.x = legSwing;
     rig.bodyScaleGroup.position.y = bob;
@@ -710,25 +958,37 @@ export function updateCharacterRigAnimation(
       rig.headGroup.rotation.set(0, 0, Math.sin(elapsedTime * 3.2) * 0.09);
     }
   } else {
-    // Natural Breathing & Subtle Head Look-Around Idle
+    // Natural Breathing & Subtle Head Look-Around Idle (or holding equipped Book / Bento in hand)
     const breath = Math.sin(elapsedTime * 2.4) * 0.014;
-    rig.leftArmPivot.rotation.x *= 0.85;
+    rig.leftArmPivot.rotation.x = THREE.MathUtils.lerp(
+      rig.leftArmPivot.rotation.x,
+      showBento ? -0.78 : 0,
+      0.16
+    );
     rig.leftArmPivot.rotation.z = THREE.MathUtils.lerp(
       rig.leftArmPivot.rotation.z,
-      0.04 + Math.sin(elapsedTime * 1.6) * 0.025,
-      0.1
+      showBento ? -0.14 : 0.04 + Math.sin(elapsedTime * 1.6) * 0.025,
+      0.12
     );
-    rig.rightArmPivot.rotation.x *= 0.85;
+    rig.rightArmPivot.rotation.x = THREE.MathUtils.lerp(
+      rig.rightArmPivot.rotation.x,
+      showBook ? -0.88 : 0,
+      0.16
+    );
     rig.rightArmPivot.rotation.z = THREE.MathUtils.lerp(
       rig.rightArmPivot.rotation.z,
-      -0.04 - Math.sin(elapsedTime * 1.6) * 0.025,
-      0.1
+      showBook ? 0.16 : -0.04 - Math.sin(elapsedTime * 1.6) * 0.025,
+      0.12
     );
     rig.leftLegPivot.rotation.x *= 0.85;
     rig.rightLegPivot.rotation.x *= 0.85;
     rig.bodyScaleGroup.position.y = breath;
     rig.bodyScaleGroup.rotation.x *= 0.85;
-    rig.headGroup.rotation.x *= 0.85;
+    rig.headGroup.rotation.x = THREE.MathUtils.lerp(
+      rig.headGroup.rotation.x,
+      showBook ? 0.14 : 0,
+      0.14
+    );
     rig.headGroup.rotation.z *= 0.85;
     rig.headGroup.rotation.y = Math.sin(elapsedTime * 1.1) * 0.09;
   }

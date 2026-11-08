@@ -28,6 +28,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   display: {
     fullscreen: false,
     showMobileControls: 'always',
+    guidanceLevel: 'standard',
   },
   audio: {
     masterVolume: 80,
@@ -586,6 +587,19 @@ export const INITIAL_MISSION_PROGRESS: MissionProgressState = {
   completedStoryIds: [],
   npcRelationships: {},
   customStories: [],
+  borrowedBookIds: [],
+  readBookIds: [],
+  openDoorIds: [
+    'door_main_front',
+    'door_class_a',
+    'door_class_b',
+    'door_class_c',
+    'door_class_d',
+    'door_library',
+  ],
+  completedObjectiveIds: [],
+  activeObjectiveId: null,
+  equippedHandItem: 'none',
 };
 
 export const STORY_CHAPTER_ARC: Array<{
@@ -1946,9 +1960,23 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'main_back_left', minX: -23.2, maxX: -2.6, minZ: -22.75, maxZ: -21.85 },
   { id: 'main_back_right', minX: 2.6, maxX: 23.2, minZ: -22.75, maxZ: -21.85 },
 
-  // Main Academic Building Far West & Far East Exterior Walls (Thick 1.0m colliders)
-  { id: 'main_west_wall', minX: -23.4, maxX: -22.3, minZ: -22.8, maxZ: -9.3 },
-  { id: 'main_east_wall', minX: 22.3, maxX: 23.4, minZ: -22.8, maxZ: -9.3 },
+  // Partition Walls between Class A Homeroom & Class D Annex (x = -22.8, doorway open z = -18.2..-13.9)
+  { id: 'main_west_wall_south', minX: -23.4, maxX: -22.3, minZ: -13.9, maxZ: -9.3 },
+  { id: 'main_west_wall_north', minX: -23.4, maxX: -22.3, minZ: -22.8, maxZ: -18.2 },
+
+  // Partition Walls between Library & Computer Lab Annex (x = +22.8, doorway open z = -18.2..-13.9)
+  { id: 'main_east_wall_south', minX: 22.3, maxX: 23.4, minZ: -13.9, maxZ: -9.3 },
+  { id: 'main_east_wall_north', minX: 22.3, maxX: 23.4, minZ: -22.8, maxZ: -18.2 },
+
+  // Class D Annex Perimeter Walls (x = -36..-22.8, z = -22.4..-9.6)
+  { id: 'class_d_west_wall', minX: -36.5, maxX: -35.5, minZ: -22.8, maxZ: -9.3 },
+  { id: 'class_d_north_wall', minX: -36.5, maxX: -22.8, minZ: -22.75, maxZ: -21.85 },
+  { id: 'class_d_south_wall', minX: -36.5, maxX: -22.8, minZ: -10.25, maxZ: -9.35 },
+
+  // Computer Lab Annex Perimeter Walls (x = 22.8..36, z = -22.4..-9.6)
+  { id: 'comp_lab_east_wall', minX: 35.5, maxX: 36.5, minZ: -22.8, maxZ: -9.3 },
+  { id: 'comp_lab_north_wall', minX: 22.8, maxX: 36.5, minZ: -22.75, maxZ: -21.85 },
+  { id: 'comp_lab_south_wall', minX: 22.8, maxX: 36.5, minZ: -10.25, maxZ: -9.35 },
 
   // Interior Partition Walls between Central Lobby and Class A Homeroom (West, x = -5.6)
   // Doorway open between z = -18.2 and z = -13.9
@@ -1988,9 +2016,17 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'bench_south_box', minX: -1.65, maxX: 1.65, minZ: 16.05, maxZ: 16.95 },
   { id: 'notice_board_box', minX: 3.7, maxX: 5.9, minZ: -6.1, maxZ: -5.5 },
 
-  // West & East Side Wings (South of the Main Wing, enlarged 3-story wings)
-  { id: 'west_wing', minX: -27.2, maxX: -14.8, minZ: -9.6, maxZ: 4.8 },
-  { id: 'east_wing', minX: 14.8, maxX: 27.2, minZ: -9.6, maxZ: 4.8 },
+  // Walkable Class B Wing (South-West Wing, doorway on East wall at z = -4.5..-0.5)
+  { id: 'class_b_west_wall', minX: -27.6, maxX: -26.8, minZ: -9.6, maxZ: 4.6 },
+  { id: 'class_b_south_wall', minX: -27.6, maxX: -14.8, minZ: 4.0, maxZ: 4.8 },
+  { id: 'class_b_east_north', minX: -15.4, maxX: -14.6, minZ: -9.6, maxZ: -4.5 },
+  { id: 'class_b_east_south', minX: -15.4, maxX: -14.6, minZ: -0.5, maxZ: 4.6 },
+
+  // Walkable Class C Wing (South-East Wing, doorway on West wall at z = -4.5..-0.5)
+  { id: 'class_c_east_wall', minX: 26.8, maxX: 27.6, minZ: -9.6, maxZ: 4.6 },
+  { id: 'class_c_south_wall', minX: 14.8, maxX: 27.6, minZ: 4.0, maxZ: 4.8 },
+  { id: 'class_c_west_north', minX: 14.6, maxX: 15.4, minZ: -9.6, maxZ: -4.5 },
+  { id: 'class_c_west_south', minX: 14.6, maxX: 15.4, minZ: -0.5, maxZ: 4.6 },
 
   // Enlarged East Gymnasium Arena, West Cafeteria Hall, and Northwest 4-Story Student Dormitory Hall
   { id: 'gym_annex', minX: 30.2, maxX: 46.8, minZ: -3.2, maxZ: 19.2 },

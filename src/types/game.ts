@@ -146,9 +146,74 @@ export interface GraphicsSettings {
   resolutionScale: ResolutionScale;
 }
 
+export type GuidanceLevel = 'minimal' | 'standard' | 'detailed';
+
+export type EquippedHandItem =
+  | 'none'
+  | 'book'
+  | 'id_card'
+  | 'bento'
+  | 'notebook';
+
+export type ObjectiveStatus =
+  | 'locked'
+  | 'available'
+  | 'active'
+  | 'completed'
+  | 'failed';
+
+export type ObjectiveInteractionType =
+  | 'enter_zone'
+  | 'talk_npc'
+  | 'sit_object'
+  | 'borrow_book'
+  | 'read_book'
+  | 'return_book'
+  | 'use_computer'
+  | 'use_microscope'
+  | 'purchase_food'
+  | 'inspect_object'
+  | 'open_door';
+
+export interface MissionObjective {
+  id: string;
+  storyId: string;
+  phaseId: string;
+  phaseNumber: number;
+  sequenceNumber: number;
+  title: string;
+  shortHint: string;
+  detailedClarification?: string;
+  targetName: string;
+  targetLocationName: string;
+  targetPosition: Vector3Tuple;
+  requiredInteractionType: ObjectiveInteractionType;
+  targetEntityIds: string[];
+  rewardXp: number;
+  rewardPp?: number;
+  prerequisiteObjectiveIds: string[];
+}
+
+export interface PhaseCompletionSummary {
+  storyId: string;
+  storyTitle: string;
+  phaseNumber: number;
+  phaseTitle: string;
+  tasksCompletedCount: number;
+  rewardXp: number;
+  rewardCp: number;
+  rewardPp: number;
+  skillBoostLabel: string;
+  nextPhaseNumber: number | null;
+  nextPhaseTitle: string | null;
+  storyJustCompleted: boolean;
+  nextStoryUnlockedTitle: string | null;
+}
+
 export interface DisplaySettings {
   fullscreen: boolean;
   showMobileControls: 'auto' | 'always' | 'hidden';
+  guidanceLevel?: GuidanceLevel;
 }
 
 export interface AudioSettings {
@@ -219,6 +284,14 @@ export interface MissionProgressState {
   completedStoryIds?: string[];
   npcRelationships?: Record<string, NPCRelationshipState>;
   customStories?: StoryLibraryItem[];
+  // V8.0 Universal Object Interaction & Library State
+  borrowedBookIds?: string[];
+  readBookIds?: string[];
+  openDoorIds?: string[];
+  // V9.0 Guided Sequential Objective State
+  completedObjectiveIds?: string[];
+  activeObjectiveId?: string | null;
+  equippedHandItem?: EquippedHandItem;
 }
 
 export interface SaveSlotData {
@@ -329,6 +402,8 @@ export interface NPCRuntimeState {
   currentActivity?: string;
   emotionalState?: string;
   talkingWithNpcId?: string | null;
+  objectPosture?: 'none' | 'sit' | 'study' | 'read' | 'use_computer' | 'eat';
+  usingObjectId?: string | null;
 }
 
 export interface AmbientNpcBanter {

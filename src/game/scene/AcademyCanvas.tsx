@@ -11,9 +11,11 @@ import { AcademyCameraController } from '../camera/CameraController';
 import {
   computeEffectivePixelRatio,
   createInitialNPCRuntimeStates,
+  dampAngle,
   findNearestInteractable,
   getSakuraPetalCount,
   getShadowMapSize,
+  isInsideSchoolBuilding,
   stepAutonomousNPCs,
   stepPlayerPhysics,
 } from '../core/rules';
@@ -28,6 +30,7 @@ import { buildAcademyEnvironment } from '../environment/AcademyModels';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { sharedInputBridge } from '../systems/InputBridge';
+import { findBestContextualInteraction } from '../systems/ObjectInteractionSystem';
 
 const _petalDummy = new THREE.Object3D();
 const _sunColor = new THREE.Color();
@@ -47,6 +50,18 @@ export function AcademyCanvas() {
     settings: useGameStore.getState().settings,
     activeDialogue: useGameStore.getState().activeDialogue,
     nearbyInteractableId: useGameStore.getState().nearbyInteractable?.id ?? null,
+    contextualPromptId: useGameStore.getState().contextualPrompt?.id ?? null,
+    activeObjectInteraction: useGameStore.getState().activeObjectInteraction,
+    activeObjectModal: useGameStore.getState().activeObjectModal,
+    openDoorIds:
+      useGameStore.getState().missionProgress.openDoorIds ?? [
+        'door_main_front',
+        'door_class_a',
+        'door_class_b',
+        'door_class_c',
+        'door_class_d',
+        'door_library',
+      ],
     characterCustomization:
       useGameStore.getState().missionProgress.characterCustomization,
   });
@@ -61,6 +76,18 @@ export function AcademyCanvas() {
         settings: state.settings,
         activeDialogue: state.activeDialogue,
         nearbyInteractableId: state.nearbyInteractable?.id ?? null,
+        contextualPromptId: state.contextualPrompt?.id ?? null,
+        activeObjectInteraction: state.activeObjectInteraction,
+        activeObjectModal: state.activeObjectModal,
+        openDoorIds:
+          state.missionProgress.openDoorIds ?? [
+            'door_main_front',
+            'door_class_a',
+            'door_class_b',
+            'door_class_c',
+            'door_class_d',
+            'door_library',
+          ],
         characterCustomization: state.missionProgress.characterCustomization,
       };
     });
@@ -474,15 +501,34 @@ export function AcademyCanvas() {
           if (sharedInputBridge.mobileInteractJustPressed) {
             sharedInputBridge.mobileInteractJustPressed = false;
             if (!activeDialogue) {
-              useGameStore.getState().openInteractionDialogue();
+              useGameStore.getState().triggerContextualInteraction();
             }
+          }
+
+          const { activeObjectInteraction, activeObjectModal, openDoorIds } =
+            stateRef.current;
+
+          // Smoothly animate hinged campus doors based on openDoorIds
+          for (const [doorId, pivot] of Object.entries(academyEnv.doorPivots)) {
+            const isOpen = openDoorIds.includes(doorId);
+            const targetAngle = isOpen
+              ? doorId === 'door_class_b' || doorId === 'door_class_c'
+                ? Math.PI * 0.45
+                : -Math.PI * 0.48
+              : 0;
+            pivot.rotation.y = dampAngle(pivot.rotation.y, targetAngle, 7.5, dt);
           }
 
           // Gather WASD + Arrow movement or camera orbit depending on cameraMode
           // Note: moveZ < 0 is forward (-Z), moveZ > 0 is backward (+Z)
           let kbMoveX = 0;
           let kbMoveZ = 0;
-          if (!activeDialogue) {
+          const movementLocked =
+            Boolean(activeDialogue) ||
+            Boolean(activeObjectInteraction) ||
+            activeObjectModal !== 'none';
+
+          if (!movementLocked) {
             if (heldKeys.has('KeyA')) kbMoveX -= 1;
             if (heldKeys.has('KeyD')) kbMoveX += 1;
             if (heldKeys.has('KeyW')) kbMoveZ -= 1;
@@ -513,10 +559,10 @@ export function AcademyCanvas() {
           }
 
           // Combine keyboard & mobile virtual thumbstick (joystickY > 0 is up on screen -> negative moveZ)
-          const combinedMoveX = activeDialogue
+          const combinedMoveX = movementLocked
             ? 0
             : Math.max(-1, Math.min(1, kbMoveX + sharedInputBridge.joystickX));
-          const combinedMoveZ = activeDialogue
+          const combinedMoveZ = movementLocked
             ? 0
             : Math.max(-1, Math.min(1, kbMoveZ - sharedInputBridge.joystickY));
 
@@ -529,17 +575,17 @@ export function AcademyCanvas() {
           }
 
           const sprintHeld =
-            !activeDialogue &&
+            !movementLocked &&
             (heldKeys.has('ShiftLeft') ||
               heldKeys.has('ShiftRight') ||
               sharedInputBridge.mobileSprintHeld ||
               sharedInputBridge.mobileSprintToggle);
 
           const jumpJustPressed =
-            !activeDialogue &&
+            !movementLocked &&
             (jumpKeyJustPressed || sharedInputBridge.mobileJumpJustPressed);
           const jumpHeld =
-            !activeDialogue &&
+            !movementLocked &&
             (heldKeys.has('Space') || sharedInputBridge.mobileJumpHeld);
 
           jumpKeyJustPressed = false;
@@ -547,20 +593,55 @@ export function AcademyCanvas() {
 
           const wasGrounded = playerState.isGrounded;
 
-          const stepResult = stepPlayerPhysics(
-            playerState,
-            {
-              moveX: combinedMoveX,
-              moveZ: combinedMoveZ,
-              cameraYaw: cameraController.getCameraYaw(),
-              sprintHeld,
-              jumpJustPressed,
-              jumpHeld,
-            },
-            dt,
-            npcStates
-          );
-          playerState = stepResult.nextState;
+          if (activeObjectInteraction) {
+            // Align player smoothly to the furniture/object anchor while sitting/studying/eating/using computer
+            playerState.x = activeObjectInteraction.anchorPosition.x;
+            playerState.y = activeObjectInteraction.anchorPosition.y;
+            playerState.z = activeObjectInteraction.anchorPosition.z;
+            playerState.vx = 0;
+            playerState.vy = 0;
+            playerState.vz = 0;
+            playerState.yaw = dampAngle(
+              playerState.yaw,
+              activeObjectInteraction.anchorYaw,
+              10.0,
+              dt
+            );
+          } else {
+            const stepResult = stepPlayerPhysics(
+              playerState,
+              {
+                moveX: combinedMoveX,
+                moveZ: combinedMoveZ,
+                cameraYaw: cameraController.getCameraYaw(),
+                sprintHeld,
+                jumpJustPressed,
+                jumpHeld,
+              },
+              dt,
+              npcStates
+            );
+            playerState = stepResult.nextState;
+
+            // Play procedural footstep SFX synced to distanceDelta (crisp indoor shoes vs outdoor stone)
+            if (stepResult.distanceDelta > 0) {
+              const nowInside = isInsideSchoolBuilding(playerState.x, playerState.z);
+              totalWalkedForFootsteps += stepResult.distanceDelta;
+              unsavedWalkDistance += stepResult.distanceDelta;
+              if (
+                totalWalkedForFootsteps - lastFootstepDist >= 1.65 &&
+                playerState.isGrounded
+              ) {
+                lastFootstepDist = totalWalkedForFootsteps;
+                stepCount += 1;
+                audioManager.playFootstep(stepCount, nowInside);
+              }
+              if (unsavedWalkDistance >= 0.6) {
+                useGameStore.getState().recordMovementDistance(unsavedWalkDistance);
+                unsavedWalkDistance = 0;
+              }
+            }
+          }
 
           // Update protagonist 3D transform & real-time customization
           applyCharacterCustomizationToRig(
@@ -571,11 +652,7 @@ export function AcademyCanvas() {
           protagonistRig.root.rotation.y = playerState.yaw;
 
           // Check if player just entered or exited the walkable school interior
-          const nowInsideSchool =
-            playerState.x >= -22.8 &&
-            playerState.x <= 22.8 &&
-            playerState.z <= -9.6 &&
-            playerState.z >= -22.4;
+          const nowInsideSchool = isInsideSchoolBuilding(playerState.x, playerState.z);
           if (nowInsideSchool !== wasInsideSchool) {
             wasInsideSchool = nowInsideSchool;
             audioManager.playDoorTransition();
@@ -589,32 +666,16 @@ export function AcademyCanvas() {
             audioManager.playJump();
           }
 
-          // Play procedural footstep SFX synced to distanceDelta (crisp indoor shoes vs outdoor stone)
-          if (stepResult.distanceDelta > 0) {
-            totalWalkedForFootsteps += stepResult.distanceDelta;
-            unsavedWalkDistance += stepResult.distanceDelta;
-            if (
-              totalWalkedForFootsteps - lastFootstepDist >= 1.65 &&
-              playerState.isGrounded
-            ) {
-              lastFootstepDist = totalWalkedForFootsteps;
-              stepCount += 1;
-              audioManager.playFootstep(stepCount, nowInsideSchool);
-            }
-            if (unsavedWalkDistance >= 0.6) {
-              useGameStore.getState().recordMovementDistance(unsavedWalkDistance);
-              unsavedWalkDistance = 0;
-            }
-          }
-
           // Export live coordinates to shared bridge
           sharedInputBridge.playerX = playerState.x;
           sharedInputBridge.playerY = playerState.y;
           sharedInputBridge.playerZ = playerState.z;
           sharedInputBridge.playerYaw = playerState.yaw;
 
-          // Update protagonist rig animation
-          const isMoving = Math.hypot(playerState.vx, playerState.vz) > 0.25;
+          // Update protagonist rig animation (including V8.0 object postures: sit, study, read, use_computer, eat)
+          const isMoving =
+            !activeObjectInteraction &&
+            Math.hypot(playerState.vx, playerState.vz) > 0.25;
           updateCharacterRigAnimation(
             protagonistRig,
             playerState.walkPhase,
@@ -622,7 +683,10 @@ export function AcademyCanvas() {
             playerState.isSprinting,
             playerState.squashY,
             playerState.squashXZ,
-            elapsedTotal
+            elapsedTotal,
+            false,
+            'wave',
+            activeObjectInteraction?.posture ?? 'none'
           );
 
           // Step autonomous NPC patrols before checking proximity
@@ -646,6 +710,17 @@ export function AcademyCanvas() {
           if (nearestId !== nearbyInteractableId) {
             useGameStore.getState().setNearbyInteractable(nearest.target);
           }
+
+          // V8.0 Universal Contextual Object & NPC Interaction Detection
+          const bestContextual = findBestContextualInteraction({
+            playerX: playerState.x,
+            playerZ: playerState.z,
+            playerYaw: playerState.yaw,
+            npcRuntimeStates: npcStates,
+            openDoorIds,
+            currentStickyId: stateRef.current.contextualPromptId,
+          });
+          useGameStore.getState().setContextualPrompt(bestContextual);
         } else {
           // Even on title / character-creation screen, sync customization & let NPCs stroll around the courtyard!
           applyCharacterCustomizationToRig(
@@ -696,7 +771,8 @@ export function AcademyCanvas() {
             1,
             elapsedTotal + i * 1.1,
             Boolean(runtime.isGreetingPlayer),
-            runtime.greetingAnim
+            runtime.greetingAnim,
+            runtime.objectPosture ?? 'none'
           );
         }
 

@@ -18,6 +18,11 @@ import {
   STORY_CHAPTER_ARC,
 } from '../../config/defaults';
 import {
+  CAFETERIA_MENU_ITEMS,
+  LIBRARY_BOOKS,
+  WORLD_INTERACTABLE_OBJECTS,
+} from '../systems/ObjectInteractionSystem';
+import {
   AABBCollider2D,
   AcademyClassId,
   AmbientNpcBanter,
@@ -31,8 +36,12 @@ import {
   GameSettings,
   GraphicsPreset,
   GraphicsSettings,
+  MissionObjective,
   MissionProgressState,
   NPCRelationshipState,
+  ObjectiveInteractionType,
+  ObjectiveStatus,
+  PhaseCompletionSummary,
   NPCRuntimeState,
   PersonalityTrait,
   PlayerPhysicsState,
@@ -166,10 +175,13 @@ export function getLoadingMessageForProgress(progress: number): string {
 
 /**
  * Checks whether the given XZ coordinates are inside the walkable
- * Main Academic Building ground-floor interior (Lobby, Class A Homeroom, or Library).
+ * Main Academic Building ground-floor interior (Lobby, Class A, B, C, D, Library, or Computer Lab).
  */
 export function isInsideSchoolBuilding(x: number, z: number): boolean {
-  return x >= -22.8 && x <= 22.8 && z <= -9.6 && z >= -22.4;
+  const inMainNorthBelt = x >= -36.0 && x <= 36.0 && z <= -9.6 && z >= -22.4;
+  const inClassBWing = x >= -27.2 && x <= -14.8 && z > -9.6 && z <= 4.6;
+  const inClassCWing = x >= 14.8 && x <= 27.2 && z > -9.6 && z <= 4.6;
+  return inMainNorthBelt || inClassBWing || inClassCWing;
 }
 
 /**
@@ -177,7 +189,11 @@ export function isInsideSchoolBuilding(x: number, z: number): boolean {
  */
 export function getCampusZoneLabel(x: number, z: number): string {
   if (isInsideSchoolBuilding(x, z)) {
+    if (z > -9.6 && x <= -14.8) return 'Class B Classroom';
+    if (z > -9.6 && x >= 14.8) return 'Class C Classroom';
+    if (x < -22.8) return 'Class D Classroom';
     if (x < -5.6) return 'Inside Class A Homeroom';
+    if (x > 22.8) return 'Computer Laboratory';
     if (x > 5.6) return 'Library & Archive Room';
     return 'Hoshino Entrance Hall';
   }
@@ -629,6 +645,20 @@ export function clampCameraPositionAgainstWalls(
   const margin = 0.28; // Keep camera 28cm away from wall surface
 
   for (const box of aabbs) {
+    // Low furniture (desks, chairs, benches, tables, podiums) sit below camera height (y < 1.1m)
+    // and must NEVER pull the elevated camera into the character's head/torso!
+    const boxId = box.id.toLowerCase();
+    if (
+      boxId.includes('desk') ||
+      boxId.includes('bench') ||
+      boxId.includes('table') ||
+      boxId.includes('chair') ||
+      boxId.includes('seat') ||
+      boxId.includes('podium')
+    ) {
+      continue;
+    }
+
     const minX = box.minX - margin;
     const maxX = box.maxX + margin;
     const minZ = box.minZ - margin;
@@ -670,7 +700,7 @@ export function clampCameraPositionAgainstWalls(
     }
 
     if (hit && t0 >= 0 && t0 < minT) {
-      minT = Math.max(0.02, t0);
+      minT = Math.max(0.08, t0);
     }
   }
 
@@ -941,6 +971,8 @@ export function createInitialNPCRuntimeStates(
         currentActivity: item.currentActivity ?? 'Patrolling Hoshino Academy',
         emotionalState: item.emotionalState ?? profile.defaultEmotion,
         talkingWithNpcId: null,
+        objectPosture: 'none',
+        usingObjectId: null,
       };
     });
 }
@@ -1038,8 +1070,40 @@ export function stepAutonomousNPCs(
       next.isMoving = false;
       const nearestRest = Math.round(next.walkPhase / Math.PI) * Math.PI;
       next.walkPhase = dampValue(next.walkPhase, nearestRest, 8.0, clampedDt);
+
+      // Autonomous NPC Object Usage: check if paused near a chair/desk/bookshelf/computer/cafeteria seat
+      let matchedObj = WORLD_INTERACTABLE_OBJECTS.find(
+        (o) =>
+          o.defaultPosture &&
+          o.defaultPosture !== 'none' &&
+          Math.hypot(next.x - o.position.x, next.z - o.position.z) <= 3.2
+      );
+      if (matchedObj && matchedObj.defaultPosture) {
+        next.objectPosture = matchedObj.defaultPosture;
+        next.usingObjectId = matchedObj.id;
+        if (matchedObj.anchorYaw !== undefined) {
+          next.yaw = dampAngle(next.yaw, matchedObj.anchorYaw, 6.0, clampedDt);
+        }
+        next.currentActivity = `${
+          matchedObj.defaultPosture === 'study'
+            ? 'Studying at'
+            : matchedObj.defaultPosture === 'read'
+              ? 'Reading from'
+              : matchedObj.defaultPosture === 'use_computer'
+                ? 'Using'
+                : matchedObj.defaultPosture === 'eat'
+                  ? 'Having lunch at'
+                  : 'Sitting on'
+        } ${matchedObj.label}`;
+      } else {
+        next.objectPosture = 'none';
+        next.usingObjectId = null;
+      }
       return next;
     }
+
+    next.objectPosture = 'none';
+    next.usingObjectId = null;
 
     const targetWp = waypoints[next.waypointIndex % waypoints.length];
     const dx = targetWp.x - next.x;
@@ -1190,6 +1254,18 @@ export function advanceMissionProgress(
       ...(current.npcRelationships ?? {}),
     },
     customStories: [...(current.customStories ?? [])],
+    borrowedBookIds: [...(current.borrowedBookIds ?? [])],
+    readBookIds: [...(current.readBookIds ?? [])],
+    openDoorIds: [
+      ...(current.openDoorIds ?? [
+        'door_main_front',
+        'door_class_a',
+        'door_class_b',
+        'door_class_c',
+        'door_class_d',
+        'door_library',
+      ]),
+    ],
   };
 
   if (event.distanceDelta && event.distanceDelta > 0) {
@@ -1378,6 +1454,18 @@ export function validateSaveData(raw: unknown): SaveSlotData | null {
               ? { ...createInitialNpcRelationships(), ...rawMp.npcRelationships }
               : createInitialNpcRelationships(),
           customStories: Array.isArray(rawMp.customStories) ? rawMp.customStories : [],
+          borrowedBookIds: Array.isArray(rawMp.borrowedBookIds) ? rawMp.borrowedBookIds : [],
+          readBookIds: Array.isArray(rawMp.readBookIds) ? rawMp.readBookIds : [],
+          openDoorIds: Array.isArray(rawMp.openDoorIds)
+            ? rawMp.openDoorIds
+            : [
+                'door_main_front',
+                'door_class_a',
+                'door_class_b',
+                'door_class_c',
+                'door_class_d',
+                'door_library',
+              ],
         }
       : structuredClone(INITIAL_MISSION_PROGRESS);
 
@@ -1663,3 +1751,904 @@ export function generateSmartNpcReply(params: {
     affinityBonus: 12,
   };
 }
+
+// ============================================================================
+// V8.0 Universal Object Interaction, Library Book Borrowing & Campus Rules
+// ============================================================================
+
+/**
+ * Borrows a book from the Hoshino Library, adding it to borrowedBookIds and inventoryItems.
+ */
+export function borrowLibraryBook(
+  current: MissionProgressState,
+  bookId: string
+): MissionProgressState {
+  const book = LIBRARY_BOOKS.find((b) => b.id === bookId);
+  if (!book) return current;
+
+  const borrowed = [...(current.borrowedBookIds ?? [])];
+  if (borrowed.includes(bookId)) return current;
+  borrowed.push(bookId);
+
+  const inventory = [...(current.inventoryItems ?? ['Hoshino Student ID Card (Class D)'])];
+  const itemLabel = `Book: ${book.title}`;
+  if (!inventory.includes(itemLabel)) {
+    inventory.push(itemLabel);
+  }
+
+  return {
+    ...current,
+    borrowedBookIds: borrowed,
+    inventoryItems: inventory,
+    equippedHandItem: 'book',
+    reputationPoints: current.reputationPoints + 5,
+  };
+}
+
+/**
+ * Reads a book from the Library or Inventory, awarding its skillBonus and XP on first read.
+ */
+export function readLibraryBook(
+  current: MissionProgressState,
+  bookId: string
+): MissionProgressState {
+  const book = LIBRARY_BOOKS.find((b) => b.id === bookId);
+  if (!book) return current;
+
+  const readIds = [...(current.readBookIds ?? [])];
+  const alreadyRead = readIds.includes(bookId);
+  if (!alreadyRead) {
+    readIds.push(bookId);
+  }
+
+  const skills: PlayerSkills = { ...(current.skills ?? INITIAL_PLAYER_SKILLS) };
+  if (!alreadyRead) {
+    const key = book.skillBonus.skill;
+    skills[key] = Math.min(100, (skills[key] ?? 15) + book.skillBonus.amount);
+  }
+
+  const newRep = current.reputationPoints + (alreadyRead ? 2 : 15);
+  return {
+    ...current,
+    readBookIds: readIds,
+    equippedHandItem: 'book',
+    skills,
+    reputationPoints: newRep,
+    chapterIndex: getCurrentStoryChapter(newRep).index,
+  };
+}
+
+/**
+ * Returns a borrowed book at the Library Return Station or Bookshelf.
+ */
+export function returnLibraryBook(
+  current: MissionProgressState,
+  bookId: string
+): MissionProgressState {
+  const book = LIBRARY_BOOKS.find((b) => b.id === bookId);
+  const borrowed = (current.borrowedBookIds ?? []).filter((id) => id !== bookId);
+  const itemLabel = book ? `Book: ${book.title}` : '';
+  const inventory = (current.inventoryItems ?? []).filter((item) => item !== itemLabel);
+
+  return {
+    ...current,
+    borrowedBookIds: borrowed,
+    inventoryItems: inventory,
+    equippedHandItem: borrowed.length > 0 ? 'book' : 'none',
+    reputationPoints: current.reputationPoints + 10,
+  };
+}
+
+/**
+ * Toggles a functional campus door between open and closed states.
+ */
+export function toggleCampusDoor(
+  current: MissionProgressState,
+  doorId: string
+): MissionProgressState {
+  const openIds = [
+    ...(current.openDoorIds ?? [
+      'door_main_front',
+      'door_class_a',
+      'door_class_b',
+      'door_class_c',
+      'door_class_d',
+      'door_library',
+    ]),
+  ];
+  const idx = openIds.indexOf(doorId);
+  if (idx >= 0) {
+    openIds.splice(idx, 1);
+  } else {
+    openIds.push(doorId);
+  }
+  return {
+    ...current,
+    openDoorIds: openIds,
+  };
+}
+
+/**
+ * Purchases a meal at the Cafeteria Counter using Personal Points (PP) and awards XP.
+ */
+export function purchaseCafeteriaMeal(
+  current: MissionProgressState,
+  menuItemId: string
+): { nextProgress: MissionProgressState; purchased: boolean } {
+  const item = CAFETERIA_MENU_ITEMS.find((m) => m.id === menuItemId);
+  if (!item) return { nextProgress: current, purchased: false };
+
+  const curPp = current.ppPoints ?? 150;
+  if (curPp < item.pricePp) {
+    return { nextProgress: current, purchased: false };
+  }
+
+  const newRep = current.reputationPoints + item.xpBonus;
+  return {
+    purchased: true,
+    nextProgress: {
+      ...current,
+      ppPoints: curPp - item.pricePp,
+      equippedHandItem: 'bento',
+      reputationPoints: newRep,
+      chapterIndex: getCurrentStoryChapter(newRep).index,
+    },
+  };
+}
+
+// ============================================================================
+// V9.0 Guided Gameplay, Dynamic Hint System & Strict Sequential Objective Engine
+// ============================================================================
+
+interface RawTaskSpec {
+  title: string;
+  shortHint: string;
+  detailedClarification: string;
+  targetName: string;
+  targetLocationName: string;
+  targetPosition: { x: number; y: number; z: number };
+  requiredInteractionType: ObjectiveInteractionType;
+  targetEntityIds: string[];
+  rewardXp: number;
+  rewardPp?: number;
+}
+
+/**
+ * Generates the 6 mandatory sequential objectives for a given story and phase.
+ * Each task k > 1 strictly requires task k - 1 in prerequisiteObjectiveIds.
+ */
+export function getObjectivesForStoryPhase(
+  storyId: string,
+  phaseNumber: number,
+  allStories: StoryLibraryItem[] = INITIAL_STORY_LIBRARY
+): MissionObjective[] {
+  const safePhase = Math.max(1, Math.min(9, Math.round(phaseNumber)));
+  const phaseId = `${storyId}_phase_${safePhase}`;
+
+  const buildChain = (specs: RawTaskSpec[]): MissionObjective[] =>
+    specs.map((spec, idx) => {
+      const seq = idx + 1;
+      const id = `${storyId}_p${safePhase}_obj_${seq}`;
+      const prevId = idx > 0 ? `${storyId}_p${safePhase}_obj_${idx}` : null;
+      return {
+        id,
+        storyId,
+        phaseId,
+        phaseNumber: safePhase,
+        sequenceNumber: seq,
+        title: spec.title,
+        shortHint: spec.shortHint,
+        detailedClarification: spec.detailedClarification,
+        targetName: spec.targetName,
+        targetLocationName: spec.targetLocationName,
+        targetPosition: { ...spec.targetPosition },
+        requiredInteractionType: spec.requiredInteractionType,
+        targetEntityIds: [...spec.targetEntityIds],
+        rewardXp: spec.rewardXp,
+        rewardPp: spec.rewardPp ?? 5,
+        prerequisiteObjectiveIds: prevId ? [prevId] : [],
+      };
+    });
+
+  // Canonical Story 01 — Phase 01: First Day at Hoshino (Exact 6-task sequence from Master Prompt V9.0)
+  if (storyId === 'story_01' && safePhase === 1) {
+    return buildChain([
+      {
+        title: 'Enter the Academy',
+        shortHint: 'Walk through the main entrance into the Hoshino Academy Courtyard.',
+        detailedClarification:
+          'Move north from the Main Gate along the Sakura Avenue into the Central Courtyard plaza.',
+        targetName: 'Main Academy Entrance',
+        targetLocationName: 'Hoshino Academy Courtyard',
+        targetPosition: { x: 0, y: 0, z: 16.5 },
+        requiredInteractionType: 'enter_zone',
+        targetEntityIds: [
+          'Hoshino Academy Courtyard',
+          'Main Entrance Plaza',
+          'enter_academy_gate',
+        ],
+        rewardXp: 10,
+      },
+      {
+        title: 'Find the Reception',
+        shortHint: 'Go to the reception area and check in at the reception desk.',
+        detailedClarification:
+          'Approach the Main Gate Reception Booth (x: -6.2, z: 33.4) or Central Lobby Information Desk (x: 0, z: -15.8) and interact with it.',
+        targetName: 'Academy Reception Desk',
+        targetLocationName: 'Hoshino Entrance Hall',
+        targetPosition: { x: 0, y: 0, z: -15.8 },
+        requiredInteractionType: 'inspect_object',
+        targetEntityIds: [
+          'obj_lobby_reception_desk',
+          'obj_main_gate_reception',
+          'obj_entrance_map_board',
+        ],
+        rewardXp: 10,
+      },
+      {
+        title: 'Collect Your Student ID',
+        shortHint: 'Open your assigned Student Locker (#D-07) to collect your Student ID card.',
+        detailedClarification:
+          'Walk to your Student Locker in the Entrance Hall (x: -4.8, z: -11.9) and press OPEN LOCKER.',
+        targetName: 'Student Locker #D-07',
+        targetLocationName: 'Hoshino Entrance Hall',
+        targetPosition: { x: -4.8, y: 0, z: -11.9 },
+        requiredInteractionType: 'inspect_object',
+        targetEntityIds: ['obj_lobby_shoe_locker', 'obj_main_gate_reception'],
+        rewardXp: 15,
+      },
+      {
+        title: 'Find Your Classroom',
+        shortHint: 'Check your timetable, locate your Class D Classroom, and sit at your desk.',
+        detailedClarification:
+          'Walk west along the corridor to the Class D Homeroom (x: -29.5, z: -14.32) and sit at your assigned desk.',
+        targetName: 'Your Assigned Class D Desk',
+        targetLocationName: 'Class D Classroom',
+        targetPosition: { x: -29.5, y: 0, z: -14.32 },
+        requiredInteractionType: 'sit_object',
+        targetEntityIds: [
+          'obj_class_d_player_desk',
+          'obj_class_a_seat_center',
+          'obj_class_a_seat_front',
+          'obj_class_b_desk',
+          'obj_class_c_desk',
+        ],
+        rewardXp: 15,
+      },
+      {
+        title: 'Meet Your Classmates',
+        shortHint: 'Approach Aiko Hoshino or Sora Amamiya and introduce yourself.',
+        detailedClarification:
+          'Walk up to Aiko Hoshino in the Courtyard or Sora Amamiya and press TALK to complete your introduction.',
+        targetName: 'Aiko Hoshino / Sora Amamiya',
+        targetLocationName: 'Hoshino Academy Courtyard',
+        targetPosition: { x: -4.5, y: 0, z: 12.0 },
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: [
+          'npc_hana',
+          'npc_sora',
+          'npc_kenzo',
+          'npc_ren',
+          'npc_aoi',
+        ],
+        rewardXp: 15,
+      },
+      {
+        title: 'Meet Your Teacher',
+        shortHint: 'Speak with your class teacher Sensei Takeda to complete your first-day introduction.',
+        detailedClarification:
+          'Locate Homeroom Teacher Kenji Takeda near the Main Hall Portico (x: 0, z: -3.8) and talk to him.',
+        targetName: 'Sensei Kenji Takeda',
+        targetLocationName: 'Main Academic Hall',
+        targetPosition: { x: 0, y: 0, z: -3.8 },
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: ['npc_takeda', 'npc_kuroda', 'npc_coach_ryo'],
+        rewardXp: 20,
+      },
+    ]);
+  }
+
+  // Canonical Guided Library Activity Sequence (Phase 2 of Story 01, or Library-focused phases)
+  if ((storyId === 'story_01' && safePhase === 2) || (storyId === 'story_04' && safePhase === 1)) {
+    return buildChain([
+      {
+        title: 'Find the Library',
+        shortHint: 'Walk into the East Wing Multi-Section Library.',
+        detailedClarification:
+          'Enter the Main Academic Hall and walk east into the Library Wing (x: 14.2, z: -16.0).',
+        targetName: 'East Wing Library',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 14.2, y: 0, z: -16.0 },
+        requiredInteractionType: 'enter_zone',
+        targetEntityIds: ['East Wing Library', 'Library & East Corridor'],
+        rewardXp: 10,
+      },
+      {
+        title: 'Talk to the Librarian / Archivist',
+        shortHint: 'Talk to Mika Aozora or Dr. Kuroda about borrowing a study book.',
+        detailedClarification:
+          'Speak with Mika Aozora (Class C Archivist) or Dr. Emi Kuroda to ask about borrowing a library volume.',
+        targetName: 'Mika Aozora / Dr. Kuroda',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 15.2, y: 0, z: -15.2 },
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: ['npc_aoi', 'npc_kuroda', 'npc_takeda', 'npc_sora'],
+        rewardXp: 15,
+      },
+      {
+        title: 'Borrow a Science or Archive Book',
+        shortHint: 'Browse the science or archive bookshelf and borrow a book.',
+        detailedClarification:
+          'Approach a Library Bookshelf (x: 14.2, z: -20.8), press BROWSE BOOKS, and click Take / Borrow Book.',
+        targetName: 'Library Bookshelf',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 14.2, y: 0, z: -20.8 },
+        requiredInteractionType: 'borrow_book',
+        targetEntityIds: [
+          'obj_shelf_science',
+          'obj_shelf_fiction',
+          'obj_shelf_history',
+          'book_sci_01',
+          'book_sci_02',
+          'book_fic_01',
+          'book_hist_01',
+        ],
+        rewardXp: 15,
+      },
+      {
+        title: 'Sit at the Reading Desk',
+        shortHint: 'Take your book to the Library Reading Table and sit down.',
+        detailedClarification:
+          'Walk to the Library Quiet Reading Table & Chair (x: 14.2, z: -14.32) and press SIT & READ.',
+        targetName: 'Library Reading Table',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 14.2, y: 0, z: -14.32 },
+        requiredInteractionType: 'sit_object',
+        targetEntityIds: ['obj_library_reading_desk'],
+        rewardXp: 15,
+      },
+      {
+        title: 'Read the Selected Book',
+        shortHint: 'Read the borrowed book to complete your library study activity.',
+        detailedClarification:
+          'Open the book reader from the bookshelf or your hand-held book badge and read its pages.',
+        targetName: 'Borrowed Library Book',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 14.2, y: 0, z: -14.32 },
+        requiredInteractionType: 'read_book',
+        targetEntityIds: [],
+        rewardXp: 20,
+      },
+      {
+        title: 'Share Your Notes with Classmates',
+        shortHint: 'Speak with Sora Amamiya or Aiko Hoshino to discuss what you learned.',
+        detailedClarification:
+          'Find Sora Amamiya or Aiko Hoshino and talk to them about the library clue.',
+        targetName: 'Sora Amamiya / Aiko Hoshino',
+        targetLocationName: 'Hoshino Academy Courtyard',
+        targetPosition: { x: -4.5, y: 0, z: 12.0 },
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: ['npc_sora', 'npc_hana', 'npc_aoi', 'npc_kenzo'],
+        rewardXp: 20,
+      },
+    ]);
+  }
+
+  // Dynamic 6-task template generator for all other phases (Phases 3–9 and Stories 02–08)
+  const story = allStories.find((s) => s.id === storyId) ?? INITIAL_STORY_LIBRARY[0];
+  const phaseObj =
+    story.phases.find((p) => p.phaseNumber === safePhase) ?? story.phases[0];
+  const primaryNpcId = phaseObj?.relevantNpcIds?.[0] ?? 'npc_hana';
+  const secondaryNpcId = phaseObj?.relevantNpcIds?.[1] ?? 'npc_sora';
+  const primaryNpc =
+    CAMPUS_INTERACTABLES.find((n) => n.id === primaryNpcId) ?? CAMPUS_INTERACTABLES[0];
+  const secondaryNpc =
+    CAMPUS_INTERACTABLES.find((n) => n.id === secondaryNpcId) ?? CAMPUS_INTERACTABLES[1];
+
+  // Rotate specialized campus activities by phaseNumber mod 3 so every phase feels hands-on and varied
+  const mode = safePhase % 3;
+
+  if (mode === 0) {
+    // Computer Lab & Classroom Strategy Sequence
+    return buildChain([
+      {
+        title: `Report to ${primaryNpc.name}`,
+        shortHint: `Find ${primaryNpc.name} and discuss the plan for ${phaseObj.title}.`,
+        detailedClarification: `Walk to ${primaryNpc.name} (${primaryNpc.role}) and press TALK.`,
+        targetName: primaryNpc.name,
+        targetLocationName: phaseObj.location,
+        targetPosition: primaryNpc.position,
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: [primaryNpc.id, secondaryNpc.id, 'npc_hana', 'npc_sora'],
+        rewardXp: 12,
+      },
+      {
+        title: 'Inspect the Classroom Blackboard',
+        shortHint: 'Read the Classroom Blackboard to check the day’s academic strategy.',
+        detailedClarification:
+          'Go to Class D or Class A Homeroom and press READ BLACKBOARD on the front chalkboard.',
+        targetName: 'Classroom Blackboard',
+        targetLocationName: 'Class D Classroom',
+        targetPosition: { x: -30.5, y: 0, z: -21.0 },
+        requiredInteractionType: 'inspect_object',
+        targetEntityIds: [
+          'obj_class_d_board',
+          'obj_class_a_blackboard',
+          'obj_class_b_board',
+          'obj_class_c_board',
+        ],
+        rewardXp: 15,
+      },
+      {
+        title: 'Sit at the Computer Lab Workstation',
+        shortHint: 'Go to the East Tech Annex and use the Computer Lab Terminal.',
+        detailedClarification:
+          'Walk to Computer Lab Workstation #01 (x: 30.5, z: -15.15) and press USE COMPUTER.',
+        targetName: 'Computer Lab Workstation #01',
+        targetLocationName: 'Computer Laboratory & Tech Wing',
+        targetPosition: { x: 30.5, y: 0, z: -15.15 },
+        requiredInteractionType: 'use_computer',
+        targetEntityIds: ['obj_computer_lab_terminal'],
+        rewardXp: 20,
+      },
+      {
+        title: 'Borrow a Reference Book',
+        shortHint: 'Visit the East Wing Library and borrow a reference book for your desk.',
+        detailedClarification:
+          'Approach any bookshelf in the East Wing Library (x: 14.2, z: -20.8) and borrow a book.',
+        targetName: 'Library Bookshelf',
+        targetLocationName: 'East Wing Library',
+        targetPosition: { x: 14.2, y: 0, z: -20.8 },
+        requiredInteractionType: 'borrow_book',
+        targetEntityIds: [],
+        rewardXp: 15,
+      },
+      {
+        title: 'Sit and Study at a Student Desk',
+        shortHint: 'Sit down at your classroom desk or library reading table with your notes.',
+        detailedClarification:
+          'Walk to a classroom desk or the library reading table and press SIT & STUDY.',
+        targetName: 'Student Study Desk',
+        targetLocationName: 'Class D Classroom',
+        targetPosition: { x: -29.5, y: 0, z: -14.32 },
+        requiredInteractionType: 'sit_object',
+        targetEntityIds: [
+          'obj_class_d_player_desk',
+          'obj_library_reading_desk',
+          'obj_class_a_seat_center',
+          'obj_class_b_desk',
+          'obj_class_c_desk',
+        ],
+        rewardXp: 15,
+      },
+      {
+        title: `Debrief with ${secondaryNpc.name}`,
+        shortHint: `Speak with ${secondaryNpc.name} to finalize ${phaseObj.title}.`,
+        detailedClarification: `Approach ${secondaryNpc.name} and complete the conversation to finish the phase.`,
+        targetName: secondaryNpc.name,
+        targetLocationName: phaseObj.location,
+        targetPosition: secondaryNpc.position,
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: [secondaryNpc.id, primaryNpc.id, 'npc_takeda', 'npc_sora'],
+        rewardXp: 20,
+      },
+    ]);
+  }
+
+  if (mode === 1) {
+    // Science Microscope & Campus Exploration Sequence
+    return buildChain([
+      {
+        title: `Meet ${primaryNpc.name}`,
+        shortHint: `Speak with ${primaryNpc.name} to begin ${phaseObj.title}.`,
+        detailedClarification: `Approach ${primaryNpc.name} and press TALK.`,
+        targetName: primaryNpc.name,
+        targetLocationName: phaseObj.location,
+        targetPosition: primaryNpc.position,
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: [primaryNpc.id, secondaryNpc.id, 'npc_hana', 'npc_sora'],
+        rewardXp: 12,
+      },
+      {
+        title: 'Check the Campus Directory Board',
+        shortHint: 'Inspect the Campus Map Board or Lobby Directory to verify facility routes.',
+        detailedClarification:
+          'Interact with the Main Entrance Map Board (x: 6.2, z: 33.4) or Lobby Reception Desk (x: 0, z: -15.8).',
+        targetName: 'Campus Directory Board',
+        targetLocationName: 'Main Entrance Plaza',
+        targetPosition: { x: 6.2, y: 0, z: 33.4 },
+        requiredInteractionType: 'inspect_object',
+        targetEntityIds: [
+          'obj_entrance_map_board',
+          'obj_lobby_reception_desk',
+          'obj_main_gate_reception',
+        ],
+        rewardXp: 12,
+      },
+      {
+        title: 'Inspect the Science Lab Microscope',
+        shortHint: 'Go to the Science & Research Lab and inspect the optical microscope.',
+        detailedClarification:
+          'Walk to the Science Lab Microscope Station (x: 52.5, z: -22.0) and press INSPECT MICROSCOPE.',
+        targetName: 'Optical Microscope Station',
+        targetLocationName: 'Science & Research Laboratory',
+        targetPosition: { x: 52.5, y: 0, z: -20.8 },
+        requiredInteractionType: 'use_microscope',
+        targetEntityIds: ['obj_science_lab_microscope'],
+        rewardXp: 20,
+      },
+      {
+        title: 'Log Data on the Lab Computer',
+        shortHint: 'Use the Computer Lab Workstation to log your observation results.',
+        detailedClarification:
+          'Walk to the Computer Lab Terminal (x: 30.5, z: -15.15) and execute the telemetry diagnostic.',
+        targetName: 'Computer Lab Workstation #01',
+        targetLocationName: 'Computer Laboratory & Tech Wing',
+        targetPosition: { x: 30.5, y: 0, z: -15.15 },
+        requiredInteractionType: 'use_computer',
+        targetEntityIds: ['obj_computer_lab_terminal'],
+        rewardXp: 20,
+      },
+      {
+        title: 'Take a Break on a Campus Seat',
+        shortHint: 'Sit on a courtyard bench or classroom chair to review your field notes.',
+        detailedClarification:
+          'Approach any courtyard bench or classroom seat and press SIT.',
+        targetName: 'Courtyard Bench / Desk Chair',
+        targetLocationName: 'Hoshino Academy Courtyard',
+        targetPosition: { x: 0, y: 0, z: 16.1 },
+        requiredInteractionType: 'sit_object',
+        targetEntityIds: [],
+        rewardXp: 15,
+      },
+      {
+        title: `Report Findings to ${secondaryNpc.name}`,
+        shortHint: `Speak with ${secondaryNpc.name} to complete ${phaseObj.title}.`,
+        detailedClarification: `Find ${secondaryNpc.name} and share your verified research results.`,
+        targetName: secondaryNpc.name,
+        targetLocationName: phaseObj.location,
+        targetPosition: secondaryNpc.position,
+        requiredInteractionType: 'talk_npc',
+        targetEntityIds: [secondaryNpc.id, primaryNpc.id, 'npc_kuroda', 'npc_takeda'],
+        rewardXp: 20,
+      },
+    ]);
+  }
+
+  // mode === 2: Cafeteria Social, Library Reading & Class Coordination Sequence
+  return buildChain([
+    {
+      title: `Speak with ${primaryNpc.name}`,
+      shortHint: `Talk to ${primaryNpc.name} about the upcoming activity in ${phaseObj.title}.`,
+      detailedClarification: `Walk up to ${primaryNpc.name} and press TALK.`,
+      targetName: primaryNpc.name,
+      targetLocationName: phaseObj.location,
+      targetPosition: primaryNpc.position,
+      requiredInteractionType: 'talk_npc',
+      targetEntityIds: [primaryNpc.id, secondaryNpc.id, 'npc_hana', 'npc_sora'],
+      rewardXp: 12,
+    },
+    {
+      title: 'Order a Meal at the Cafeteria',
+      shortHint: 'Go to the West Cafeteria Counter and order a lunch set or drink.',
+      detailedClarification:
+        'Walk to the West Cafeteria Food Counter (x: -30.2, z: 8.0) and order any meal item.',
+      targetName: 'Cafeteria Food Counter',
+      targetLocationName: 'West Cafeteria Pavilion',
+      targetPosition: { x: -30.2, y: 0, z: 8.0 },
+      requiredInteractionType: 'purchase_food',
+      targetEntityIds: ['obj_cafeteria_counter', 'obj_dormitory_vending'],
+      rewardXp: 15,
+    },
+    {
+      title: 'Sit at a Dining Table or Bench',
+      shortHint: 'Take your meal to a Cafeteria Table or Courtyard Bench and sit down.',
+      detailedClarification:
+        'Approach the Cafeteria Terrace Table (x: -27.5, z: 3.8) or any seat and press SIT.',
+      targetName: 'Cafeteria Dining Seat',
+      targetLocationName: 'West Cafeteria Pavilion',
+      targetPosition: { x: -26.2, y: 0, z: 3.8 },
+      requiredInteractionType: 'sit_object',
+      targetEntityIds: [
+        'obj_cafeteria_seat_north',
+        'obj_cafeteria_seat_south',
+        'obj_courtyard_bench_west',
+        'obj_courtyard_bench_east',
+        'obj_courtyard_bench_south',
+      ],
+      rewardXp: 15,
+    },
+    {
+      title: 'Borrow a Book from the Library',
+      shortHint: 'Head to the East Wing Library and borrow a volume for afternoon study.',
+      detailedClarification:
+        'Walk to the East Wing Library Bookshelf (x: 14.2, z: -20.8) and borrow any book.',
+      targetName: 'Library Bookshelf',
+      targetLocationName: 'East Wing Library',
+      targetPosition: { x: 14.2, y: 0, z: -20.8 },
+      requiredInteractionType: 'borrow_book',
+      targetEntityIds: [],
+      rewardXp: 15,
+    },
+    {
+      title: 'Read Your Borrowed Book',
+      shortHint: 'Open and read your borrowed library book to gain academic insight.',
+      detailedClarification:
+        'Read your borrowed book at the library reading desk or from your hand-held book action.',
+      targetName: 'Library Reading Table',
+      targetLocationName: 'East Wing Library',
+      targetPosition: { x: 14.2, y: 0, z: -14.32 },
+      requiredInteractionType: 'read_book',
+      targetEntityIds: [],
+      rewardXp: 18,
+    },
+    {
+      title: `Complete Phase Review with ${secondaryNpc.name}`,
+      shortHint: `Speak with ${secondaryNpc.name} to conclude ${phaseObj.title}.`,
+      detailedClarification: `Talk to ${secondaryNpc.name} to validate your progress and unlock the next phase.`,
+      targetName: secondaryNpc.name,
+      targetLocationName: phaseObj.location,
+      targetPosition: secondaryNpc.position,
+      requiredInteractionType: 'talk_npc',
+      targetEntityIds: [secondaryNpc.id, primaryNpc.id, 'npc_takeda', 'npc_hana'],
+      rewardXp: 20,
+    },
+  ]);
+}
+
+/**
+ * Computes the complete sequential objective state for the player's currently active story phase.
+ * Strictly enforces that only ONE objective is active at any time, and future objectives remain locked.
+ */
+export function getPhaseObjectiveState(
+  progress: MissionProgressState,
+  allStories: StoryLibraryItem[] = INITIAL_STORY_LIBRARY
+): {
+  objectives: MissionObjective[];
+  completedObjectiveIds: string[];
+  activeObjective: MissionObjective | null;
+  activeSequenceNumber: number;
+  totalObjectives: number;
+  completedCount: number;
+  isPhaseAllObjectivesComplete: boolean;
+  statusById: Record<string, ObjectiveStatus>;
+} {
+  const storyId = progress.activeStoryId ?? 'story_01';
+  const phaseNumber = progress.activePhaseNumber ?? 1;
+  const objectives = getObjectivesForStoryPhase(storyId, phaseNumber, allStories);
+  const completedSet = new Set(progress.completedObjectiveIds ?? []);
+
+  const statusById: Record<string, ObjectiveStatus> = {};
+  let activeObjective: MissionObjective | null = null;
+  let completedCount = 0;
+
+  for (const obj of objectives) {
+    if (completedSet.has(obj.id)) {
+      statusById[obj.id] = 'completed';
+      completedCount++;
+      continue;
+    }
+
+    const prereqsMet = obj.prerequisiteObjectiveIds.every((pid) =>
+      completedSet.has(pid)
+    );
+    if (prereqsMet && !activeObjective) {
+      activeObjective = obj;
+      statusById[obj.id] = 'active';
+    } else {
+      statusById[obj.id] = 'locked';
+    }
+  }
+
+  const totalObjectives = objectives.length;
+  const isPhaseAllObjectivesComplete =
+    totalObjectives > 0 && completedCount === totalObjectives;
+  const activeSequenceNumber = activeObjective
+    ? activeObjective.sequenceNumber
+    : totalObjectives;
+
+  return {
+    objectives,
+    completedObjectiveIds: Array.from(completedSet),
+    activeObjective,
+    activeSequenceNumber,
+    totalObjectives,
+    completedCount,
+    isPhaseAllObjectivesComplete,
+    statusById,
+  };
+}
+
+/**
+ * Strictly validates a gameplay interaction against the currently active sequential objective.
+ * - Never completes future objectives out of order.
+ * - Never completes an interaction objective merely by reaching a location.
+ * - Automatically advances to the next hint when the active objective is validated.
+ * - Automatically completes the phase and unlocks the next phase when the final objective finishes.
+ */
+export function validateObjectiveAction(
+  progress: MissionProgressState,
+  action: {
+    type: ObjectiveInteractionType;
+    targetId?: string;
+    zoneName?: string;
+    distanceToTarget?: number;
+  },
+  allStories: StoryLibraryItem[] = INITIAL_STORY_LIBRARY
+): {
+  nextProgress: MissionProgressState;
+  matched: boolean;
+  completedObjective: MissionObjective | null;
+  nextActiveObjective: MissionObjective | null;
+  phaseJustCompleted: boolean;
+  storyJustCompleted: boolean;
+  phaseCompletionSummary: PhaseCompletionSummary | null;
+  clarificationMessage: string | null;
+} {
+  const state = getPhaseObjectiveState(progress, allStories);
+  const active = state.activeObjective;
+
+  if (!active) {
+    return {
+      nextProgress: progress,
+      matched: false,
+      completedObjective: null,
+      nextActiveObjective: null,
+      phaseJustCompleted: false,
+      storyJustCompleted: false,
+      phaseCompletionSummary: null,
+      clarificationMessage: null,
+    };
+  }
+
+  let isMatch = false;
+
+  if (active.requiredInteractionType === action.type) {
+    if (action.type === 'enter_zone') {
+      const targetZones = active.targetEntityIds.map((z) => z.toLowerCase());
+      const zoneMatched =
+        Boolean(action.zoneName) &&
+        targetZones.some(
+          (tz) =>
+            action.zoneName!.toLowerCase().includes(tz) ||
+            tz.includes(action.zoneName!.toLowerCase())
+        );
+      const targetMatched =
+        Boolean(action.targetId) &&
+        active.targetEntityIds.includes(action.targetId!);
+      const distMatched =
+        typeof action.distanceToTarget === 'number' &&
+        action.distanceToTarget <= 7.5;
+      isMatch = zoneMatched || targetMatched || distMatched;
+    } else if (active.targetEntityIds.length === 0) {
+      isMatch = true;
+    } else if (
+      action.targetId &&
+      active.targetEntityIds.includes(action.targetId)
+    ) {
+      isMatch = true;
+    }
+  }
+
+  if (!isMatch) {
+    // Provide a gentle clarification only for intentional interactions (not passive enter_zone ticks)
+    const clarification =
+      action.type === 'enter_zone'
+        ? null
+        : `Current Task (${active.sequenceNumber}/${state.totalObjectives}): ${active.shortHint}`;
+    return {
+      nextProgress: progress,
+      matched: false,
+      completedObjective: null,
+      nextActiveObjective: active,
+      phaseJustCompleted: false,
+      storyJustCompleted: false,
+      phaseCompletionSummary: null,
+      clarificationMessage: clarification,
+    };
+  }
+
+  // Mark active objective completed
+  const nextCompletedIds = [...state.completedObjectiveIds, active.id];
+  const newRep = progress.reputationPoints + active.rewardXp;
+  const newPp = (progress.ppPoints ?? 150) + (active.rewardPp ?? 5);
+
+  // Ensure Student ID is in inventory when completing "Collect Your Student ID"
+  const nextInventory = [
+    ...(progress.inventoryItems ?? ['Hoshino Student ID Card (Class D)']),
+  ];
+  if (
+    active.title.toLowerCase().includes('student id') &&
+    !nextInventory.includes('Hoshino Student ID Card (Class D)')
+  ) {
+    nextInventory.push('Hoshino Student ID Card (Class D)');
+  }
+
+  let updatedProgress: MissionProgressState = {
+    ...progress,
+    reputationPoints: newRep,
+    ppPoints: newPp,
+    inventoryItems: nextInventory,
+    completedObjectiveIds: nextCompletedIds,
+    chapterIndex: getCurrentStoryChapter(newRep).index,
+  };
+
+  const nextState = getPhaseObjectiveState(updatedProgress, allStories);
+  updatedProgress.activeObjectiveId = nextState.activeObjective?.id ?? null;
+
+  let phaseJustCompleted = false;
+  let storyJustCompleted = false;
+  let phaseCompletionSummary: PhaseCompletionSummary | null = null;
+
+  if (nextState.isPhaseAllObjectivesComplete) {
+    const storyId = progress.activeStoryId ?? 'story_01';
+    const phaseNum = progress.activePhaseNumber ?? 1;
+    const prevStoryDone = (progress.completedStoryIds ?? []).includes(storyId);
+
+    const afterPhase = completeStoryPhaseProgress(
+      updatedProgress,
+      storyId,
+      phaseNum,
+      allStories
+    );
+
+    updatedProgress = {
+      ...afterPhase,
+      completedObjectiveIds: nextCompletedIds,
+      activeObjectiveId: null,
+    };
+
+    phaseJustCompleted = true;
+    storyJustCompleted =
+      !prevStoryDone &&
+      (updatedProgress.completedStoryIds ?? []).includes(storyId);
+
+    const storyObj =
+      allStories.find((s) => s.id === storyId) ?? INITIAL_STORY_LIBRARY[0];
+    const phaseItem =
+      storyObj.phases.find((p) => p.phaseNumber === phaseNum) ??
+      storyObj.phases[0];
+    const nextPhaseItem =
+      phaseNum < 9
+        ? storyObj.phases.find((p) => p.phaseNumber === phaseNum + 1) ?? null
+        : null;
+    const nextStoryObj = storyJustCompleted
+      ? allStories.find((s) => s.storyNumber === storyObj.storyNumber + 1) ??
+        null
+      : null;
+
+    phaseCompletionSummary = {
+      storyId,
+      storyTitle: storyObj.title,
+      phaseNumber: phaseNum,
+      phaseTitle: phaseItem?.title ?? `Phase 0${phaseNum}`,
+      tasksCompletedCount: state.totalObjectives,
+      rewardXp: (phaseItem?.rewardXp ?? 25) + active.rewardXp,
+      rewardCp: phaseItem?.rewardCp ?? 15,
+      rewardPp: (phaseItem?.rewardPp ?? 20) + (active.rewardPp ?? 5),
+      skillBoostLabel:
+        phaseNum % 3 === 1
+          ? 'Observation & Communication +2'
+          : phaseNum % 3 === 2
+          ? 'Academics & Creativity +2'
+          : 'Problem Solving & Leadership +2',
+      nextPhaseNumber: nextPhaseItem ? nextPhaseItem.phaseNumber : null,
+      nextPhaseTitle: nextPhaseItem ? nextPhaseItem.title : null,
+      storyJustCompleted,
+      nextStoryUnlockedTitle: nextStoryObj ? nextStoryObj.title : null,
+    };
+  }
+
+  return {
+    nextProgress: updatedProgress,
+    matched: true,
+    completedObjective: active,
+    nextActiveObjective: nextState.activeObjective,
+    phaseJustCompleted,
+    storyJustCompleted,
+    phaseCompletionSummary,
+    clarificationMessage: null,
+  };
+}
+
+

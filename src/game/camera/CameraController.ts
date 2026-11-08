@@ -20,6 +20,10 @@ export class AcademyCameraController {
   private currentLook = new THREE.Vector3(0, 1.5, 20.0);
   private followYaw = 0; // 0 = looking North (-Z) behind the player
   private followPitch = 0.24; // Slight downward angle over player shoulder
+  private targetZoomDist = 4.6;
+  private currentZoomDist = 4.6;
+  private readonly MIN_ZOOM_DIST = 1.95;
+  private readonly MAX_ZOOM_DIST = 6.8;
   private orbitYawOffset = 0;
   private orbitPitchOffset = 0;
   private isDragging = false;
@@ -33,6 +37,32 @@ export class AcademyCameraController {
 
   public setCameraYaw(yaw: number): void {
     this.followYaw = yaw;
+  }
+
+  public getZoomDistance(): number {
+    return this.currentZoomDist;
+  }
+
+  public setZoomDistance(dist: number): void {
+    this.targetZoomDist = THREE.MathUtils.clamp(
+      dist,
+      this.MIN_ZOOM_DIST,
+      this.MAX_ZOOM_DIST
+    );
+  }
+
+  public onWheel(deltaY: number): void {
+    const step = deltaY * 0.0032;
+    this.setZoomDistance(this.targetZoomDist + step);
+  }
+
+  public getDistanceToCharacterHead(playerState: PlayerPhysicsState): number {
+    const headY = playerState.y + 1.48;
+    return Math.hypot(
+      this.currentPos.x - playerState.x,
+      this.currentPos.y - headY,
+      this.currentPos.z - playerState.z
+    );
   }
 
   public resetOffsets(): void {
@@ -134,8 +164,6 @@ export class AcademyCameraController {
   ): void {
     if (phase === 'character-creation' || phase === 'character-intro') {
       // Real-time 3D rotatable character preview camera framing protagonist on the right half of screen
-      // Protagonist at (playerState.x, playerState.y, playerState.z) faces +Z (rotation.y = 0) during preview,
-      // so placing the camera at +Z looks toward -Z (with Hoshino Academy behind the protagonist).
       const previewAngle =
         this.orbitYawOffset +
         (phase === 'character-intro' ? Math.sin(elapsedTime * 0.45) * 0.35 : 0);
@@ -165,15 +193,25 @@ export class AcademyCameraController {
       _targetPos.set(9.0 + sweep * 5.5, 8.8 + lift * 1.1, 31.0 + lift * 2.5);
       _targetLook.set(-6.5 + sweep * 1.8, 7.5 + lift * 0.5, -12.0);
     } else if (cameraMode === 'follow') {
-      // Phase 2, 4 & 5 Third-Person Spring-Arm Follow Camera (with indoor ceiling + wall raycast clearance)
+      // Smoothly damp zoom distance
+      this.currentZoomDist = dampValue(
+        this.currentZoomDist,
+        this.targetZoomDist,
+        12.0,
+        dt
+      );
+
+      // Third-Person Spring-Arm Follow Camera (with indoor ceiling + wall raycast + anti-body-clipping)
       const indoor = isInsideSchoolBuilding(playerState.x, playerState.z);
-      const followDist = indoor
-        ? 2.85
-        : playerState.isSprinting
-          ? 5.6
-          : 4.8;
+      const baseDist = indoor
+        ? Math.min(this.currentZoomDist, 2.95)
+        : this.currentZoomDist;
+      const followDist = Math.max(
+        this.MIN_ZOOM_DIST,
+        baseDist + (playerState.isSprinting && !indoor ? 0.55 : 0)
+      );
       const effectivePitch = indoor ? Math.min(this.followPitch, 0.28) : this.followPitch;
-      const horizDist = followDist * Math.cos(effectivePitch);
+      const horizDist = Math.max(1.38, followDist * Math.cos(effectivePitch));
       const vertOffset = followDist * Math.sin(effectivePitch);
 
       const rawCamX = playerState.x + Math.sin(this.followYaw) * horizDist;
@@ -184,14 +222,54 @@ export class AcademyCameraController {
         rawCamX,
         rawCamZ
       );
-      const rawCamY = Math.max(1.15, playerState.y + 1.45 + vertOffset);
-      const camY = indoor ? Math.min(3.65, rawCamY) : rawCamY;
 
-      _targetPos.set(safeCamXZ.x, camY, safeCamXZ.z);
+      let camX = safeCamXZ.x;
+      let camZ = safeCamXZ.z;
+      const rawCamY = Math.max(1.18, playerState.y + 1.46 + vertOffset);
+      let camY = indoor ? Math.min(3.65, rawCamY) : rawCamY;
+
+      // CRITICAL ANTI-BODY-CLIPPING SAFEGUARD:
+      // Never allow the camera to sit inside the character's head/torso sphere (radius ~0.42m).
+      const dxFromPlayer = camX - playerState.x;
+      const dzFromPlayer = camZ - playerState.z;
+      const horizDistFromPlayer = Math.hypot(dxFromPlayer, dzFromPlayer);
+
+      if (horizDistFromPlayer < 1.38) {
+        const closeRatio = 1 - horizDistFromPlayer / 1.38;
+        camY = Math.min(
+          indoor ? 3.7 : 4.5,
+          Math.max(camY, playerState.y + 1.56 + closeRatio * 0.26)
+        );
+        if (horizDistFromPlayer < 1.18) {
+          const dirX =
+            horizDistFromPlayer > 0.01
+              ? dxFromPlayer / horizDistFromPlayer
+              : Math.sin(this.followYaw);
+          const dirZ =
+            horizDistFromPlayer > 0.01
+              ? dzFromPlayer / horizDistFromPlayer
+              : Math.cos(this.followYaw);
+          camX = playerState.x + dirX * 1.18;
+          camZ = playerState.z + dirZ * 1.18;
+        }
+      }
+
+      _targetPos.set(camX, camY, camZ);
+
+      // Adaptive look-at target: reduce forward lead when zoomed close so the camera never looks THROUGH the head!
+      const effectiveHorizDist = Math.hypot(
+        camX - playerState.x,
+        camZ - playerState.z
+      );
+      const forwardLead = THREE.MathUtils.clamp(
+        (effectiveHorizDist - 1.65) * 0.42,
+        0.0,
+        1.25
+      );
       _targetLook.set(
-        playerState.x - Math.sin(this.followYaw) * 1.4,
-        playerState.y + 1.42,
-        playerState.z - Math.cos(this.followYaw) * 1.4
+        playerState.x - Math.sin(this.followYaw) * forwardLead,
+        playerState.y + 1.44,
+        playerState.z - Math.cos(this.followYaw) * forwardLead
       );
 
       // Subtle dynamic FOV boost when sprinting or inside classroom
@@ -233,7 +311,7 @@ export class AcademyCameraController {
       this.currentPos.copy(_targetPos);
       this.currentLook.copy(_targetLook);
     } else {
-      const lambda = cameraMode === 'follow' && phase === 'playing' ? 10.5 : 4.8;
+      const lambda = cameraMode === 'follow' && phase === 'playing' ? 12.5 : 4.8;
       this.currentPos.set(
         dampValue(this.currentPos.x, _targetPos.x, lambda, dt),
         dampValue(this.currentPos.y, _targetPos.y, lambda, dt),

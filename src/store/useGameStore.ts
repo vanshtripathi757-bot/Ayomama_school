@@ -6,10 +6,14 @@ import {
   CampusInteractable,
   CharacterCustomization,
   DialogueChatEntry,
+  EquippedHandItem,
   GamePhase,
   GameSettings,
   GraphicsPreset,
+  GuidanceLevel,
   MissionProgressState,
+  ObjectiveInteractionType,
+  PhaseCompletionSummary,
   ResolutionScale,
   SaveSlotData,
   SchoolPeriodId,
@@ -21,6 +25,7 @@ import {
 import {
   advanceMissionProgress,
   applyGraphicsPreset,
+  borrowLibraryBook,
   completeStoryPhaseProgress,
   generateSmartNpcReply,
   getActiveStoryAndPhase,
@@ -32,11 +37,26 @@ import {
   getNextCameraViewpoint,
   getNextSchoolPeriod,
   getNextTimeOfDay,
+  getPhaseObjectiveState,
+  isInsideSchoolBuilding,
   isPhaseUnlocked,
   isStoryUnlocked,
   mapPhaseToBodyState,
+  purchaseCafeteriaMeal,
+  readLibraryBook,
+  returnLibraryBook,
+  toggleCampusDoor,
+  validateObjectiveAction,
   validateStoryDirectorPack,
 } from '../game/core/rules';
+import {
+  ActiveObjectModalType,
+  ActivePlayerObjectInteraction,
+  ContextualPromptCandidate,
+  LIBRARY_BOOKS,
+  LibraryBookCategory,
+  WorldInteractableObject,
+} from '../game/systems/ObjectInteractionSystem';
 import { SaveLoadManager } from '../game/systems/SaveLoadManager';
 import { audioManager } from '../game/systems/AudioManager';
 import {
@@ -106,6 +126,19 @@ interface GameStoreState {
     explanation: string;
   } | null;
 
+  // V8.0 Universal Object Interaction State
+  contextualPrompt: ContextualPromptCandidate | null;
+  activeObjectInteraction: ActivePlayerObjectInteraction | null;
+  activeObjectModal: ActiveObjectModalType;
+  selectedBookshelfCategory: LibraryBookCategory | 'All';
+  activeReadingBookId: string | null;
+  activeReadingPageIndex: number;
+  activeNoticeObject: WorldInteractableObject | null;
+
+  // V9.0 Guided Gameplay, Dynamic Hint System & Phase Completion State
+  phaseCompletionSummary: PhaseCompletionSummary | null;
+  objectiveFeedbackToast: string | null;
+
   // Actions
   setLoadingProgress: (progress: number) => void;
   markSceneReady: () => void;
@@ -132,6 +165,7 @@ interface GameStoreState {
   setResolutionScale: (scale: ResolutionScale) => void;
   setFullscreen: (fullscreen: boolean) => Promise<void>;
   setShowMobileControls: (mode: 'auto' | 'always' | 'hidden') => void;
+  setGuidanceLevel: (level: GuidanceLevel) => void;
   setMasterVolume: (val: number) => void;
   setMusicVolume: (val: number) => void;
   setSfxVolume: (val: number) => void;
@@ -167,6 +201,31 @@ interface GameStoreState {
   setStoryModalOpen: (open: boolean) => void;
   submitStoryPackAnswer: (optionIndex: number) => void;
   requestNextStoryDirectorPack: () => Promise<void>;
+
+  // V8.0 Universal Object Interaction Actions
+  setContextualPrompt: (prompt: ContextualPromptCandidate | null) => void;
+  triggerContextualInteraction: () => void;
+  exitObjectInteraction: () => void;
+  setActiveObjectModal: (modal: ActiveObjectModalType) => void;
+  setSelectedBookshelfCategory: (cat: LibraryBookCategory | 'All') => void;
+  borrowBook: (bookId: string) => void;
+  openBookReader: (bookId: string) => void;
+  setReadingPage: (pageIdx: number) => void;
+  returnBook: (bookId: string) => void;
+  orderCafeteriaMeal: (itemId: string) => boolean;
+  toggleDoor: (doorId: string) => void;
+  completeComputerLabActivity: () => void;
+  completeScienceMicroscopeActivity: () => void;
+
+  // V9.0 Guided Objective Engine Actions
+  setEquippedHandItem: (item: EquippedHandItem) => void;
+  notifyObjectiveEvent: (action: {
+    type: ObjectiveInteractionType;
+    targetId?: string;
+    zoneName?: string;
+    distanceToTarget?: number;
+  }) => void;
+  closePhaseCompletionModal: (continueToNextPhase?: boolean) => void;
 }
 
 function syncBodyDataset(phase: GamePhase): void {
@@ -204,6 +263,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     storyModalOpen: false,
     storyLoading: false,
     lastQuizFeedback: null,
+
+    contextualPrompt: null,
+    activeObjectInteraction: null,
+    activeObjectModal: 'none',
+    selectedBookshelfCategory: 'All',
+    activeReadingBookId: null,
+    activeReadingPageIndex: 0,
+    activeNoticeObject: null,
+    phaseCompletionSummary: null,
+    objectiveFeedbackToast: null,
 
     setLoadingProgress: (progress: number) => {
       const clamped = Math.min(100, Math.max(0, Math.round(progress)));
@@ -373,6 +442,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         activeStoryId: storyId,
         activePhaseNumber: phaseNumber,
       };
+      const objState = getPhaseObjectiveState(updatedMp, allStories);
+      updatedMp.activeObjectiveId = objState.activeObjective?.id ?? null;
       const pack = buildPackFromActivePhase(updatedMp);
 
       syncBodyDataset('playing');
@@ -384,6 +455,8 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         activeStoryPack: pack,
         lastQuizFeedback: null,
         storyModalOpen: false,
+        phaseCompletionSummary: null,
+        objectiveFeedbackToast: null,
         cameraMode: 'follow',
         sessionStartTime: Date.now(),
       });
@@ -391,23 +464,30 @@ export const useGameStore = create<GameStoreState>((set, get) => {
     },
 
     completeCurrentStoryPhase: () => {
+      // V9.0 Strict Sequential Rule: Phase completion only happens when all phase objectives are validated!
       const mp = get().missionProgress;
+      const allStories = getAllStories(mp.customStories ?? []);
+      const objState = getPhaseObjectiveState(mp, allStories);
+      if (!objState.isPhaseAllObjectivesComplete) {
+        audioManager.playCancel();
+        set({
+          objectiveFeedbackToast: objState.activeObjective
+            ? `Complete current objective first: ${objState.activeObjective.shortHint}`
+            : 'Complete all phase objectives in sequence first.',
+        });
+        return;
+      }
       const storyId = mp.activeStoryId ?? 'story_01';
       const phaseNum = mp.activePhaseNumber ?? 1;
       audioManager.playConfirmChime();
 
-      const nextMp = completeStoryPhaseProgress(mp, storyId, phaseNum);
+      const nextMp = completeStoryPhaseProgress(mp, storyId, phaseNum, allStories);
       const nextPack = buildPackFromActivePhase(nextMp);
 
       set({
         missionProgress: nextMp,
         selectedStoryId: nextMp.activeStoryId ?? storyId,
         activeStoryPack: nextPack,
-        lastQuizFeedback: {
-          selectedOption: get().activeStoryPack.correctOption,
-          isCorrect: true,
-          explanation: `Phase 0${phaseNum} completed! Phase 0${nextMp.activePhaseNumber ?? 1} is now unlocked (+XP, +CP, +PP & Skills)!`,
-        },
       });
       void get().saveCurrentSession();
     },
@@ -691,6 +771,16 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       set({ settings: next });
     },
 
+    setGuidanceLevel: (guidanceLevel: GuidanceLevel) => {
+      const current = get().settings;
+      const next: GameSettings = {
+        ...current,
+        display: { ...current.display, guidanceLevel },
+      };
+      SaveLoadManager.saveSettings(next);
+      set({ settings: next });
+    },
+
     setMasterVolume: (masterVolume: number) => {
       const current = get().settings;
       const next: GameSettings = {
@@ -772,7 +862,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const fresh = SaveLoadManager.loadSettings();
       const defaults: GameSettings = {
         graphics: applyGraphicsPreset('high'),
-        display: { fullscreen: fresh.display.fullscreen, showMobileControls: 'always' },
+        display: {
+          fullscreen: fresh.display.fullscreen,
+          showMobileControls: 'always',
+          guidanceLevel: 'standard',
+        },
         audio: { masterVolume: 80, musicVolume: 70, sfxVolume: 85, muted: false },
         camera: { sensitivity: 1.0, invertY: false },
       };
@@ -881,6 +975,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         },
         missionProgress: nextMission,
       });
+      get().notifyObjectiveEvent({ type: 'talk_npc', targetId: target.id });
       void get().saveCurrentSession();
     },
 
@@ -929,6 +1024,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         },
         missionProgress: nextMission,
       });
+      get().notifyObjectiveEvent({ type: 'talk_npc', targetId: active.target.id });
     },
 
     sendCustomDialogueMessage: async (playerMessage: string) => {
@@ -1034,6 +1130,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         },
         missionProgress: nextMission,
       });
+      get().notifyObjectiveEvent({ type: 'talk_npc', targetId: active.target.id });
       void get().saveCurrentSession();
     },
 
@@ -1078,6 +1175,28 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         distanceDelta,
       });
       set({ missionProgress: nextMission });
+
+      // Check if active sequential objective is an 'enter_zone' trigger
+      const allStories = getAllStories(nextMission.customStories ?? []);
+      const objState = getPhaseObjectiveState(nextMission, allStories);
+      if (objState.activeObjective?.requiredInteractionType === 'enter_zone') {
+        const targetPos = objState.activeObjective.targetPosition;
+        const dist = Math.hypot(
+          sharedInputBridge.playerX - targetPos.x,
+          sharedInputBridge.playerZ - targetPos.z
+        );
+        const zoneLabel = getCampusZoneLabel(
+          sharedInputBridge.playerX,
+          sharedInputBridge.playerZ
+        );
+        if (dist <= 7.5) {
+          get().notifyObjectiveEvent({
+            type: 'enter_zone',
+            zoneName: zoneLabel,
+            distanceToTarget: dist,
+          });
+        }
+      }
     },
 
     recordInteriorVisit: () => {
@@ -1095,14 +1214,30 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       sharedInputBridge.playerY = 0;
       sharedInputBridge.playerZ = z;
       sharedInputBridge.playerYaw = yaw;
-      const inside = x >= -22.8 && x <= 22.8 && z <= -9.6 && z >= -22.4;
+      const inside = isInsideSchoolBuilding(x, z);
       const nextMission = inside
         ? advanceMissionProgress(get().missionProgress, { enteredInterior: true })
         : get().missionProgress;
       set({
         cameraMode: 'follow',
         missionProgress: nextMission,
+        activeObjectInteraction: null,
+        activeObjectModal: 'none',
       });
+      const zoneLabel = getCampusZoneLabel(x, z);
+      const allStories = getAllStories(nextMission.customStories ?? []);
+      const objState = getPhaseObjectiveState(nextMission, allStories);
+      if (objState.activeObjective?.requiredInteractionType === 'enter_zone') {
+        const dist = Math.hypot(
+          x - objState.activeObjective.targetPosition.x,
+          z - objState.activeObjective.targetPosition.z
+        );
+        get().notifyObjectiveEvent({
+          type: 'enter_zone',
+          zoneName: zoneLabel,
+          distanceToTarget: dist,
+        });
+      }
       void get().saveCurrentSession();
     },
 
@@ -1139,37 +1274,20 @@ export const useGameStore = create<GameStoreState>((set, get) => {
       const isCorrect = optionIndex === pack.correctOption;
       if (isCorrect) {
         audioManager.playConfirmChime();
-        const curMp = get().missionProgress;
-        const activeStoryId = curMp.activeStoryId ?? 'story_01';
-        const activePhaseNumber = curMp.activePhaseNumber ?? 1;
-
-        const phaseAdvancedMp = completeStoryPhaseProgress(
-          curMp,
-          activeStoryId,
-          activePhaseNumber
-        );
-        const nextMission = advanceMissionProgress(phaseAdvancedMp, {
-          completedStoryPackId: pack.id,
-          clueUnlocked: pack.clueReward,
-        });
-
         set({
-          missionProgress: nextMission,
-          selectedStoryId: nextMission.activeStoryId ?? activeStoryId,
           lastQuizFeedback: {
             selectedOption: optionIndex,
             isCorrect: true,
-            explanation: `${pack.explanation} (Phase 0${activePhaseNumber} Complete! Phase 0${nextMission.activePhaseNumber ?? 1} Unlocked!)`,
+            explanation: pack.explanation,
           },
         });
-        void get().saveCurrentSession();
       } else {
         audioManager.playDialogueBlip();
         set({
           lastQuizFeedback: {
             selectedOption: optionIndex,
             isCorrect: false,
-            explanation: `Not quite! Hint: ${pack.explanation} Feel free to try another option!`,
+            explanation: `Not quite! Hint: ${pack.explanation}`,
           },
         });
       }
@@ -1229,5 +1347,348 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         lastQuizFeedback: null,
       });
     },
+
+    setContextualPrompt: (prompt: ContextualPromptCandidate | null) => {
+      const cur = get().contextualPrompt;
+      if (cur?.id === prompt?.id && cur?.actionVerb === prompt?.actionVerb) {
+        return;
+      }
+      set({ contextualPrompt: prompt });
+    },
+
+    triggerContextualInteraction: () => {
+      const state = get();
+      // If currently sitting/studying/eating with no modal open, pressing E stands up
+      if (state.activeObjectInteraction && state.activeObjectModal === 'none') {
+        get().exitObjectInteraction();
+        return;
+      }
+
+      const prompt = state.contextualPrompt;
+      if (!prompt) {
+        if (state.nearbyInteractable) {
+          get().openInteractionDialogue(state.nearbyInteractable);
+        }
+        return;
+      }
+
+      if (prompt.sourceKind === 'npc' && prompt.npcTarget) {
+        get().openInteractionDialogue(prompt.npcTarget);
+        return;
+      }
+
+      const obj = prompt.objectTarget;
+      if (!obj) return;
+
+      if (obj.objectType === 'door') {
+        get().toggleDoor(obj.id);
+        return;
+      }
+
+      audioManager.playConfirmChime();
+
+      let nextMp = advanceMissionProgress(state.missionProgress, {
+        interactedId: obj.id,
+        reputationDelta: obj.xpReward ?? 10,
+      });
+
+      // Equip notebook in hand when studying at a desk if no book is equipped
+      if (
+        obj.defaultPosture === 'study' &&
+        (!nextMp.equippedHandItem || nextMp.equippedHandItem === 'none')
+      ) {
+        nextMp = { ...nextMp, equippedHandItem: 'notebook' };
+      }
+
+      let nextObjectInteraction: ActivePlayerObjectInteraction | null =
+        state.activeObjectInteraction;
+
+      if (obj.defaultPosture && obj.defaultPosture !== 'none') {
+        const anchor = obj.anchorPosition ?? obj.position;
+        const yaw = obj.anchorYaw ?? 0;
+        // NOTE: Do NOT set sharedInputBridge.teleportRequest here so AcademyCanvas smoothly glides
+        // the player onto the chair/desk without snapping the camera yaw!
+        nextObjectInteraction = {
+          objectId: obj.id,
+          label: obj.label,
+          objectType: obj.objectType,
+          posture: obj.defaultPosture,
+          anchorPosition: anchor,
+          anchorYaw: yaw,
+          startedAt: Date.now(),
+        };
+      }
+
+      const nextModal: ActiveObjectModalType = obj.opensModal ?? 'none';
+      const nextCat: LibraryBookCategory | 'All' =
+        obj.bookshelfCategory ?? state.selectedBookshelfCategory;
+
+      set({
+        missionProgress: nextMp,
+        activeObjectInteraction: nextObjectInteraction,
+        activeObjectModal: nextModal,
+        selectedBookshelfCategory: nextCat,
+        activeNoticeObject: nextModal === 'notice_reader' ? obj : null,
+      });
+
+      // Validate against active sequential objective based on object type / posture
+      if (obj.objectType === 'computer') {
+        get().notifyObjectiveEvent({ type: 'use_computer', targetId: obj.id });
+      } else if (obj.objectType === 'microscope') {
+        get().notifyObjectiveEvent({ type: 'use_microscope', targetId: obj.id });
+      } else if (
+        obj.defaultPosture === 'sit' ||
+        obj.defaultPosture === 'study' ||
+        obj.defaultPosture === 'eat'
+      ) {
+        get().notifyObjectiveEvent({ type: 'sit_object', targetId: obj.id });
+      } else if (
+        obj.objectType === 'notice_board' ||
+        obj.objectType === 'blackboard' ||
+        obj.objectType === 'locker' ||
+        obj.objectType === 'map_board'
+      ) {
+        get().notifyObjectiveEvent({ type: 'inspect_object', targetId: obj.id });
+      }
+
+      void get().saveCurrentSession();
+    },
+
+    exitObjectInteraction: () => {
+      audioManager.playCancel();
+      const curMp = get().missionProgress;
+      const nextEquipped: EquippedHandItem =
+        curMp.equippedHandItem === 'notebook'
+          ? (curMp.borrowedBookIds?.length ?? 0) > 0
+            ? 'book'
+            : 'none'
+          : curMp.equippedHandItem ?? 'none';
+      set({
+        missionProgress: {
+          ...curMp,
+          equippedHandItem: nextEquipped,
+        },
+        activeObjectInteraction: null,
+        activeObjectModal: 'none',
+        activeReadingBookId: null,
+        activeNoticeObject: null,
+      });
+    },
+
+    setActiveObjectModal: (modal: ActiveObjectModalType) => {
+      if (modal === 'none') {
+        audioManager.playCancel();
+      } else {
+        audioManager.playClick();
+      }
+      set({ activeObjectModal: modal });
+    },
+
+    setSelectedBookshelfCategory: (selectedBookshelfCategory: LibraryBookCategory | 'All') => {
+      audioManager.playClick();
+      set({ selectedBookshelfCategory });
+    },
+
+    borrowBook: (bookId: string) => {
+      audioManager.playConfirmChime();
+      const book = LIBRARY_BOOKS.find((b) => b.id === bookId);
+      const nextMp = borrowLibraryBook(get().missionProgress, bookId);
+      set({ missionProgress: nextMp });
+      get().notifyObjectiveEvent({
+        type: 'borrow_book',
+        targetId: book?.shelfId ?? bookId,
+      });
+      void get().saveCurrentSession();
+    },
+
+    openBookReader: (bookId: string) => {
+      audioManager.playConfirmChime();
+      const book = LIBRARY_BOOKS.find((b) => b.id === bookId);
+      if (!book) return;
+      const nextMp = readLibraryBook(get().missionProgress, bookId);
+      set({
+        missionProgress: nextMp,
+        activeReadingBookId: bookId,
+        activeReadingPageIndex: 0,
+        activeObjectModal: 'book_reader',
+        activeObjectInteraction: get().activeObjectInteraction ?? {
+          objectId: `reading_${bookId}`,
+          label: book.title,
+          objectType: 'bookshelf',
+          posture: 'read',
+          anchorPosition: {
+            x: sharedInputBridge.playerX,
+            y: sharedInputBridge.playerY,
+            z: sharedInputBridge.playerZ,
+          },
+          anchorYaw: sharedInputBridge.playerYaw,
+          startedAt: Date.now(),
+        },
+      });
+      get().notifyObjectiveEvent({ type: 'read_book', targetId: bookId });
+      void get().saveCurrentSession();
+    },
+
+    setReadingPage: (pageIdx: number) => {
+      audioManager.playClick();
+      set({ activeReadingPageIndex: Math.max(0, pageIdx) });
+    },
+
+    returnBook: (bookId: string) => {
+      audioManager.playConfirmChime();
+      const nextMp = returnLibraryBook(get().missionProgress, bookId);
+      set({
+        missionProgress: nextMp,
+        activeReadingBookId:
+          get().activeReadingBookId === bookId ? null : get().activeReadingBookId,
+      });
+      get().notifyObjectiveEvent({ type: 'return_book', targetId: bookId });
+      void get().saveCurrentSession();
+    },
+
+    orderCafeteriaMeal: (itemId: string) => {
+      const { nextProgress, purchased } = purchaseCafeteriaMeal(
+        get().missionProgress,
+        itemId
+      );
+      if (!purchased) {
+        audioManager.playCancel();
+        return false;
+      }
+      audioManager.playConfirmChime();
+      // Smoothly transition player to sitting and eating at the cafeteria table with bento in hand
+      const eatAnchor = { x: -26.2, y: 0, z: 3.8 };
+
+      set({
+        missionProgress: nextProgress,
+        activeObjectModal: 'none',
+        activeObjectInteraction: {
+          objectId: 'obj_cafeteria_seat_north',
+          label: 'Cafeteria Dining Seat (Having Lunch)',
+          objectType: 'cafeteria_seat',
+          posture: 'eat',
+          anchorPosition: eatAnchor,
+          anchorYaw: -Math.PI / 2,
+          startedAt: Date.now(),
+        },
+      });
+      get().notifyObjectiveEvent({
+        type: 'purchase_food',
+        targetId: 'obj_cafeteria_counter',
+      });
+      void get().saveCurrentSession();
+      return true;
+    },
+
+    toggleDoor: (doorId: string) => {
+      audioManager.playClick();
+      const nextMp = toggleCampusDoor(get().missionProgress, doorId);
+      set({ missionProgress: nextMp });
+      get().notifyObjectiveEvent({ type: 'open_door', targetId: doorId });
+      void get().saveCurrentSession();
+    },
+
+    completeComputerLabActivity: () => {
+      audioManager.playConfirmChime();
+      const curMp = get().missionProgress;
+      const nextMp = advanceMissionProgress(curMp, {
+        interactedId: 'computer_lab_coding_challenge',
+        reputationDelta: 25,
+        clueUnlocked: 'Computer Lab Digital Archive Index',
+      });
+      if (nextMp.skills) {
+        nextMp.skills.problemSolving = Math.min(100, nextMp.skills.problemSolving + 4);
+        nextMp.skills.academics = Math.min(100, nextMp.skills.academics + 3);
+      }
+      set({ missionProgress: nextMp });
+      get().notifyObjectiveEvent({
+        type: 'use_computer',
+        targetId: 'obj_computer_lab_terminal',
+      });
+      void get().saveCurrentSession();
+    },
+
+    completeScienceMicroscopeActivity: () => {
+      audioManager.playConfirmChime();
+      const curMp = get().missionProgress;
+      const nextMp = advanceMissionProgress(curMp, {
+        interactedId: 'science_lab_microscope_analysis',
+        reputationDelta: 20,
+        clueUnlocked: 'Science Lab Optical Chronometer Calibration Log',
+      });
+      if (nextMp.skills) {
+        nextMp.skills.observation = Math.min(100, nextMp.skills.observation + 4);
+        nextMp.skills.academics = Math.min(100, nextMp.skills.academics + 2);
+      }
+      set({ missionProgress: nextMp });
+      get().notifyObjectiveEvent({
+        type: 'use_microscope',
+        targetId: 'obj_science_lab_microscope',
+      });
+      void get().saveCurrentSession();
+    },
+
+    setEquippedHandItem: (item: EquippedHandItem) => {
+      audioManager.playClick();
+      const curMp = get().missionProgress;
+      set({
+        missionProgress: {
+          ...curMp,
+          equippedHandItem: item,
+        },
+      });
+    },
+
+    notifyObjectiveEvent: (action) => {
+      const curMp = get().missionProgress;
+      const allStories = getAllStories(curMp.customStories ?? []);
+      const result = validateObjectiveAction(curMp, action, allStories);
+
+      if (!result.matched) {
+        if (result.clarificationMessage && action.type !== 'enter_zone') {
+          set({ objectiveFeedbackToast: result.clarificationMessage });
+        }
+        return;
+      }
+
+      audioManager.playConfirmChime();
+      const nextPack = buildPackFromActivePhase(result.nextProgress);
+      const toastText = result.completedObjective
+        ? `✓ Objective Complete: ${result.completedObjective.title} (+${result.completedObjective.rewardXp} XP)`
+        : null;
+
+      set({
+        missionProgress: result.nextProgress,
+        selectedStoryId: result.nextProgress.activeStoryId ?? curMp.activeStoryId ?? 'story_01',
+        activeStoryPack: nextPack,
+        objectiveFeedbackToast: toastText,
+        phaseCompletionSummary:
+          result.phaseJustCompleted && result.phaseCompletionSummary
+            ? result.phaseCompletionSummary
+            : get().phaseCompletionSummary,
+      });
+
+      void get().saveCurrentSession();
+    },
+
+    closePhaseCompletionModal: (continueToNextPhase = true) => {
+      const summary = get().phaseCompletionSummary;
+      audioManager.playConfirmChime();
+      set({
+        phaseCompletionSummary: null,
+        objectiveFeedbackToast: null,
+      });
+
+      if (!continueToNextPhase && summary) {
+        syncBodyDataset('phase-selection');
+        set({
+          phase: 'phase-selection',
+          selectedStoryId: summary.storyId,
+          activeModal: 'none',
+        });
+      }
+      void get().saveCurrentSession();
+    },
   };
 });
+

@@ -23,8 +23,49 @@ import {
   triggerMobileJump,
   triggerMobileSprintToggle,
 } from '../../game/systems/InputBridge';
+import {
+  CAFETERIA_MENU_ITEMS,
+  LIBRARY_BOOKS,
+  LibraryBookCategory,
+} from '../../game/systems/ObjectInteractionSystem';
 import { useGameStore } from '../../store/useGameStore';
-import { CameraViewpointId } from '../../types/game';
+import { CameraViewpointId, CharacterCustomization } from '../../types/game';
+
+const BOOK_CATEGORIES: Array<LibraryBookCategory | 'All'> = [
+  'All',
+  'Fiction',
+  'Science',
+  'Mathematics',
+  'History',
+  'Literature',
+  'Reference',
+];
+
+const CAMPUS_DIRECTORY_LOCATIONS: Array<{
+  id: string;
+  name: string;
+  zone: string;
+  x: number;
+  z: number;
+  yaw: number;
+}> = [
+  { id: 'loc_gate', name: 'Main Entrance & Security Booth', zone: 'Main Gate', x: -5.2, z: 33.4, yaw: -Math.PI / 2 },
+  { id: 'loc_lobby', name: 'Main Academic Building Lobby', zone: '1F Central', x: 0, z: -14.2, yaw: Math.PI },
+  { id: 'loc_class_a', name: 'Class A Classroom', zone: '1F West Wing', x: -14.2, z: -13.6, yaw: Math.PI },
+  { id: 'loc_class_b', name: 'Class B Classroom', zone: '1F South-West Wing', x: -20.5, z: -1.4, yaw: Math.PI },
+  { id: 'loc_class_c', name: 'Class C Classroom', zone: '1F South-East Wing', x: 20.5, z: -1.4, yaw: Math.PI },
+  { id: 'loc_class_d', name: 'Class D Classroom', zone: '1F Far-West Wing', x: -29.5, z: -14.2, yaw: Math.PI },
+  { id: 'loc_library', name: 'Multi-Section Academy Library', zone: '1F East Wing', x: 14.2, z: -19.0, yaw: Math.PI },
+  { id: 'loc_comp_lab', name: 'Computer & Robotics Lab', zone: '1F Far-East Wing', x: 30.5, z: -14.5, yaw: Math.PI },
+  { id: 'loc_sci_lab', name: 'Science Lab & Research Dome', zone: 'East Campus', x: 52.5, z: -20.2, yaw: Math.PI },
+  { id: 'loc_cafe', name: 'West Cafeteria Pavilion', zone: 'West Campus', x: -28.8, z: 8.0, yaw: -Math.PI / 2 },
+  { id: 'loc_auditorium', name: 'Auditorium & Amphitheater', zone: 'North-West', x: -66.0, z: -17.0, yaw: Math.PI },
+  { id: 'loc_gym', name: 'East Gymnasium & Pool', zone: 'East Campus', x: 28.5, z: 8.0, yaw: Math.PI / 2 },
+  { id: 'loc_dorm', name: '4-Story Student Dormitory', zone: 'North-West', x: -33.8, z: -34.5, yaw: -Math.PI / 2 },
+  { id: 'loc_town', name: 'South Town Commercial District', zone: 'Open World', x: -13.0, z: 58.0, yaw: -Math.PI / 2 },
+  { id: 'loc_station', name: 'Hoshino Commuter Train Station', zone: 'Open World', x: -8.0, z: 91.2, yaw: 0 },
+  { id: 'loc_shrine', name: 'North Mountain Torii Shrine', zone: 'Open World', x: 0, z: -78.0, yaw: Math.PI },
+];
 
 export function AcademyHUD() {
   const phase = useGameStore((s) => s.phase);
@@ -60,6 +101,35 @@ export function AcademyHUD() {
   const submitStoryPackAnswer = useGameStore((s) => s.submitStoryPackAnswer);
   const requestNextStoryDirectorPack = useGameStore((s) => s.requestNextStoryDirectorPack);
   const openStoryLibrary = useGameStore((s) => s.openStoryLibrary);
+
+  // V8.0 Universal Object Interaction State & Actions
+  const contextualPrompt = useGameStore((s) => s.contextualPrompt);
+  const activeObjectInteraction = useGameStore((s) => s.activeObjectInteraction);
+  const activeObjectModal = useGameStore((s) => s.activeObjectModal);
+  const selectedBookshelfCategory = useGameStore((s) => s.selectedBookshelfCategory);
+  const activeReadingBookId = useGameStore((s) => s.activeReadingBookId);
+  const activeReadingPageIndex = useGameStore((s) => s.activeReadingPageIndex);
+  const activeNoticeObject = useGameStore((s) => s.activeNoticeObject);
+
+  const triggerContextualInteraction = useGameStore((s) => s.triggerContextualInteraction);
+  const exitObjectInteraction = useGameStore((s) => s.exitObjectInteraction);
+  const setActiveObjectModal = useGameStore((s) => s.setActiveObjectModal);
+  const setSelectedBookshelfCategory = useGameStore((s) => s.setSelectedBookshelfCategory);
+  const borrowBook = useGameStore((s) => s.borrowBook);
+  const openBookReader = useGameStore((s) => s.openBookReader);
+  const setReadingPage = useGameStore((s) => s.setReadingPage);
+  const returnBook = useGameStore((s) => s.returnBook);
+  const orderCafeteriaMeal = useGameStore((s) => s.orderCafeteriaMeal);
+  const completeComputerLabActivity = useGameStore((s) => s.completeComputerLabActivity);
+  const completeScienceMicroscopeActivity = useGameStore(
+    (s) => s.completeScienceMicroscopeActivity
+  );
+  const teleportToZone = useGameStore((s) => s.teleportToZone);
+  const updateCharacterCustomization = useGameStore((s) => s.updateCharacterCustomization);
+
+  // Lab activity feedback states
+  const [labActivityToast, setLabActivityToast] = useState<string | null>(null);
+  const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
 
   // Upper-Right Unified Hub Drawer state (keeps the main screen 100% clean when closed)
   const [hubOpen, setHubOpen] = useState(false);
@@ -109,6 +179,14 @@ export function AcademyHUD() {
         return;
       }
 
+      if (activeObjectModal !== 'none') {
+        if (e.code === 'Escape') {
+          e.preventDefault();
+          exitObjectInteraction();
+        }
+        return;
+      }
+
       if (activeDialogue) {
         if (e.code === 'Escape') {
           e.preventDefault();
@@ -120,13 +198,21 @@ export function AcademyHUD() {
       if (isTypingInInput) return;
 
       if (e.code === 'Escape' || e.code === 'KeyP') {
+        if (activeObjectInteraction) {
+          e.preventDefault();
+          exitObjectInteraction();
+          return;
+        }
         e.preventDefault();
         audioManager.playClick();
         setPhase(phase === 'playing' ? 'paused' : 'playing');
       } else if (phase === 'playing') {
-        if ((e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') && nearbyInteractable) {
+        if (
+          (e.code === 'KeyE' || e.code === 'KeyF' || e.code === 'Enter') &&
+          (contextualPrompt || nearbyInteractable || activeObjectInteraction)
+        ) {
           e.preventDefault();
-          openInteractionDialogue();
+          triggerContextualInteraction();
         } else if (e.code === 'KeyC') {
           setCameraMode(cameraMode === 'follow' ? 'overview' : 'follow');
         } else if (e.code === 'KeyH') {
@@ -153,14 +239,18 @@ export function AcademyHUD() {
     phase,
     cameraMode,
     activeModal,
+    activeObjectModal,
+    activeObjectInteraction,
     activeDialogue,
+    contextualPrompt,
     nearbyInteractable,
     setPhase,
     setCameraMode,
     setActiveModal,
     toggleMute,
     setActiveViewpoint,
-    openInteractionDialogue,
+    triggerContextualInteraction,
+    exitObjectInteraction,
     closeDialogue,
   ]);
 
@@ -315,7 +405,7 @@ export function AcademyHUD() {
           </div>
         )}
 
-        {/* Upper-Right Compact Profile + Story Chronicle + Menu Buttons */}
+        {/* Upper-Right Compact Profile + Campus Map + Story Chronicle + Menu Buttons */}
         <div className="pointer-events-auto relative flex items-center gap-1.5">
           <button
             type="button"
@@ -329,6 +419,21 @@ export function AcademyHUD() {
             className="min-h-[34px] px-2.5 py-1 rounded bg-[#0a101f]/80 hover:bg-[#16223d] border border-sky-400/50 text-xs font-semibold text-sky-200 shadow-lg flex items-center gap-1 transition-colors cursor-pointer"
           >
             <span>👤 {playerClass}</span>
+          </button>
+
+          <button
+            type="button"
+            data-testid="top-right-map-btn"
+            onClick={() => {
+              audioManager.playClick();
+              setHubOpen(false);
+              setStoryModalOpen(false);
+              setActiveModal('none');
+              setActiveObjectModal('campus_map');
+            }}
+            className="min-h-[34px] px-2.5 py-1 rounded bg-[#0a101f]/80 hover:bg-[#16223d] border border-emerald-400/50 text-xs font-semibold text-emerald-200 shadow-lg flex items-center gap-1 transition-colors cursor-pointer"
+          >
+            <span>🗺️ Map</span>
           </button>
 
           <button
@@ -587,49 +692,91 @@ export function AcademyHUD() {
         </div>
       )}
 
-      {/* Bottom Area: Proximity Greeting Bubble + Interaction Pill + Compact Mobile Controls */}
+      {/* Bottom Area: V8.0 Universal Contextual Interaction Button + Active Posture Bar + Compact Mobile Controls */}
       <div className="w-full flex flex-col items-center pb-2.5 px-3 gap-1.5">
-        {/* Proximity-Based NPC Greeting Bubble + Tap-to-Chat Pill (with NPC Class & Personality!) */}
-        {phase === 'playing' && nearbyInteractable && !activeDialogue && (
-          <div className="flex flex-col items-center gap-1 max-w-xs sm:max-w-sm">
-            {nearbyInteractable.greetingText && (
-              <div
-                data-testid="proximity-greeting-bubble"
-                onClick={() => openInteractionDialogue()}
-                className="pointer-events-auto px-3 py-1 rounded-lg bg-[#081022]/82 border border-amber-300/45 shadow-md text-center cursor-pointer"
+        {/* Active Object Posture Status & Stand Up / Exit Pill */}
+        {phase === 'playing' &&
+          activeObjectInteraction &&
+          !activeDialogue &&
+          activeObjectModal === 'none' && (
+            <div className="flex flex-col items-center gap-1 max-w-xs sm:max-w-sm">
+              <button
+                type="button"
+                data-testid="exit-interaction-btn"
+                onClick={() => exitObjectInteraction()}
+                className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-[#0a1428]/90 hover:bg-rose-950/90 border border-amber-400/70 shadow-lg flex items-center gap-2 transition-colors cursor-pointer"
               >
-                <div className="text-[10px] font-semibold text-amber-300">
-                  {nearbyInteractable.name.split(' ')[0]}
-                  {nearbyInteractable.academyClass
-                    ? ` · ${nearbyInteractable.academyClass}`
-                    : ''}
-                  {nearbyInteractable.personalityType
-                    ? ` · ${nearbyInteractable.personalityType}`
-                    : ''}
-                </div>
-                <div className="text-[11px] text-slate-100 leading-snug">
-                  &ldquo;{nearbyInteractable.greetingText}&rdquo;
-                </div>
-              </div>
-            )}
-            <button
-              type="button"
-              data-testid="interaction-prompt-banner"
-              onClick={() => openInteractionDialogue()}
-              className="pointer-events-auto px-3 py-1 rounded-full bg-[#0a1224]/75 hover:bg-[#142242]/90 border border-emerald-400/60 shadow-lg flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <span className="px-1.5 py-0.2 rounded-full bg-emerald-600 text-[10px] font-mono font-bold text-white">
-                TAP
-              </span>
-              <span className="text-[11px] font-semibold text-white">
-                Chat: {nearbyInteractable.name.split(' ')[0]}
-                {nearbyInteractable.academyClass
-                  ? ` (${nearbyInteractable.academyClass})`
-                  : ''}
-              </span>
-            </button>
-          </div>
-        )}
+                <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-[10px] font-mono font-bold text-slate-950">
+                  {activeObjectInteraction.posture === 'study'
+                    ? '✍️ STUDYING'
+                    : activeObjectInteraction.posture === 'eat'
+                      ? '🍱 EATING'
+                      : activeObjectInteraction.posture === 'read'
+                        ? '📖 READING'
+                        : activeObjectInteraction.posture === 'use_computer'
+                          ? '💻 TERMINAL'
+                          : '🪑 SEATED'}
+                </span>
+                <span className="text-xs font-semibold text-white">
+                  {activeObjectInteraction.label}
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-rose-600 text-[10px] font-bold text-white">
+                  Stand Up [E]
+                </span>
+              </button>
+            </div>
+          )}
+
+        {/* V8.0 Universal Contextual Floating Interaction Button (Only appears when near a valid interactable object or NPC!) */}
+        {phase === 'playing' &&
+          !activeObjectInteraction &&
+          contextualPrompt &&
+          !activeDialogue &&
+          activeObjectModal === 'none' && (
+            <div className="flex flex-col items-center gap-1 max-w-xs sm:max-w-md">
+              {contextualPrompt.sourceKind === 'npc' &&
+                contextualPrompt.npcTarget?.greetingText && (
+                  <div
+                    data-testid="proximity-greeting-bubble"
+                    onClick={() => triggerContextualInteraction()}
+                    className="pointer-events-auto px-3 py-1 rounded-lg bg-[#081022]/85 border border-amber-300/45 shadow-md text-center cursor-pointer"
+                  >
+                    <div className="text-[10px] font-semibold text-amber-300">
+                      {contextualPrompt.npcTarget.name.split(' ')[0]}
+                      {contextualPrompt.npcTarget.academyClass
+                        ? ` · ${contextualPrompt.npcTarget.academyClass}`
+                        : ''}
+                      {contextualPrompt.npcTarget.personalityType
+                        ? ` · ${contextualPrompt.npcTarget.personalityType}`
+                        : ''}
+                    </div>
+                    <div className="text-[11px] text-slate-100 leading-snug">
+                      &ldquo;{contextualPrompt.npcTarget.greetingText}&rdquo;
+                    </div>
+                  </div>
+                )}
+
+              <button
+                type="button"
+                data-testid="contextual-interaction-btn"
+                onClick={() => triggerContextualInteraction()}
+                className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-[#0a1224]/88 hover:bg-[#142242]/95 border border-emerald-400/70 shadow-lg flex items-center gap-2 transition-colors cursor-pointer"
+              >
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-[10px] font-mono font-bold text-white">
+                  {contextualPrompt.icon} [E]
+                </span>
+                <span
+                  data-testid="interaction-prompt-banner"
+                  className="text-xs font-bold text-emerald-200"
+                >
+                  {contextualPrompt.actionVerb}
+                </span>
+                <span className="text-[11px] font-medium text-slate-200 truncate max-w-[190px]">
+                  · {contextualPrompt.label}
+                </span>
+              </button>
+            </div>
+          )}
 
         {/* Compact Small Mobile Touch Controls (Bottom-Left Stick + Bottom-Right Small Buttons) */}
         {phase === 'playing' && !activeDialogue && shouldRenderMobileControls && (
@@ -662,7 +809,7 @@ export function AcademyHUD() {
               </div>
             </div>
 
-            {/* Compact 40px Right Action Pad (Chat, Jump, Run, Cam) */}
+            {/* Compact 40px Right Action Pad (Use/Chat, Jump, Run, Cam) */}
             <div
               data-testid="mobile-action-pad"
               className="pointer-events-auto grid grid-cols-2 gap-1.5 items-center"
@@ -672,16 +819,22 @@ export function AcademyHUD() {
                 data-testid="mobile-btn-interact"
                 onClick={() => {
                   audioManager.startBgm(timeOfDay);
-                  openInteractionDialogue();
+                  triggerContextualInteraction();
                   triggerMobileInteract();
                 }}
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border shadow-md flex items-center justify-center transition-colors cursor-pointer touch-none ${
-                  nearbyInteractable
-                    ? 'bg-emerald-600/85 border-emerald-300 text-white'
+                  contextualPrompt || activeObjectInteraction
+                    ? 'bg-emerald-600/90 border-emerald-300 text-white'
                     : 'bg-[#0d1528]/65 border-indigo-400/50 text-slate-100'
                 }`}
               >
-                <span className="text-[10px] font-bold">CHAT</span>
+                <span className="text-[9px] font-bold uppercase">
+                  {activeObjectInteraction
+                    ? 'UP'
+                    : contextualPrompt?.sourceKind === 'object'
+                      ? 'USE'
+                      : 'CHAT'}
+                </span>
               </button>
 
               <button
@@ -1063,6 +1216,635 @@ export function AcademyHUD() {
         </div>
       )}
 
+      {/* ===================================================================== */}
+      {/* V8.0 UNIVERSAL OBJECT INTERACTION MODALS                              */}
+      {/* ===================================================================== */}
+
+      {/* 1. Multi-Section Library Bookshelf & Return Station Modal */}
+      {activeObjectModal === 'library_bookshelf' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="library-bookshelf-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[86vh] overflow-y-auto rounded-xl bg-[#091224]/96 border border-indigo-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-start justify-between gap-2 border-b border-slate-700/80 pb-2.5">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">
+                  Hoshino Academy · Multi-Section Library Catalogue
+                </div>
+                <h2 className="font-display text-base sm:text-lg font-bold text-white">
+                  📚 Browse, Borrow, Read &amp; Return Books
+                </h2>
+                <div className="text-[11px] text-indigo-200">
+                  Borrowed Books: {(missionProgress.borrowedBookIds ?? []).length} · Read Books:{' '}
+                  {(missionProgress.readBookIds ?? []).length}/{LIBRARY_BOOKS.length}
+                </div>
+              </div>
+              <button
+                type="button"
+                data-testid="close-bookshelf-modal-btn"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="flex flex-wrap gap-1">
+              {BOOK_CATEGORIES.map((cat) => {
+                const active = selectedBookshelfCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    data-testid={`bookshelf-tab-${cat.toLowerCase()}`}
+                    onClick={() => setSelectedBookshelfCategory(cat)}
+                    className={`px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition-colors ${
+                      active
+                        ? 'bg-indigo-600 text-white border border-indigo-300'
+                        : 'bg-[#111c35] text-slate-300 hover:text-white border border-slate-700'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Books Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[55vh] overflow-y-auto pr-1">
+              {LIBRARY_BOOKS.filter(
+                (b) =>
+                  selectedBookshelfCategory === 'All' ||
+                  b.category === selectedBookshelfCategory
+              ).map((book) => {
+                const isBorrowed = (missionProgress.borrowedBookIds ?? []).includes(book.id);
+                const isRead = (missionProgress.readBookIds ?? []).includes(book.id);
+                return (
+                  <div
+                    key={book.id}
+                    data-testid={`library-book-card-${book.id}`}
+                    className="rounded-lg bg-[#0d1830] border border-slate-700/80 p-3 flex flex-col justify-between gap-2"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="px-1.5 py-0.5 rounded bg-indigo-950 border border-indigo-400/40 text-[10px] font-mono text-indigo-200">
+                          {book.category}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-300">
+                          +{book.skillBonus.amount} {book.skillBonus.skill}
+                        </span>
+                      </div>
+                      <h3 className="font-display text-sm font-bold text-amber-200">
+                        {book.title}
+                      </h3>
+                      <div className="text-[10px] text-slate-400">By {book.author}</div>
+                      <p className="text-[11px] text-slate-200 leading-snug">{book.summary}</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1 border-t border-slate-800">
+                      <button
+                        type="button"
+                        data-testid={`borrow-book-${book.id}`}
+                        disabled={isBorrowed}
+                        onClick={() => borrowBook(book.id)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-bold cursor-pointer ${
+                          isBorrowed
+                            ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40 opacity-80'
+                            : 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                        }`}
+                      >
+                        {isBorrowed ? '✓ In Bag' : '📥 Take Book'}
+                      </button>
+
+                      <button
+                        type="button"
+                        data-testid={`read-book-${book.id}`}
+                        onClick={() => openBookReader(book.id)}
+                        className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-[11px] font-bold text-white cursor-pointer"
+                      >
+                        📖 {isRead ? 'Read Again' : 'Read Book'}
+                      </button>
+
+                      {isBorrowed && (
+                        <button
+                          type="button"
+                          data-testid={`return-book-${book.id}`}
+                          onClick={() => returnBook(book.id)}
+                          className="px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 text-[11px] font-semibold text-slate-200 cursor-pointer"
+                        >
+                          ↩ Return
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 2. Multi-Page Book Reader Modal */}
+      {activeObjectModal === 'book_reader' &&
+        (() => {
+          const book =
+            LIBRARY_BOOKS.find((b) => b.id === activeReadingBookId) ?? LIBRARY_BOOKS[0];
+          const totalPages = book.pages.length;
+          const pageIdx = Math.min(activeReadingPageIndex, totalPages - 1);
+          const isBorrowed = (missionProgress.borrowedBookIds ?? []).includes(book.id);
+
+          return (
+            <div
+              className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/85 px-3 py-4"
+              onClick={() => exitObjectInteraction()}
+            >
+              <div
+                data-testid="book-reader-modal"
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-lg rounded-xl bg-[#0b1529]/96 border border-amber-400/50 p-4 sm:p-5 shadow-2xl text-slate-100 space-y-3.5"
+              >
+                <div className="flex items-start justify-between gap-2 border-b border-slate-700 pb-2.5">
+                  <div>
+                    <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">
+                      {book.category} Section · By {book.author}
+                    </div>
+                    <h2 className="font-display text-base sm:text-lg font-bold text-white">
+                      📖 {book.title}
+                    </h2>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="close-book-reader-btn"
+                    onClick={() => exitObjectInteraction()}
+                    className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+                  >
+                    Stop Reading
+                  </button>
+                </div>
+
+                <div
+                  data-testid="book-reader-page-content"
+                  className="rounded-lg bg-[#111e38] border border-indigo-400/30 p-4 min-h-[140px] flex flex-col justify-between space-y-3"
+                >
+                  <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-serif">
+                    {book.pages[pageIdx]}
+                  </p>
+                  <div className="flex items-center justify-between text-[11px] font-mono text-amber-300 pt-2 border-t border-slate-700/70">
+                    <span>
+                      Page {pageIdx + 1} of {totalPages}
+                    </span>
+                    <span className="text-emerald-300">
+                      Skill Bonus: +{book.skillBonus.amount} {book.skillBonus.skill}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      data-testid="book-prev-page-btn"
+                      disabled={pageIdx <= 0}
+                      onClick={() => setReadingPage(pageIdx - 1)}
+                      className="px-3 py-1.5 rounded bg-[#162444] hover:bg-[#1f325d] disabled:opacity-40 text-xs font-semibold text-white cursor-pointer"
+                    >
+                      ◀ Prev Page
+                    </button>
+                    <button
+                      type="button"
+                      data-testid="book-next-page-btn"
+                      disabled={pageIdx >= totalPages - 1}
+                      onClick={() => setReadingPage(pageIdx + 1)}
+                      className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-xs font-semibold text-white cursor-pointer"
+                    >
+                      Next Page ▶
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    {!isBorrowed ? (
+                      <button
+                        type="button"
+                        onClick={() => borrowBook(book.id)}
+                        className="px-2.5 py-1.5 rounded bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 cursor-pointer"
+                      >
+                        📥 Borrow Book
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => returnBook(book.id)}
+                        className="px-2.5 py-1.5 rounded bg-slate-700 hover:bg-slate-600 text-xs font-semibold text-slate-200 cursor-pointer"
+                      >
+                        ↩ Return Book
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setActiveObjectModal('library_bookshelf')}
+                      className="px-2.5 py-1.5 rounded bg-[#162444] hover:bg-[#1f325d] text-xs font-semibold text-indigo-200 cursor-pointer"
+                    >
+                      📚 All Books
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* 3. Computer Lab Workstation Terminal Modal */}
+      {activeObjectModal === 'computer_terminal' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="computer-terminal-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-xl bg-[#071324]/96 border border-cyan-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">
+                  Hoshino OS v8.0 · Computer &amp; Robotics Laboratory
+                </div>
+                <h2 className="font-display text-base font-bold text-white">
+                  💻 Digital Research &amp; Coding Workstation
+                </h2>
+              </div>
+              <button
+                type="button"
+                data-testid="exit-computer-btn"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                Exit Computer
+              </button>
+            </div>
+
+            <div className="rounded-lg bg-[#040b16] border border-cyan-500/35 p-3 font-mono text-xs space-y-2">
+              <div className="text-cyan-300">
+                &gt; SYSTEM TASK: Calibrate Project Hoshikaze 4-Class Telemetry Array
+              </div>
+              <div className="text-slate-300 text-[11px]">
+                Compiling meteorological sensor nodes across Class A, Class B, Class C, and
+                Class D terminals...
+              </div>
+              {labActivityToast && (
+                <div className="p-2 rounded bg-emerald-950/90 border border-emerald-400/60 text-emerald-200 text-[11px]">
+                  {labActivityToast}
+                </div>
+              )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button
+                  type="button"
+                  data-testid="complete-computer-challenge-btn"
+                  onClick={() => {
+                    completeComputerLabActivity();
+                    setLabActivityToast(
+                      '✓ Telemetry Array Synchronized! Earned +25 XP, +4 Problem Solving & Digital Archive Clue!'
+                    );
+                  }}
+                  className="px-3 py-1.5 rounded bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs cursor-pointer"
+                >
+                  ▶ Execute Telemetry Algorithm (+25 XP)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveObjectModal('library_bookshelf')}
+                  className="px-3 py-1.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs cursor-pointer"
+                >
+                  📚 Open Digital Library Catalogue
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. Science Lab Optical Microscope Modal */}
+      {activeObjectModal === 'science_microscope' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="science-microscope-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-xl bg-[#081526]/96 border border-emerald-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">
+                  Hoshino Science Laboratory · Optical Bench
+                </div>
+                <h2 className="font-display text-base font-bold text-white">
+                  🔬 Binocular Research Microscope
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                Step Away
+              </button>
+            </div>
+
+            <div className="flex gap-1.5">
+              {[
+                {
+                  title: 'Sakura Epidermal Cells (400x)',
+                  desc: 'Delicate hexagonal cell walls with anthocyanin pigment vacuoles from the courtyard cherry trees.',
+                },
+                {
+                  title: 'Koi Pond Micro-Flora (600x)',
+                  desc: 'Symbiotic oxygenating diatoms thriving in the West Koi Garden basin.',
+                },
+                {
+                  title: 'Quartz Chronometer Crystal (800x)',
+                  desc: 'Precision-cut piezoelectric lattice used in the original Project Hoshikaze solar chronometer!',
+                },
+              ].map((slide, idx) => (
+                <button
+                  key={slide.title}
+                  type="button"
+                  onClick={() => setSelectedSlideIndex(idx)}
+                  className={`flex-1 p-2 rounded border text-[11px] font-semibold cursor-pointer ${
+                    selectedSlideIndex === idx
+                      ? 'bg-emerald-700/80 border-emerald-300 text-white'
+                      : 'bg-[#102038] border-slate-700 text-slate-300'
+                  }`}
+                >
+                  Slide #{idx + 1}
+                </button>
+              ))}
+            </div>
+
+            <div className="rounded-lg bg-[#05101e] border border-emerald-500/40 p-3 text-xs space-y-1.5">
+              <div className="font-bold text-emerald-300">
+                Active Specimen:{' '}
+                {
+                  [
+                    'Sakura Epidermal Cells (400x)',
+                    'Koi Pond Micro-Flora (600x)',
+                    'Quartz Chronometer Crystal (800x)',
+                  ][selectedSlideIndex]
+                }
+              </div>
+              <p className="text-slate-200 text-[11px]">
+                {
+                  [
+                    'Delicate hexagonal cell walls with anthocyanin pigment vacuoles from the courtyard cherry trees.',
+                    'Symbiotic oxygenating diatoms thriving in the West Koi Garden basin.',
+                    'Precision-cut piezoelectric lattice used in the original Project Hoshikaze solar chronometer!',
+                  ][selectedSlideIndex]
+                }
+              </p>
+              {labActivityToast && (
+                <div className="p-2 rounded bg-emerald-950 border border-emerald-400/50 text-emerald-200 text-[11px]">
+                  {labActivityToast}
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                data-testid="record-microscope-btn"
+                onClick={() => {
+                  completeScienceMicroscopeActivity();
+                  setLabActivityToast(
+                    '✓ Specimen logged in Science Lab Journal! (+20 XP & +4 Observation)'
+                  );
+                }}
+                className="px-3.5 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs cursor-pointer"
+              >
+                🔬 Record Lab Observation (+20 XP)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. Cafeteria Menu & Meal Order Modal */}
+      {activeObjectModal === 'cafeteria_menu' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="cafeteria-menu-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-lg rounded-xl bg-[#0b1324]/96 border border-amber-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">
+                  West Cafeteria Pavilion · Student Dining Counter
+                </div>
+                <h2 className="font-display text-base font-bold text-white">
+                  🍱 Campus Lunch Menu (Personal Points: {missionProgress.ppPoints ?? 150} PP)
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {CAFETERIA_MENU_ITEMS.map((item) => {
+                const canAfford = (missionProgress.ppPoints ?? 150) >= item.pricePp;
+                return (
+                  <div
+                    key={item.id}
+                    className="rounded-lg bg-[#111e36] border border-slate-700 p-3 flex flex-col justify-between gap-2"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-bold text-amber-200">
+                        <span>{item.name}</span>
+                        <span className="font-mono text-emerald-300">{item.pricePp} PP</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 mt-1">{item.description}</p>
+                    </div>
+                    <button
+                      type="button"
+                      data-testid={`order-meal-${item.id}`}
+                      disabled={!canAfford}
+                      onClick={() => orderCafeteriaMeal(item.id)}
+                      className="w-full py-1.5 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-40 text-slate-950 font-bold text-xs cursor-pointer"
+                    >
+                      🍴 Order &amp; Sit to Eat (+{item.xpBonus} XP)
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Interactive Campus Map & Building Floor Directory Modal */}
+      {(activeObjectModal === 'campus_map' || activeObjectModal === 'elevator_floor') && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="campus-map-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-xl bg-[#091224]/96 border border-sky-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-sky-300">
+                  Hoshino Academy · Interactive Architecture &amp; District Directory
+                </div>
+                <h2 className="font-display text-base sm:text-lg font-bold text-white">
+                  🗺️ Campus Buildings, Classrooms A–D &amp; Open World Map
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {CAMPUS_DIRECTORY_LOCATIONS.map((loc) => (
+                <button
+                  key={loc.id}
+                  type="button"
+                  data-testid={`directory-nav-${loc.id}`}
+                  onClick={() => {
+                    teleportToZone(loc.x, loc.z, loc.yaw);
+                  }}
+                  className="p-2.5 rounded-lg bg-[#101e38] hover:bg-indigo-900/80 border border-slate-700 hover:border-sky-400/60 text-left flex items-center justify-between gap-2 cursor-pointer transition-colors"
+                >
+                  <div>
+                    <div className="text-xs font-bold text-white">{loc.name}</div>
+                    <div className="text-[10px] font-mono text-sky-300">{loc.zone}</div>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-[10px] font-mono text-sky-200 shrink-0">
+                    Go ▸
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Noticeboard / Blackboard / Locker / Reception Reader Modal */}
+      {activeObjectModal === 'notice_reader' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="notice-reader-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-xl bg-[#0a1428]/96 border border-indigo-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <h2 className="font-display text-sm sm:text-base font-bold text-amber-200">
+                📋 {activeNoticeObject?.noticeTitle ?? activeNoticeObject?.label ?? 'Campus Notice'}
+              </h2>
+              <button
+                type="button"
+                data-testid="close-notice-modal-btn"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-xs text-slate-200 leading-relaxed">
+              {activeNoticeObject?.noticeBody ??
+                'Official Hoshino Academy notice for Classes A, B, C, and D.'}
+            </p>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-emerald-300 font-mono">
+              <span>✓ Inspection Recorded (+{activeNoticeObject?.xpReward ?? 15} XP)</span>
+              <button
+                type="button"
+                onClick={() => exitObjectInteraction()}
+                className="px-3 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-white font-sans font-semibold cursor-pointer"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Dormitory Wardrobe & Rest Modal */}
+      {activeObjectModal === 'wardrobe_outfit' && (
+        <div
+          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/84 px-3 py-4"
+          onClick={() => exitObjectInteraction()}
+        >
+          <div
+            data-testid="wardrobe-outfit-modal"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-md rounded-xl bg-[#0a1428]/96 border border-indigo-400/50 p-4 shadow-2xl text-slate-100 space-y-3"
+          >
+            <div className="flex items-center justify-between border-b border-slate-700 pb-2">
+              <h2 className="font-display text-base font-bold text-white">
+                👕 Student Dormitory Wardrobe &amp; Rest
+              </h2>
+              <button
+                type="button"
+                onClick={() => exitObjectInteraction()}
+                className="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(
+                [
+                  { id: 'uniform_blazer', label: 'Navy Academy Blazer' },
+                  { id: 'summer_vest', label: 'Summer Knit Vest' },
+                  { id: 'track_jacket', label: 'Athletics Tracksuit' },
+                  { id: 'council_gold', label: 'Council Gold-Trim' },
+                ] as Array<{ id: CharacterCustomization['outfit']; label: string }>
+              ).map((o) => {
+                const active =
+                  missionProgress.characterCustomization?.outfit === o.id;
+                return (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => updateCharacterCustomization({ outfit: o.id })}
+                    className={`p-2.5 rounded border text-xs font-semibold cursor-pointer ${
+                      active
+                        ? 'bg-indigo-600 border-indigo-300 text-white'
+                        : 'bg-[#111e36] border-slate-700 text-slate-200'
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Focused Pause Modal Card when phase === 'paused' */}
       {phase === 'paused' && activeModal === 'none' && (
         <div
@@ -1136,3 +1918,4 @@ export function AcademyHUD() {
     </div>
   );
 }
+

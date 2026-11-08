@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   advanceMissionProgress,
   applyGraphicsPreset,
+  borrowLibraryBook,
   clampCameraPositionAgainstWalls,
   completeStoryPhaseProgress,
   computeAudioGain,
@@ -28,14 +29,22 @@ import {
   isPhaseUnlocked,
   isStoryUnlocked,
   mapPhaseToBodyState,
+  purchaseCafeteriaMeal,
+  readLibraryBook,
   resolveCampusCollisions,
+  returnLibraryBook,
   sanitizeSettings,
   stepAutonomousNPCs,
   stepPlayerPhysics,
+  toggleCampusDoor,
   updateNpcRelationshipOnInteraction,
   validateSaveData,
   validateStoryDirectorPack,
 } from './rules';
+import {
+  findBestContextualInteraction,
+  LIBRARY_BOOKS,
+} from '../systems/ObjectInteractionSystem';
 import { CAMPUS_INTERACTABLES, INITIAL_MISSION_PROGRESS } from '../../config/defaults';
 import { PlayerPhysicsState } from '../../types/game';
 
@@ -165,7 +174,11 @@ test('resolveCampusCollisions prevents wall tunneling, clamps camera, and suppor
   assert.equal(insideDoorway.z, -10.5);
   assert.equal(isInsideSchoolBuilding(-14.2, -16.0), true);
   assert.equal(getCampusZoneLabel(-14.2, -16.0), 'Inside Class A Homeroom');
+  assert.equal(getCampusZoneLabel(-20.8, -2.5), 'Class B Classroom');
+  assert.equal(getCampusZoneLabel(20.8, -2.5), 'Class C Classroom');
+  assert.equal(getCampusZoneLabel(-29.5, -16.0), 'Class D Classroom');
   assert.equal(getCampusZoneLabel(14.2, -16.0), 'Library & Archive Room');
+  assert.equal(getCampusZoneLabel(29.5, -16.0), 'Computer Laboratory');
 
   // Walking or sprinting into the left front wall (x = -10, z = -9.8, coming from z = -8.8) pushes player back outside (z >= -8.91)
   const pushedFromLeftWall = resolveCampusCollisions(
@@ -489,6 +502,62 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
   );
   assert.ok(aikoRel.memories.some((m: string) => m.includes('Greeted Aiko')));
 });
+
+test('V8.0 Universal Object Interaction System, Library Book Borrowing/Reading/Returning, Doors, and Cafeteria work', () => {
+  // 1. Contextual interaction detection for Courtyard Bench ("Sit")
+  const benchPrompt = findBestContextualInteraction({
+    playerX: 0,
+    playerZ: 17.5,
+    playerYaw: Math.PI,
+  });
+  assert.ok(benchPrompt);
+  assert.equal(benchPrompt.sourceKind, 'object');
+  assert.equal(benchPrompt.actionVerb, 'Sit');
+
+  // 2. Contextual interaction detection for Library Bookshelf ("Browse Books")
+  const shelfPrompt = findBestContextualInteraction({
+    playerX: 11.2,
+    playerZ: -19.8,
+    playerYaw: Math.PI,
+  });
+  assert.ok(shelfPrompt);
+  assert.equal(shelfPrompt.actionVerb, 'Browse Books');
+
+  // 3. Contextual interaction detection for Computer Lab ("Use Computer")
+  const compPrompt = findBestContextualInteraction({
+    playerX: 30.5,
+    playerZ: -15.0,
+    playerYaw: Math.PI,
+  });
+  assert.ok(compPrompt);
+  assert.equal(compPrompt.actionVerb, 'Use Computer');
+
+  // 4. Library Book Borrow -> Read -> Return lifecycle
+  let mp = structuredClone(INITIAL_MISSION_PROGRESS);
+  const targetBook = LIBRARY_BOOKS[0];
+  mp = borrowLibraryBook(mp, targetBook.id);
+  assert.ok(mp.borrowedBookIds?.includes(targetBook.id));
+  assert.ok(mp.inventoryItems?.includes(`Book: ${targetBook.title}`));
+
+  const prevSkillVal = mp.skills?.[targetBook.skillBonus.skill] ?? 15;
+  mp = readLibraryBook(mp, targetBook.id);
+  assert.ok(mp.readBookIds?.includes(targetBook.id));
+  assert.ok((mp.skills?.[targetBook.skillBonus.skill] ?? 0) > prevSkillVal);
+
+  mp = returnLibraryBook(mp, targetBook.id);
+  assert.ok(!mp.borrowedBookIds?.includes(targetBook.id));
+  assert.ok(!mp.inventoryItems?.includes(`Book: ${targetBook.title}`));
+
+  // 5. Door open/close toggle & Cafeteria meal purchase
+  const beforeDoors = [...(mp.openDoorIds ?? [])];
+  mp = toggleCampusDoor(mp, 'door_class_a');
+  assert.notDeepEqual(mp.openDoorIds, beforeDoors);
+
+  const mealResult = purchaseCafeteriaMeal(mp, 'meal_bento_deluxe');
+  assert.equal(mealResult.purchased, true);
+  assert.ok((mealResult.nextProgress.ppPoints ?? 0) < (mp.ppPoints ?? 150));
+});
+
 
 
 

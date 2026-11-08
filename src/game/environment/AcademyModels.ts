@@ -24,6 +24,7 @@ export interface AcademyEnvironmentRefs {
   cloudGroup: THREE.Group;
   cloudMaterial: THREE.MeshStandardMaterial;
   celestialDisc: THREE.Mesh;
+  doorPivots: Record<string, THREE.Group>;
   dispose: () => void;
 }
 
@@ -31,10 +32,11 @@ export function buildAcademyEnvironment(
   textures: ProceduralTextureSet
 ): AcademyEnvironmentRefs {
   const rootGroup = new THREE.Group();
-  rootGroup.name = 'SeiranAcademyEnvironment';
+  rootGroup.name = 'SeiranAcademyEnvironmentV8';
 
   const geometries: THREE.BufferGeometry[] = [];
   const materials: THREE.Material[] = [];
+  const doorPivots: Record<string, THREE.Group> = {};
 
   const trackGeo = <T extends THREE.BufferGeometry>(g: T): T => {
     geometries.push(g);
@@ -45,14 +47,16 @@ export function buildAcademyEnvironment(
     return m;
   };
 
-  // Shared PBR Materials
+  // ==========================================================================
+  // SHARED ARCHITECTURAL PBR MATERIALS (Modern Japanese Elite Academy)
+  // ==========================================================================
   const courtyardMat = trackMat(
     new THREE.MeshStandardMaterial({
       map: textures.courtyardTileColor,
       bumpMap: textures.courtyardTileBump,
       bumpScale: 0.03,
-      roughness: 0.78,
-      metalness: 0.05,
+      roughness: 0.76,
+      metalness: 0.06,
     })
   );
 
@@ -70,8 +74,8 @@ export function buildAcademyEnvironment(
       emissiveMap: textures.academyFacadeEmissive,
       emissive: new THREE.Color('#ffcb7d'),
       emissiveIntensity: 0.85,
-      roughness: 0.65,
-      metalness: 0.12,
+      roughness: 0.62,
+      metalness: 0.14,
     })
   );
 
@@ -80,23 +84,31 @@ export function buildAcademyEnvironment(
       map: textures.roofSlateColor,
       bumpMap: textures.roofSlateBump,
       bumpScale: 0.04,
-      roughness: 0.55,
-      metalness: 0.22,
+      roughness: 0.52,
+      metalness: 0.24,
     })
   );
 
   const creamWallMat = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0xe2dfd7,
-      roughness: 0.72,
+      color: 0xe6e3dc,
+      roughness: 0.7,
       metalness: 0.05,
+    })
+  );
+
+  const concreteStoneMat = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0xcbd5e1,
+      roughness: 0.68,
+      metalness: 0.12,
     })
   );
 
   const interiorWallMat = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0xf4f1ea,
-      roughness: 0.75,
+      color: 0xf5f2eb,
+      roughness: 0.74,
       metalness: 0.04,
     })
   );
@@ -104,32 +116,44 @@ export function buildAcademyEnvironment(
   const interiorFloorMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0xc8a97e,
-      roughness: 0.45,
+      roughness: 0.42,
       metalness: 0.08,
     })
   );
 
   const hallwayTileMat = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0xd6d3cd,
-      roughness: 0.4,
-      metalness: 0.1,
+      color: 0xd8d5ce,
+      roughness: 0.36,
+      metalness: 0.12,
     })
   );
 
   const darkTrimMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0x1e2638,
-      roughness: 0.5,
-      metalness: 0.35,
+      roughness: 0.45,
+      metalness: 0.42,
     })
   );
 
   const stoneMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0x949ba6,
-      roughness: 0.8,
+      roughness: 0.78,
       metalness: 0.08,
+    })
+  );
+
+  const glassCurtainMat = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0xbae6fd,
+      emissive: 0x0369a1,
+      emissiveIntensity: 0.28,
+      roughness: 0.14,
+      metalness: 0.55,
+      transparent: true,
+      opacity: 0.68,
     })
   );
 
@@ -148,7 +172,7 @@ export function buildAcademyEnvironment(
   const woodMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0x6b442a,
-      roughness: 0.82,
+      roughness: 0.8,
       metalness: 0.04,
     })
   );
@@ -156,16 +180,26 @@ export function buildAcademyEnvironment(
   const lightWoodMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0xa47551,
-      roughness: 0.65,
+      roughness: 0.62,
       metalness: 0.06,
     })
   );
 
   const chalkboardMat = trackMat(
     new THREE.MeshStandardMaterial({
-      color: 0x14452f,
-      roughness: 0.7,
+      color: 0x134e3a,
+      roughness: 0.68,
       metalness: 0.05,
+    })
+  );
+
+  const screenGlowMat = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0x38bdf8,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.9,
+      roughness: 0.2,
+      metalness: 0.3,
     })
   );
 
@@ -199,10 +233,154 @@ export function buildAcademyEnvironment(
       color: 0xfbbf24,
       emissive: 0xb45309,
       emissiveIntensity: 0.4,
-      roughness: 0.3,
-      metalness: 0.8,
+      roughness: 0.28,
+      metalness: 0.82,
     })
   );
+
+  const crimsonMat = trackMat(
+    new THREE.MeshStandardMaterial({
+      color: 0xdc2626,
+      roughness: 0.55,
+      metalness: 0.08,
+    })
+  );
+
+  // Helper to build a functional hinged door that registers in `doorPivots`
+  const createHingedDoor = (
+    doorId: string,
+    hingeX: number,
+    hingeZ: number,
+    baseRotationY: number,
+    accentHex: number
+  ) => {
+    const pivot = new THREE.Group();
+    pivot.position.set(hingeX, 0, hingeZ);
+    pivot.rotation.y = baseRotationY;
+    pivot.userData = { baseRotationY };
+
+    const panel = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(1.15, 2.45, 0.1)),
+      lightWoodMat
+    );
+    panel.position.set(0.58, 1.25, 0);
+    panel.castShadow = true;
+    pivot.add(panel);
+
+    const windowInsert = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.65, 0.9, 0.12)),
+      glassCurtainMat
+    );
+    windowInsert.position.set(0.58, 1.65, 0);
+    pivot.add(windowInsert);
+
+    const classPlaca = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.52, 0.18, 0.13)),
+      trackMat(
+        new THREE.MeshStandardMaterial({
+          color: accentHex,
+          emissive: accentHex,
+          emissiveIntensity: 0.35,
+          roughness: 0.3,
+        })
+      )
+    );
+    classPlaca.position.set(0.58, 2.22, 0);
+    pivot.add(classPlaca);
+
+    const handle = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.12, 0.05, 0.18)),
+      goldAccentMat
+    );
+    handle.position.set(1.02, 1.1, 0);
+    pivot.add(handle);
+
+    doorPivots[doorId] = pivot;
+    rootGroup.add(pivot);
+  };
+
+  // Helper to populate a Classroom with Blackboard, Teacher Podium, Desks, Chairs, Clock & AC
+  const buildClassroomFurniture = (
+    parent: THREE.Group,
+    centerX: number,
+    centerZ: number,
+    cols: number[],
+    rows: number[],
+    boardZ: number,
+    classColorHex: number
+  ) => {
+    // Blackboard & Frame
+    const boardFrame = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(6.8, 1.95, 0.14)),
+      woodMat
+    );
+    boardFrame.position.set(centerX, 2.25, boardZ);
+    parent.add(boardFrame);
+
+    const boardSurface = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(6.4, 1.7, 0.18)),
+      chalkboardMat
+    );
+    boardSurface.position.set(centerX, 2.25, boardZ + 0.02);
+    parent.add(boardSurface);
+
+    // Class Crest Header Banner above Blackboard
+    const classBanner = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.6, 0.36, 0.2)),
+      trackMat(
+        new THREE.MeshStandardMaterial({
+          color: classColorHex,
+          emissive: classColorHex,
+          emissiveIntensity: 0.35,
+          roughness: 0.35,
+        })
+      )
+    );
+    classBanner.position.set(centerX, 3.45, boardZ + 0.03);
+    parent.add(classBanner);
+
+    // Wall Clock above Blackboard
+    const clockCase = new THREE.Mesh(
+      trackGeo(new THREE.CylinderGeometry(0.28, 0.28, 0.08, 16)),
+      lanternBulbMaterial
+    );
+    clockCase.rotation.x = Math.PI / 2;
+    clockCase.position.set(centerX + 2.8, 3.45, boardZ + 0.05);
+    parent.add(clockCase);
+
+    // Teacher Podium & Desk
+    const podium = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.0, 1.02, 1.0)),
+      woodMat
+    );
+    podium.position.set(centerX, 0.51, boardZ + 2.1);
+    podium.castShadow = true;
+    parent.add(podium);
+
+    // Student Desks + Chairs (3-part composite appearance)
+    const deskTopGeo = trackGeo(new THREE.BoxGeometry(1.3, 0.74, 0.82));
+    const chairSeatGeo = trackGeo(new THREE.BoxGeometry(0.62, 0.45, 0.62));
+    const chairBackGeo = trackGeo(new THREE.BoxGeometry(0.62, 0.44, 0.08));
+
+    for (const dx of cols) {
+      for (const dz of rows) {
+        const desk = new THREE.Mesh(deskTopGeo, lightWoodMat);
+        desk.position.set(dx, 0.37, dz);
+        desk.castShadow = true;
+        desk.receiveShadow = true;
+        parent.add(desk);
+
+        const seat = new THREE.Mesh(chairSeatGeo, darkTrimMat);
+        seat.position.set(dx, 0.225, dz + 0.68);
+        seat.castShadow = true;
+        parent.add(seat);
+
+        const back = new THREE.Mesh(chairBackGeo, woodMat);
+        back.position.set(dx, 0.64, dz + 0.96);
+        parent.add(back);
+      }
+    }
+  };
 
   // ==========================================================================
   // 1. GRAND HOSHINO ACADEMY WORLD GROUND PLANES, COURTYARD PLAZA, ROADS & WALKWAYS
@@ -218,16 +396,33 @@ export function buildAcademyEnvironment(
 
   // Main Courtyard Paved Plaza
   const courtyardPlaza = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(66, 0.14, 54)),
+    trackGeo(new THREE.BoxGeometry(72, 0.14, 56)),
     courtyardMat
   );
   courtyardPlaza.position.set(0, 0.02, 10);
   courtyardPlaza.receiveShadow = true;
   rootGroup.add(courtyardPlaza);
 
+  // Covered Walkway Colonade Canopies flanking the Courtyard (East & West)
+  const colonnadeRoofGeo = trackGeo(new THREE.BoxGeometry(3.6, 0.32, 26.0));
+  const colonnadePostGeo = trackGeo(new THREE.CylinderGeometry(0.16, 0.18, 3.6, 8));
+  for (const colX of [-14.2, 14.2]) {
+    const canopy = new THREE.Mesh(colonnadeRoofGeo, darkTrimMat);
+    canopy.position.set(colX, 3.65, 18.0);
+    canopy.castShadow = true;
+    rootGroup.add(canopy);
+
+    for (let pz = 6.0; pz <= 30.0; pz += 6.0) {
+      const post = new THREE.Mesh(colonnadePostGeo, concreteStoneMat);
+      post.position.set(colX, 1.8, pz);
+      post.castShadow = true;
+      rootGroup.add(post);
+    }
+  }
+
   // Extended East-West Grand Promenade connecting West Koi Garden (-86) to East Research & Pool (+86)
   const crossWalkway = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(188, 0.15, 8.2)),
+    trackGeo(new THREE.BoxGeometry(188, 0.15, 8.6)),
     courtyardMat
   );
   crossWalkway.position.set(0, 0.025, 8);
@@ -253,41 +448,50 @@ export function buildAcademyEnvironment(
   rootGroup.add(northShrinePath);
 
   // ==========================================================================
-  // 2. WALKABLE MAIN ACADEMIC BUILDING (Ground Floor Interior + Upper Stories)
+  // 2. MULTI-WING WALKABLE ACADEMIC COMPLEX:
+  //    - Central Lobby, Reception, Lockers, Elevator & Water Fountain
+  //    - CLASS A CLASSROOM (North-West Main Wing: x = -14.2, z = -16.1)
+  //    - CLASS B CLASSROOM (South-West Wing: x = -21.2, z = -2.5)
+  //    - CLASS C CLASSROOM (South-East Wing: x = +21.2, z = -2.5)
+  //    - CLASS D CLASSROOM (West Annex: x = -30.5, z = -16.1)
+  //    - MULTI-SECTION LIBRARY (East Main Wing: x = +14.2, z = -16.1)
+  //    - COMPUTER LAB & TECH ANNEX (East Annex: x = +30.5, z = -16.1)
   // ==========================================================================
-  // Ground Floor Interior spans x: -22.8..22.8, z: -9.8..-22.4, y: 0..4.5
   const interiorGroup = new THREE.Group();
-  interiorGroup.name = 'WalkableSchoolInterior';
+  interiorGroup.name = 'WalkableSchoolInteriorV8';
   rootGroup.add(interiorGroup);
 
-  // 2A. School Interior Floor (Polished Hallway + Wood Classroom & Library Floors)
-  const classroomFloorWest = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(17.2, 0.16, 12.4)),
+  // 2A. Ground-Floor Walkable Floors for All 4 Classrooms, Lobby, Library & Computer Lab
+  const mainComplexFloor = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(72.0, 0.16, 12.6)),
     interiorFloorMat
   );
-  classroomFloorWest.position.set(-14.2, 0.04, -16.1);
-  classroomFloorWest.receiveShadow = true;
-  interiorGroup.add(classroomFloorWest);
-
-  const libraryFloorEast = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(17.2, 0.16, 12.4)),
-    interiorFloorMat
-  );
-  libraryFloorEast.position.set(14.2, 0.04, -16.1);
-  libraryFloorEast.receiveShadow = true;
-  interiorGroup.add(libraryFloorEast);
+  mainComplexFloor.position.set(0, 0.04, -16.1);
+  mainComplexFloor.receiveShadow = true;
+  interiorGroup.add(mainComplexFloor);
 
   const lobbyHallwayFloor = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(11.4, 0.17, 12.6)),
+    trackGeo(new THREE.BoxGeometry(11.4, 0.18, 12.6)),
     hallwayTileMat
   );
-  lobbyHallwayFloor.position.set(0, 0.045, -16.1);
+  lobbyHallwayFloor.position.set(0, 0.05, -16.1);
   lobbyHallwayFloor.receiveShadow = true;
   interiorGroup.add(lobbyHallwayFloor);
 
-  // Welcoming Blue Entrance Mat at Front Door (0, 0.06, -10.2)
+  // Class B (South-West Wing) & Class C (South-East Wing) Walkable Wood Floors
+  for (const sideX of [-21.2, 21.2]) {
+    const wingFloor = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(12.2, 0.16, 13.8)),
+      interiorFloorMat
+    );
+    wingFloor.position.set(sideX, 0.04, -2.5);
+    wingFloor.receiveShadow = true;
+    interiorGroup.add(wingFloor);
+  }
+
+  // Welcoming Entrance Mat at Front Door (0, 0.07, -10.2)
   const welcomeMat = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(4.4, 0.06, 2.2)),
+    trackGeo(new THREE.BoxGeometry(4.6, 0.06, 2.2)),
     trackMat(
       new THREE.MeshStandardMaterial({
         color: 0x1e3a8a,
@@ -298,160 +502,210 @@ export function buildAcademyEnvironment(
   welcomeMat.position.set(0, 0.07, -10.2);
   interiorGroup.add(welcomeMat);
 
-  // 2B. Ground-Floor Perimeter & Partition Walls (Height = 4.5m)
+  // 2B. Perimeter & Partition Walls with Open Doorways for All 4 Classrooms + Library + Computer Lab
   // Front South Wall Left & Right (leaving x: -2.8..+2.8 open for the Front Entrance!)
-  const frontWallLeft = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(20.0, 4.5, 0.45)),
-    facadeMaterial
-  );
-  frontWallLeft.position.set(-12.8, 2.25, -9.8);
-  frontWallLeft.castShadow = true;
-  frontWallLeft.receiveShadow = true;
-  interiorGroup.add(frontWallLeft);
-
-  const frontWallRight = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(20.0, 4.5, 0.45)),
-    facadeMaterial
-  );
-  frontWallRight.position.set(12.8, 2.25, -9.8);
-  frontWallRight.castShadow = true;
-  frontWallRight.receiveShadow = true;
-  interiorGroup.add(frontWallRight);
+  for (const fx of [-19.4, 19.4]) {
+    const frontWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(33.2, 4.5, 0.42)),
+      facadeMaterial
+    );
+    frontWall.position.set(fx, 2.25, -9.8);
+    frontWall.castShadow = true;
+    frontWall.receiveShadow = true;
+    interiorGroup.add(frontWall);
+  }
 
   // Back North Wall Left & Right (leaving x: -2.8..+2.8 open to walk out to the North Sports Field!)
-  const backWallLeft = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(20.0, 4.5, 0.45)),
-    interiorWallMat
-  );
-  backWallLeft.position.set(-12.8, 2.25, -22.3);
-  backWallLeft.castShadow = true;
-  backWallLeft.receiveShadow = true;
-  interiorGroup.add(backWallLeft);
+  for (const bx of [-19.4, 19.4]) {
+    const backWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(33.2, 4.5, 0.42)),
+      interiorWallMat
+    );
+    backWall.position.set(bx, 2.25, -22.3);
+    backWall.castShadow = true;
+    backWall.receiveShadow = true;
+    interiorGroup.add(backWall);
+  }
 
-  const backWallRight = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(20.0, 4.5, 0.45)),
-    interiorWallMat
-  );
-  backWallRight.position.set(12.8, 2.25, -22.3);
-  backWallRight.castShadow = true;
-  backWallRight.receiveShadow = true;
-  interiorGroup.add(backWallRight);
+  // Far West Annex Wall (x = -36.0) & Far East Tech Annex Wall (x = +36.0)
+  for (const ex of [-36.0, 36.0]) {
+    const endWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.45, 4.5, 12.8)),
+      facadeMaterial
+    );
+    endWall.position.set(ex, 2.25, -16.05);
+    endWall.castShadow = true;
+    interiorGroup.add(endWall);
+  }
 
-  // Far West & Far East Exterior Ground Floor Walls
-  const farWestWall = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(0.45, 4.5, 12.8)),
-    facadeMaterial
-  );
-  farWestWall.position.set(-22.8, 2.25, -16.05);
-  farWestWall.castShadow = true;
-  interiorGroup.add(farWestWall);
-
-  const farEastWall = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(0.45, 4.5, 12.8)),
-    facadeMaterial
-  );
-  farEastWall.position.set(22.8, 2.25, -16.05);
-  farEastWall.castShadow = true;
-  interiorGroup.add(farEastWall);
-
-  // Interior Hallway Partition Walls (with wide 4.4m open doorways into Classroom 2-A & Library!)
-  [-5.6, 5.6].forEach((partX) => {
+  // Partition Walls with Wide 4.4m Open Doorways at x = -22.8 (Class D), -5.6 (Class A), +5.6 (Library), +22.8 (Computer Lab)
+  for (const partX of [-22.8, -5.6, 5.6, 22.8]) {
     const southSeg = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(0.3, 4.5, 3.8)),
+      trackGeo(new THREE.BoxGeometry(0.32, 4.5, 3.8)),
       interiorWallMat
     );
     southSeg.position.set(partX, 2.25, -11.8);
     interiorGroup.add(southSeg);
 
     const northSeg = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(0.3, 4.5, 3.8)),
+      trackGeo(new THREE.BoxGeometry(0.32, 4.5, 3.8)),
       interiorWallMat
     );
     northSeg.position.set(partX, 2.25, -20.3);
     interiorGroup.add(northSeg);
-  });
+  }
 
-  // 2C. Central Lobby Details: Japanese Shoe Lockers (Getabako) & Trophy Display
+  // Functional Hinged Doors for Main Entrance, Class A, Class B, Class C, Class D, and Library
+  createHingedDoor('door_main_front', -2.6, -9.6, 0.35, 0xfbbf24);
+  createHingedDoor('door_class_a', -5.6, -14.0, 0.45, 0xe11d48);
+  createHingedDoor('door_class_b', -15.0, -0.8, 0.45, 0x38bdf8);
+  createHingedDoor('door_class_c', 15.0, -0.8, 2.65, 0xa855f7);
+  createHingedDoor('door_class_d', -22.8, -14.0, 0.45, 0x10b981);
+  createHingedDoor('door_library', 5.6, -14.0, 2.65, 0xf59e0b);
+
+  // 2C. Central Lobby Details: Reception Desk, Shoe Lockers (Getabako), Elevator & Water Fountain
   const lockerGeo = trackGeo(new THREE.BoxGeometry(0.55, 2.1, 3.2));
-  [-4.9, 4.9].forEach((lx) => {
+  for (const lx of [-4.9, 4.9]) {
     const locker = new THREE.Mesh(lockerGeo, lightWoodMat);
     locker.position.set(lx, 1.05, -11.9);
     locker.castShadow = true;
     interiorGroup.add(locker);
-  });
-
-  // 2D. West Classroom 2-A Interior (Chalkboard, Teacher Podium, 12 Student Desks & Chairs)
-  const chalkboardFrame = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(8.6, 2.15, 0.14)),
-    woodMat
-  );
-  chalkboardFrame.position.set(-14.2, 2.35, -21.95);
-  interiorGroup.add(chalkboardFrame);
-
-  const chalkboardSurface = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(8.2, 1.85, 0.18)),
-    chalkboardMat
-  );
-  chalkboardSurface.position.set(-14.2, 2.35, -21.93);
-  interiorGroup.add(chalkboardSurface);
-
-  const teacherPodium = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(2.2, 1.05, 1.1)),
-    woodMat
-  );
-  teacherPodium.position.set(-14.2, 0.52, -19.5);
-  teacherPodium.castShadow = true;
-  interiorGroup.add(teacherPodium);
-
-  // 12 Instanced Student Desks + Chairs in Classroom 2-A
-  const deskCols = [-18.2, -14.2, -10.2];
-  const deskRows = [-17.2, -15.0, -12.8];
-  const totalDesks = deskCols.length * deskRows.length;
-  const deskTopGeo = trackGeo(new THREE.BoxGeometry(1.35, 0.74, 0.85));
-  const deskInstanced = new THREE.InstancedMesh(deskTopGeo, lightWoodMat, totalDesks);
-  deskInstanced.castShadow = true;
-  deskInstanced.receiveShadow = true;
-
-  const chairGeo = trackGeo(new THREE.BoxGeometry(0.65, 0.46, 0.65));
-  const chairInstanced = new THREE.InstancedMesh(chairGeo, darkTrimMat, totalDesks);
-
-  const dummy = new THREE.Object3D();
-  let deskIdx = 0;
-  for (const dx of deskCols) {
-    for (const dz of deskRows) {
-      dummy.position.set(dx, 0.37, dz);
-      dummy.rotation.set(0, 0, 0);
-      dummy.scale.setScalar(1);
-      dummy.updateMatrix();
-      deskInstanced.setMatrixAt(deskIdx, dummy.matrix);
-
-      dummy.position.set(dx, 0.23, dz + 0.68);
-      dummy.updateMatrix();
-      chairInstanced.setMatrixAt(deskIdx, dummy.matrix);
-      deskIdx++;
-    }
   }
-  deskInstanced.instanceMatrix.needsUpdate = true;
-  chairInstanced.instanceMatrix.needsUpdate = true;
-  interiorGroup.add(deskInstanced);
-  interiorGroup.add(chairInstanced);
 
-  // 2E. East Library & Student Council Room Interior (Bookshelves + Council Table)
-  const shelfGeo = trackGeo(new THREE.BoxGeometry(3.6, 3.2, 0.65));
-  [9.8, 14.2, 18.6].forEach((sx) => {
+  // Reception & Information Desk in Central Lobby (0, 0.55, -15.8)
+  const receptionDesk = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.8, 1.05, 1.1)),
+    woodMat
+  );
+  receptionDesk.position.set(0, 0.52, -15.8);
+  receptionDesk.castShadow = true;
+  interiorGroup.add(receptionDesk);
+
+  // Elevator Frame & Stainless Steel Doors at (-5.2, 1.8, -19.5)
+  const elevatorFrame = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.25, 3.2, 2.2)),
+    darkTrimMat
+  );
+  elevatorFrame.position.set(-5.3, 1.6, -19.5);
+  interiorGroup.add(elevatorFrame);
+
+  // Chilled Water Fountain at (+5.1, 0.65, -19.2)
+  const waterFountainMesh = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.55, 1.25, 0.55)),
+    concreteStoneMat
+  );
+  waterFountainMesh.position.set(5.1, 0.625, -19.2);
+  interiorGroup.add(waterFountainMesh);
+
+  // 2D. ALL FOUR INDIVIDUAL CLASSROOMS: CLASS A, CLASS B, CLASS C, CLASS D
+  // 1) CLASS A (North-West Main Wing: x = -14.2, z = -16.1) — Crimson Crest
+  buildClassroomFurniture(
+    interiorGroup,
+    -14.2,
+    -16.1,
+    [-18.2, -14.2, -10.2],
+    [-17.2, -15.0, -12.8],
+    -21.9,
+    0xe11d48
+  );
+
+  // 2) CLASS B (South-West Academic Wing: x = -21.2, z = -2.5) — Sky Blue Crest
+  buildClassroomFurniture(
+    interiorGroup,
+    -21.2,
+    -2.5,
+    [-23.5, -20.5],
+    [-4.6, -2.2, 0.2],
+    -8.4,
+    0x38bdf8
+  );
+
+  // 3) CLASS C (South-East Academic Wing: x = +21.2, z = -2.5) — Amethyst Crest
+  buildClassroomFurniture(
+    interiorGroup,
+    21.2,
+    -2.5,
+    [18.9, 21.9],
+    [-4.6, -2.2, 0.2],
+    -8.4,
+    0xa855f7
+  );
+
+  // 4) CLASS D (West Academic Annex: x = -29.5, z = -16.1) — Emerald Crest
+  buildClassroomFurniture(
+    interiorGroup,
+    -29.5,
+    -16.1,
+    [-32.5, -29.5, -26.5],
+    [-17.2, -15.0, -12.8],
+    -21.9,
+    0x10b981
+  );
+
+  // 2E. MULTI-SECTION PREMIUM LIBRARY (x = 14.2, z = -16.1)
+  // 3 Tall Double Bookshelf Units with Colored 3D Book Spines (Fiction, Science/Math, History/Reference)
+  const shelfGeo = trackGeo(new THREE.BoxGeometry(3.6, 3.2, 0.68));
+  const spineColors = [0x6366f1, 0x0ea5e9, 0x10b981, 0xf59e0b, 0xec4899, 0xd97706];
+  [9.8, 14.2, 18.6].forEach((sx, sIdx) => {
     const shelf = new THREE.Mesh(shelfGeo, woodMat);
-    shelf.position.set(sx, 1.6, -21.6);
+    shelf.position.set(sx, 1.6, -21.5);
     shelf.castShadow = true;
     interiorGroup.add(shelf);
+
+    // Colored book rows on each shelf
+    for (let row = 0; row < 3; row++) {
+      const bookRow = new THREE.Mesh(
+        trackGeo(new THREE.BoxGeometry(3.1, 0.42, 0.72)),
+        trackMat(
+          new THREE.MeshStandardMaterial({
+            color: spineColors[(sIdx * 2 + row) % spineColors.length],
+            roughness: 0.55,
+          })
+        )
+      );
+      bookRow.position.set(sx, 0.9 + row * 0.85, -21.48);
+      interiorGroup.add(bookRow);
+    }
   });
 
+  // Library Quiet Reading Table, Chairs & Brass Reading Lamp
   const councilTable = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(5.2, 0.78, 2.4)),
+    trackGeo(new THREE.BoxGeometry(5.2, 0.78, 2.0)),
     woodMat
   );
   councilTable.position.set(14.2, 0.39, -15.8);
   councilTable.castShadow = true;
   interiorGroup.add(councilTable);
+
+  const readingLamp = new THREE.Mesh(
+    trackGeo(new THREE.ConeGeometry(0.32, 0.25, 12)),
+    goldAccentMat
+  );
+  readingLamp.position.set(14.2, 1.25, -15.8);
+  interiorGroup.add(readingLamp);
+
+  // 3D Library Reading Chairs facing the Reading Table
+  const libChairSeatGeo = trackGeo(new THREE.BoxGeometry(0.64, 0.45, 0.64));
+  const libChairBackGeo = trackGeo(new THREE.BoxGeometry(0.64, 0.46, 0.08));
+  for (const lcx of [12.8, 14.2, 15.6]) {
+    const libSeat = new THREE.Mesh(libChairSeatGeo, darkTrimMat);
+    libSeat.position.set(lcx, 0.225, -14.32);
+    libSeat.castShadow = true;
+    interiorGroup.add(libSeat);
+
+    const libBack = new THREE.Mesh(libChairBackGeo, woodMat);
+    libBack.position.set(lcx, 0.65, -14.02);
+    interiorGroup.add(libBack);
+  }
+
+  // Library Book-Return & Catalogue Counter at (8.2, 0.52, -12.6)
+  const returnStation = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.1, 1.04, 0.95)),
+    lightWoodMat
+  );
+  returnStation.position.set(8.2, 0.52, -12.6);
+  returnStation.castShadow = true;
+  interiorGroup.add(returnStation);
 
   // Locked Archive Cabinet & Faded Project Hoshikaze Blueprint Display in East Library
   const archiveCabinet = new THREE.Mesh(
@@ -470,7 +724,45 @@ export function buildAcademyEnvironment(
   archiveGoldSeal.position.set(21.02, 1.55, -15.8);
   interiorGroup.add(archiveGoldSeal);
 
-  // Warm Interior Ceiling Lights for Lobby, Classroom 2-A, and Library
+  // 2F. COMPUTER LABORATORY & TECH ANNEX (East Annex: x = +29.5, z = -16.1)
+  const compKeyboardGeo = trackGeo(new THREE.BoxGeometry(0.48, 0.03, 0.18));
+  for (const compX of [27.5, 30.5, 33.5]) {
+    const compDesk = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(2.2, 0.74, 1.05)),
+      darkTrimMat
+    );
+    compDesk.position.set(compX, 0.37, -16.15);
+    compDesk.castShadow = true;
+    interiorGroup.add(compDesk);
+
+    const monitor = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.88, 0.54, 0.08)),
+      screenGlowMat
+    );
+    monitor.position.set(compX, 1.08, -16.38);
+    interiorGroup.add(monitor);
+
+    const keyboard = new THREE.Mesh(compKeyboardGeo, concreteStoneMat);
+    keyboard.position.set(compX, 0.76, -15.82);
+    interiorGroup.add(keyboard);
+
+    const chair = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.65, 0.45, 0.65)),
+      woodMat
+    );
+    chair.position.set(compX, 0.225, -15.15);
+    chair.castShadow = true;
+    interiorGroup.add(chair);
+
+    const chairBack = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.65, 0.48, 0.08)),
+      darkTrimMat
+    );
+    chairBack.position.set(compX, 0.66, -14.85);
+    interiorGroup.add(chairBack);
+  }
+
+  // Warm Interior Ceiling Lights across the Academic Complex
   const ceilingLightPositions: Array<[number, number, number]> = [
     [0, 4.2, -15.5],
     [-14.2, 4.2, -16.0],
@@ -478,20 +770,20 @@ export function buildAcademyEnvironment(
   ];
   for (const [lx, ly, lz] of ceilingLightPositions) {
     const panel = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(2.4, 0.1, 1.2)),
+      trackGeo(new THREE.BoxGeometry(2.6, 0.1, 1.2)),
       lanternBulbMaterial
     );
     panel.position.set(lx, 4.42, lz);
     interiorGroup.add(panel);
 
-    const pt = new THREE.PointLight(0xfff4d6, 1.65, 18, 1.5);
+    const pt = new THREE.PointLight(0xfff4d6, 1.65, 22, 1.5);
     pt.position.set(lx, ly, lz);
     interiorGroup.add(pt);
   }
 
-  // 2F. Monumental 4-Story Upper Wing of Hoshino Academy (Supported above y = 4.5m so Ground Floor is Open!)
+  // 2G. Monumental 4-Story Upper Wing of Hoshino Academy (Supported above y = 4.5m so Ground Floor is Open!)
   const upperWing = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(58, 9.2, 14.2)),
+    trackGeo(new THREE.BoxGeometry(73.0, 9.2, 14.4)),
     facadeMaterial
   );
   upperWing.position.set(0, 4.5 + 4.6, -16.05);
@@ -499,9 +791,26 @@ export function buildAcademyEnvironment(
   upperWing.receiveShadow = true;
   rootGroup.add(upperWing);
 
+  // Exterior Architectural Balcony Railings & Glass Curtain Wall Bands on 2F & 3F
+  for (const balconyY of [4.8, 9.2]) {
+    const balconyLedge = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(73.8, 0.35, 1.4)),
+      concreteStoneMat
+    );
+    balconyLedge.position.set(0, balconyY, -8.8);
+    rootGroup.add(balconyLedge);
+
+    const glassBand = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(71.5, 1.85, 0.18)),
+      glassCurtainMat
+    );
+    glassBand.position.set(0, balconyY + 1.8, -8.82);
+    rootGroup.add(glassBand);
+  }
+
   // 4th Floor Grand Academic Penthouse Tier
   const penthouseWing = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(46, 4.8, 13.2)),
+    trackGeo(new THREE.BoxGeometry(52, 4.8, 13.4)),
     facadeMaterial
   );
   penthouseWing.position.set(0, 13.7 + 2.4, -16.05);
@@ -511,7 +820,7 @@ export function buildAcademyEnvironment(
 
   // Main Wing Cornice & Grand Pitched Roof
   const mainCornice = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(59.6, 0.75, 15.0)),
+    trackGeo(new THREE.BoxGeometry(74.4, 0.75, 15.2)),
     darkTrimMat
   );
   mainCornice.position.set(0, 18.7, -16.05);
@@ -519,55 +828,55 @@ export function buildAcademyEnvironment(
   rootGroup.add(mainCornice);
 
   const mainRoof = new THREE.Mesh(
-    trackGeo(new THREE.ConeGeometry(36, 4.8, 4)),
+    trackGeo(new THREE.ConeGeometry(42, 5.0, 4)),
     roofMat
   );
   mainRoof.rotation.y = Math.PI / 4;
-  mainRoof.scale.set(1.25, 1, 0.42);
-  mainRoof.position.set(0, 21.4, -16.05);
+  mainRoof.scale.set(1.28, 1, 0.42);
+  mainRoof.position.set(0, 21.5, -16.05);
   mainRoof.castShadow = true;
   rootGroup.add(mainRoof);
 
   // Central Entrance Portico & Columns (Flanking the Open Entrance Doors!)
   const porticoCanopy = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(14.5, 0.85, 5.8)),
+    trackGeo(new THREE.BoxGeometry(15.2, 0.85, 6.2)),
     creamWallMat
   );
-  porticoCanopy.position.set(0, 4.65, -7.6);
+  porticoCanopy.position.set(0, 4.65, -7.4);
   porticoCanopy.castShadow = true;
   porticoCanopy.receiveShadow = true;
   rootGroup.add(porticoCanopy);
 
   // Overhead "HOSHINO ACADEMY" Gold Plaque & Faded Star Emblem above Front Doors
   const entrancePlaque = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(6.8, 0.78, 0.28)),
+    trackGeo(new THREE.BoxGeometry(7.2, 0.82, 0.28)),
     goldAccentMat
   );
-  entrancePlaque.position.set(0, 4.72, -4.85);
+  entrancePlaque.position.set(0, 4.72, -4.45);
   rootGroup.add(entrancePlaque);
 
   const fadedStarEmblem = new THREE.Mesh(
-    trackGeo(new THREE.CylinderGeometry(0.68, 0.68, 0.22, 8)),
+    trackGeo(new THREE.CylinderGeometry(0.72, 0.72, 0.22, 8)),
     goldAccentMat
   );
   fadedStarEmblem.rotation.x = Math.PI / 2;
-  fadedStarEmblem.position.set(0, 5.65, -4.85);
+  fadedStarEmblem.position.set(0, 5.68, -4.45);
   rootGroup.add(fadedStarEmblem);
 
   const columnGeo = trackGeo(new THREE.CylinderGeometry(0.42, 0.48, 4.5, 12));
-  [-5.8, -3.3, 3.3, 5.8].forEach((cx) => {
+  for (const cx of [-5.8, -3.3, 3.3, 5.8]) {
     const col = new THREE.Mesh(columnGeo, creamWallMat);
     col.position.set(cx, 2.25, -5.6);
     col.castShadow = true;
     col.receiveShadow = true;
     rootGroup.add(col);
-  });
+  }
 
   // ==========================================================================
   // 3. MONUMENTAL 36M CENTRAL CLOCK TOWER & ILLUMINATED DIAL
   // ==========================================================================
   const towerShaft = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(9.2, 14.5, 9.2)),
+    trackGeo(new THREE.BoxGeometry(9.4, 14.5, 9.4)),
     creamWallMat
   );
   towerShaft.position.set(0, 24.8, -15.5);
@@ -576,14 +885,14 @@ export function buildAcademyEnvironment(
   rootGroup.add(towerShaft);
 
   const towerTrim = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(10.0, 0.75, 10.0)),
+    trackGeo(new THREE.BoxGeometry(10.2, 0.75, 10.2)),
     darkTrimMat
   );
   towerTrim.position.set(0, 32.2, -15.5);
   rootGroup.add(towerTrim);
 
   const towerSpire = new THREE.Mesh(
-    trackGeo(new THREE.ConeGeometry(7.6, 7.2, 4)),
+    trackGeo(new THREE.ConeGeometry(7.8, 7.2, 4)),
     roofMat
   );
   towerSpire.rotation.y = Math.PI / 4;
@@ -596,7 +905,7 @@ export function buildAcademyEnvironment(
     goldAccentMat
   );
   clockRim.rotation.x = Math.PI / 2;
-  clockRim.position.set(0, 27.2, -10.85);
+  clockRim.position.set(0, 27.2, -10.75);
   rootGroup.add(clockRim);
 
   const clockFace = new THREE.Mesh(
@@ -604,14 +913,14 @@ export function buildAcademyEnvironment(
     lanternBulbMaterial
   );
   clockFace.rotation.x = Math.PI / 2;
-  clockFace.position.set(0, 27.2, -10.82);
+  clockFace.position.set(0, 27.2, -10.72);
   rootGroup.add(clockFace);
 
   const clockHourHand = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(0.2, 1.35, 0.12)),
     darkTrimMat
   );
-  clockHourHand.position.set(0, 27.2, -10.6);
+  clockHourHand.position.set(0, 27.2, -10.5);
   clockHourHand.rotation.z = -Math.PI / 3;
   rootGroup.add(clockHourHand);
 
@@ -619,30 +928,50 @@ export function buildAcademyEnvironment(
     trackGeo(new THREE.BoxGeometry(0.14, 1.9, 0.12)),
     darkTrimMat
   );
-  clockMinuteHand.position.set(0, 27.2, -10.58);
+  clockMinuteHand.position.set(0, 27.2, -10.48);
   clockMinuteHand.rotation.z = Math.PI / 6;
   rootGroup.add(clockMinuteHand);
 
   // ==========================================================================
-  // 4. ENLARGED EAST & WEST WINGS, GYMNASIUM, CAFETERIA & 4-STORY STUDENT DORMITORY
+  // 4. WALKABLE CLASS B & CLASS C SIDE WINGS + GYMNASIUM, CAFETERIA & DORMITORY
   // ==========================================================================
-  const sideWingGeo = trackGeo(new THREE.BoxGeometry(12.2, 13.6, 14.4));
-  const sideRoofGeo = trackGeo(new THREE.ConeGeometry(11.4, 3.6, 4));
+  const sideUpperGeo = trackGeo(new THREE.BoxGeometry(12.6, 9.2, 14.4));
+  const sideRoofGeo = trackGeo(new THREE.ConeGeometry(11.6, 3.6, 4));
 
-  [-21.2, 21.2].forEach((wx) => {
-    const wing = new THREE.Mesh(sideWingGeo, facadeMaterial);
-    wing.position.set(wx, 6.8, -2.5);
-    wing.castShadow = true;
-    wing.receiveShadow = true;
-    rootGroup.add(wing);
+  for (const wx of [-21.2, 21.2]) {
+    // Upper stories above y = 4.5 so ground floor Class B & Class C are walkable!
+    const upperSide = new THREE.Mesh(sideUpperGeo, facadeMaterial);
+    upperSide.position.set(wx, 4.5 + 4.6, -2.5);
+    upperSide.castShadow = true;
+    upperSide.receiveShadow = true;
+    rootGroup.add(upperSide);
+
+    // Outer ground-floor wall of side wing
+    const outerX = wx < 0 ? wx - 6.0 : wx + 6.0;
+    const outerSideWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(0.4, 4.5, 14.0)),
+      facadeMaterial
+    );
+    outerSideWall.position.set(outerX, 2.25, -2.5);
+    outerSideWall.castShadow = true;
+    rootGroup.add(outerSideWall);
+
+    // South ground-floor window wall of side wing
+    const southSideWall = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(12.4, 4.5, 0.4)),
+      facadeMaterial
+    );
+    southSideWall.position.set(wx, 2.25, 4.4);
+    southSideWall.castShadow = true;
+    rootGroup.add(southSideWall);
 
     const sRoof = new THREE.Mesh(sideRoofGeo, roofMat);
     sRoof.rotation.y = Math.PI / 4;
     sRoof.scale.set(0.84, 1, 1.18);
-    sRoof.position.set(wx, 15.3, -2.5);
+    sRoof.position.set(wx, 15.5, -2.5);
     sRoof.castShadow = true;
     rootGroup.add(sRoof);
-  });
+  }
 
   // Grand East Gymnasium & Sports Arena (x: 38.5, z: 8, 16m x 11.6m x 22m)
   const gymBuilding = new THREE.Mesh(
@@ -653,6 +982,22 @@ export function buildAcademyEnvironment(
   gymBuilding.castShadow = true;
   gymBuilding.receiveShadow = true;
   rootGroup.add(gymBuilding);
+
+  const gymGlassBand = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.25, 4.2, 18.0)),
+    glassCurtainMat
+  );
+  gymGlassBand.position.set(30.4, 6.5, 8.0);
+  rootGroup.add(gymGlassBand);
+
+  // Spectator Bench outside Gym Entrance (x = 29.5, z = 8.0)
+  const gymBench = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.85, 0.52, 4.2)),
+    woodMat
+  );
+  gymBench.position.set(29.5, 0.26, 8.0);
+  gymBench.castShadow = true;
+  rootGroup.add(gymBench);
 
   const gymRoof = new THREE.Mesh(
     trackGeo(new THREE.ConeGeometry(14.8, 4.2, 4)),
@@ -674,6 +1019,22 @@ export function buildAcademyEnvironment(
   cafeBuilding.receiveShadow = true;
   rootGroup.add(cafeBuilding);
 
+  // Cafeteria Food Counter & Menu Board on East Terrace (-30.4, z = 8.0)
+  const cafeCounter = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(1.1, 1.1, 4.8)),
+    lightWoodMat
+  );
+  cafeCounter.position.set(-30.4, 0.55, 8.0);
+  cafeCounter.castShadow = true;
+  rootGroup.add(cafeCounter);
+
+  const cafeMenuBoard = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.2, 1.2, 3.6)),
+    screenGlowMat
+  );
+  cafeMenuBoard.position.set(-30.8, 2.8, 8.0);
+  rootGroup.add(cafeMenuBoard);
+
   const cafeRoof = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(16.8, 0.75, 20.2)),
     darkTrimMat
@@ -691,6 +1052,23 @@ export function buildAcademyEnvironment(
   dormitoryBuilding.receiveShadow = true;
   rootGroup.add(dormitoryBuilding);
 
+  // Dormitory Lounge Bench & Drink Vending Machine at (-35.0, z = -34.5 / -28.0)
+  const dormVending = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(0.95, 2.1, 1.25)),
+    screenGlowMat
+  );
+  dormVending.position.set(-35.1, 1.05, -28.0);
+  dormVending.castShadow = true;
+  rootGroup.add(dormVending);
+
+  const dormLoungeSeat = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(1.1, 0.55, 2.8)),
+    woodMat
+  );
+  dormLoungeSeat.position.set(-35.0, 0.28, -34.5);
+  dormLoungeSeat.castShadow = true;
+  rootGroup.add(dormLoungeSeat);
+
   const dormitoryRoof = new THREE.Mesh(
     trackGeo(new THREE.ConeGeometry(15.2, 4.2, 4)),
     roofMat
@@ -704,7 +1082,7 @@ export function buildAcademyEnvironment(
   // 5. NORTH ATHLETIC RUNNING TRACK & SOCCER FIELD (Behind the Main Wing!)
   // ==========================================================================
   const northTrackSurface = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(52, 0.12, 22)),
+    trackGeo(new THREE.BoxGeometry(56, 0.12, 22)),
     trackClayMat
   );
   northTrackSurface.position.set(0, 0.02, -35.0);
@@ -712,18 +1090,17 @@ export function buildAcademyEnvironment(
   rootGroup.add(northTrackSurface);
 
   const soccerInfield = new THREE.Mesh(
-    trackGeo(new THREE.BoxGeometry(38, 0.15, 13)),
+    trackGeo(new THREE.BoxGeometry(40, 0.15, 13)),
     grassMat
   );
   soccerInfield.position.set(0, 0.035, -35.0);
   soccerInfield.receiveShadow = true;
   rootGroup.add(soccerInfield);
 
-  // Soccer Goalposts at West (-18.5) and East (+18.5) ends of the North Field
   const goalPostMat = trackMat(
     new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 })
   );
-  [-18.5, 18.5].forEach((gx) => {
+  for (const gx of [-19.5, 19.5]) {
     const crossbar = new THREE.Mesh(
       trackGeo(new THREE.BoxGeometry(0.18, 0.18, 4.2)),
       goalPostMat
@@ -731,18 +1108,18 @@ export function buildAcademyEnvironment(
     crossbar.position.set(gx, 2.2, -35.0);
     rootGroup.add(crossbar);
 
-    [-2.0, 2.0].forEach((gzOff) => {
+    for (const gzOff of [-2.0, 2.0]) {
       const post = new THREE.Mesh(
         trackGeo(new THREE.CylinderGeometry(0.08, 0.08, 2.2, 8)),
         goalPostMat
       );
       post.position.set(gx, 1.1, -35.0 + gzOff);
       rootGroup.add(post);
-    });
-  });
+    }
+  }
 
   // ==========================================================================
-  // 6. COURTYARD OCTAGONAL FOUNTAIN & BENCHES
+  // 6. COURTYARD OCTAGONAL FOUNTAIN & SITTABLE BENCHES
   // ==========================================================================
   const fountainGroup = new THREE.Group();
   fountainGroup.position.set(0, 0.1, 10);
@@ -788,6 +1165,7 @@ export function buildAcademyEnvironment(
   fountainGroup.add(spireFinial);
 
   const benchSeatGeo = trackGeo(new THREE.BoxGeometry(3.2, 0.15, 0.75));
+  const benchBackGeo = trackGeo(new THREE.BoxGeometry(3.2, 0.45, 0.12));
   const benchLegGeo = trackGeo(new THREE.BoxGeometry(0.2, 0.5, 0.7));
   const benchPositions: Array<{ x: number; z: number; rotY: number }> = [
     { x: -6.5, z: 10, rotY: Math.PI / 2 },
@@ -807,41 +1185,93 @@ export function buildAcademyEnvironment(
     seat.receiveShadow = true;
     bGroup.add(seat);
 
-    [-1.2, 1.2].forEach((lx) => {
+    const backrest = new THREE.Mesh(benchBackGeo, lightWoodMat);
+    backrest.position.set(0, 0.78, -0.32);
+    bGroup.add(backrest);
+
+    for (const lx of [-1.2, 1.2]) {
       const leg = new THREE.Mesh(benchLegGeo, darkTrimMat);
       leg.position.set(lx, 0.25, 0);
       leg.castShadow = true;
       bGroup.add(leg);
-    });
+    }
 
     rootGroup.add(bGroup);
   }
 
   // ==========================================================================
-  // 7. SOUTH GATE PILLARS & PERIMETER WALLS
+  // 7. MAIN ENTRANCE GATE, SECURITY BOOTH & CAMPUS MAP BOARD (z = 35)
   // ==========================================================================
-  const gatePillarGeo = trackGeo(new THREE.BoxGeometry(1.8, 4.6, 1.8));
-  const gateCapGeo = trackGeo(new THREE.BoxGeometry(2.2, 0.45, 2.2));
-  [-4.8, 4.8].forEach((gx) => {
+  const gatePillarGeo = trackGeo(new THREE.BoxGeometry(2.0, 5.2, 2.0));
+  const gateCapGeo = trackGeo(new THREE.BoxGeometry(2.4, 0.5, 2.4));
+  for (const gx of [-4.8, 4.8]) {
     const pillar = new THREE.Mesh(gatePillarGeo, stoneMat);
-    pillar.position.set(gx, 2.3, 35);
+    pillar.position.set(gx, 2.6, 35);
     pillar.castShadow = true;
     pillar.receiveShadow = true;
     rootGroup.add(pillar);
 
     const cap = new THREE.Mesh(gateCapGeo, darkTrimMat);
-    cap.position.set(gx, 4.7, 35);
+    cap.position.set(gx, 5.35, 35);
     rootGroup.add(cap);
-  });
+  }
+
+  // Overhead Architectural Entrance Arch Beam & Gold Academy Sign
+  const gateArchBeam = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(12.2, 0.75, 1.4)),
+    darkTrimMat
+  );
+  gateArchBeam.position.set(0, 5.65, 35);
+  gateArchBeam.castShadow = true;
+  rootGroup.add(gateArchBeam);
+
+  const gateGoldSign = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(6.4, 0.52, 1.5)),
+    goldAccentMat
+  );
+  gateGoldSign.position.set(0, 5.68, 35);
+  rootGroup.add(gateGoldSign);
+
+  // Security & Reception Booth at (-6.8, z = 33.4)
+  const securityBooth = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.6, 2.8, 2.4)),
+    creamWallMat
+  );
+  securityBooth.position.set(-7.2, 1.4, 33.2);
+  securityBooth.castShadow = true;
+  rootGroup.add(securityBooth);
+
+  const securityWindow = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.7, 1.1, 1.8)),
+    glassCurtainMat
+  );
+  securityWindow.position.set(-7.2, 1.7, 33.2);
+  rootGroup.add(securityWindow);
+
+  // Interactive Campus Map Board at (+6.4, z = 33.4)
+  const mapBoardStand = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.2, 2.1, 0.25)),
+    darkTrimMat
+  );
+  mapBoardStand.position.set(6.4, 1.15, 33.4);
+  mapBoardStand.castShadow = true;
+  rootGroup.add(mapBoardStand);
+
+  const mapScreen = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(1.9, 1.25, 0.3)),
+    screenGlowMat
+  );
+  mapScreen.position.set(6.4, 1.35, 33.4);
+  rootGroup.add(mapScreen);
 
   const perimeterWallGeo = trackGeo(new THREE.BoxGeometry(26, 2.2, 0.7));
-  [-18.5, 18.5].forEach((wx) => {
+  for (const wx of [-18.5, 18.5]) {
     const wall = new THREE.Mesh(perimeterWallGeo, creamWallMat);
     wall.position.set(wx, 1.1, 35);
     wall.castShadow = true;
     wall.receiveShadow = true;
     rootGroup.add(wall);
-  });
+  }
 
   // ==========================================================================
   // 8. SAKURA TREES, LANTERN LAMPPOSTS & CAFETERIA OUTDOOR TABLES
@@ -857,17 +1287,14 @@ export function buildAcademyEnvironment(
     [11.5, 30, 0.95],
     [-21.5, 26, 1.15],
     [21.5, 26, 1.1],
-    // Expanded South Town Boulevard Sakura Trees
     [-11.5, 46, 1.08],
     [11.5, 46, 1.06],
     [-11.5, 76, 1.12],
     [11.5, 76, 1.1],
-    // Expanded West Koi Garden & East Pool Promenade Trees
     [-50.0, 20, 1.18],
     [-50.0, -4, 1.1],
     [50.0, 20, 1.15],
     [50.0, -4, 1.08],
-    // North Shrine Approach Trees
     [-8.5, -56, 1.1],
     [8.5, -56, 1.1],
     [-8.5, -74, 1.16],
@@ -906,7 +1333,7 @@ export function buildAcademyEnvironment(
     rootGroup.add(treeGroup);
   }
 
-  // Outdoor Cafeteria & Town Cafe Dining Tables with Festival Parasols
+  // Outdoor Cafeteria & Town Cafe Dining Tables with Individual Chairs & Parasols
   const cafeTablePositions: Array<[number, number]> = [
     [-27.5, 3.8],
     [-27.5, 12.2],
@@ -916,13 +1343,7 @@ export function buildAcademyEnvironment(
   const roundTableGeo = trackGeo(new THREE.CylinderGeometry(1.15, 1.15, 0.12, 12));
   const tablePedestalGeo = trackGeo(new THREE.CylinderGeometry(0.14, 0.24, 0.78, 8));
   const parasolConeGeo = trackGeo(new THREE.ConeGeometry(1.65, 0.65, 10));
-  const crimsonMat = trackMat(
-    new THREE.MeshStandardMaterial({
-      color: 0xdc2626,
-      roughness: 0.55,
-      metalness: 0.08,
-    })
-  );
+  const cafeChairGeo = trackGeo(new THREE.BoxGeometry(0.52, 0.46, 0.52));
 
   for (const [ctx, ctz] of cafeTablePositions) {
     const ped = new THREE.Mesh(tablePedestalGeo, darkTrimMat);
@@ -945,6 +1366,19 @@ export function buildAcademyEnvironment(
     umbrella.position.set(ctx, 2.35, ctz);
     umbrella.castShadow = true;
     rootGroup.add(umbrella);
+
+    // Individual dining chairs around each table
+    for (const [chX, chZ] of [
+      [1.3, 0],
+      [-1.3, 0],
+      [0, 1.3],
+      [0, -1.3],
+    ]) {
+      const ch = new THREE.Mesh(cafeChairGeo, woodMat);
+      ch.position.set(ctx + chX, 0.23, ctz + chZ);
+      ch.castShadow = true;
+      rootGroup.add(ch);
+    }
   }
 
   const lanternCoords: Array<[number, number]> = [
@@ -982,14 +1416,12 @@ export function buildAcademyEnvironment(
   });
 
   // ==========================================================================
-  // 8B. 4X EXPANDED DISTRICTS:
-  //  - SOUTH: SEIRAN TOWN SHOPPING STREET & ELECTRIC RAILWAY STATION (z = 42..102)
-  //  - EAST:  OLYMPIC 25M SWIMMING POOL COMPLEX & OBSERVATORY DOME (x = 50..82)
-  //  - WEST:  JAPANESE KOI POND, VERMILION BRIDGE & FESTIVAL STAGE (x = -50..-82)
+  // 8B. SURROUNDING OPEN WORLD DISTRICTS:
+  //  - SOUTH: COMMERCIAL, RESIDENTIAL & ELECTRIC RAILWAY STATION (z = 42..102)
+  //  - EAST:  AQUATICS 25M SWIMMING POOL, SCIENCE LAB & OBSERVATORY DOME (x = 50..82)
+  //  - WEST:  JAPANESE KOI POND, VERMILION BRIDGE & AUDITORIUM STAGE (x = -50..-82)
   //  - NORTH: HILLTOP TORII SHRINE & BASKETBALL COURTS (z = -48..-92)
   // ==========================================================================
-
-  // --- SOUTH DISTRICT: Town Crosswalk Stripes, Shops & Seiran Train Station ---
   const stripeGeo = trackGeo(new THREE.BoxGeometry(2.2, 0.04, 0.65));
   const whitePaintMat = trackMat(
     new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.6 })
@@ -1002,7 +1434,7 @@ export function buildAcademyEnvironment(
     }
   }
 
-  // Multi-Story West Town Building: Hoshino Manga, Books & Ramen Cafe (x = -26, z = 62, 16.5m x 13.5m x 20.5m)
+  // Multi-Story West Town Building: Hoshino Manga, Books & Ramen Cafe (x = -26, z = 62)
   const westTownShop = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(16.5, 13.5, 20.5)),
     facadeMaterial
@@ -1019,7 +1451,7 @@ export function buildAcademyEnvironment(
   westShopAwning.position.set(-16.8, 3.5, 62.0);
   rootGroup.add(westShopAwning);
 
-  // Multi-Story East Town Building: Hoshino Town Plaza & Konbini Mart (x = +26, z = 62, 16.5m x 13.5m x 20.5m)
+  // Multi-Story East Town Building: Hoshino Town Plaza, Apartments & Konbini Mart (x = +26, z = 62)
   const eastTownShop = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(16.5, 13.5, 20.5)),
     facadeMaterial
@@ -1029,22 +1461,14 @@ export function buildAcademyEnvironment(
   eastTownShop.receiveShadow = true;
   rootGroup.add(eastTownShop);
 
-  const konbiniSignMat = trackMat(
-    new THREE.MeshStandardMaterial({
-      color: 0x38bdf8,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.85,
-      roughness: 0.3,
-    })
-  );
   const eastShopSign = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(2.2, 0.85, 18.5)),
-    konbiniSignMat
+    screenGlowMat
   );
   eastShopSign.position.set(17.0, 3.6, 62.0);
   rootGroup.add(eastShopSign);
 
-  // Hoshino Electric Railway Station Terminal Platform & Grand Canopy (x = 0, z = 94.5)
+  // Hoshino Electric Railway Station Terminal Platform, Bench & Grand Canopy (x = 0, z = 94.5)
   const stationPlatform = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(62.0, 0.85, 8.2)),
     stoneMat
@@ -1052,6 +1476,13 @@ export function buildAcademyEnvironment(
   stationPlatform.position.set(0, 0.425, 94.5);
   stationPlatform.receiveShadow = true;
   rootGroup.add(stationPlatform);
+
+  const stationBench = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(3.4, 0.52, 0.85)),
+    woodMat
+  );
+  stationBench.position.set(-8.0, 1.05, 93.2);
+  rootGroup.add(stationBench);
 
   const stationCanopy = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(58.0, 0.65, 8.0)),
@@ -1096,7 +1527,7 @@ export function buildAcademyEnvironment(
 
     const carStripe = new THREE.Mesh(
       trackGeo(new THREE.BoxGeometry(13.3, 0.48, 3.26)),
-      konbiniSignMat
+      screenGlowMat
     );
     carStripe.position.set(carX, 1.9, 100.5);
     rootGroup.add(carStripe);
@@ -1109,7 +1540,7 @@ export function buildAcademyEnvironment(
     rootGroup.add(carWindows);
   }
 
-  // --- EAST DISTRICT: Hoshino 25m Aquatics Swimming Pool & Grand Research Centre Dome ---
+  // --- EAST DISTRICT: Hoshino 25m Aquatics Swimming Pool, Science Lab Bench & Research Dome ---
   const poolDeck = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(28.0, 0.14, 30.0)),
     hallwayTileMat
@@ -1125,7 +1556,6 @@ export function buildAcademyEnvironment(
   poolWater.position.set(66.0, 0.06, 8.0);
   rootGroup.add(poolWater);
 
-  // Swimming Pool Starting Blocks at South End (z = 19.6)
   const blockGeo = trackGeo(new THREE.BoxGeometry(0.8, 0.65, 0.8));
   for (const pbx of [60.5, 64.2, 67.8, 71.5]) {
     const sBlock = new THREE.Mesh(blockGeo, stoneMat);
@@ -1133,6 +1563,22 @@ export function buildAcademyEnvironment(
     sBlock.castShadow = true;
     rootGroup.add(sBlock);
   }
+
+  // Science Lab Outdoor/Annex Microscope Bench at (52.5, z = -22.0) beside the Research Dome
+  const sciLabBench = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(3.2, 0.88, 1.2)),
+    concreteStoneMat
+  );
+  sciLabBench.position.set(52.5, 0.44, -22.0);
+  sciLabBench.castShadow = true;
+  rootGroup.add(sciLabBench);
+
+  const microscopeBody = new THREE.Mesh(
+    trackGeo(new THREE.CylinderGeometry(0.14, 0.22, 0.48, 12)),
+    goldAccentMat
+  );
+  microscopeBody.position.set(52.5, 1.12, -22.0);
+  rootGroup.add(microscopeBody);
 
   // Northeast Hoshino Research Centre & Astronomy Observatory Rotunda + Silver Dome (x = 66, z = -26)
   const obsCylinder = new THREE.Mesh(
@@ -1161,7 +1607,7 @@ export function buildAcademyEnvironment(
   obsDome.castShadow = true;
   rootGroup.add(obsDome);
 
-  // --- WEST DISTRICT: Japanese Koi Pond, Vermilion Bridge & Festival Concert Stage ---
+  // --- WEST DISTRICT: Japanese Koi Pond, Vermilion Bridge & Auditorium Stage ---
   const koiPondWater = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(18.0, 0.14, 24.0)),
     waterMat
@@ -1169,7 +1615,6 @@ export function buildAcademyEnvironment(
   koiPondWater.position.set(-66.0, 0.04, 8.0);
   rootGroup.add(koiPondWater);
 
-  // Walkable Vermilion Japanese Bridge spanning the Koi Pond (x = -76..-56, z = 8)
   const bridgeDeck = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(20.0, 0.28, 3.8)),
     crimsonMat
@@ -1188,7 +1633,7 @@ export function buildAcademyEnvironment(
     rootGroup.add(bridgeRail);
   }
 
-  // Northwest Outdoor Festival Amphitheater & Music Stage (x = -66, z = -26)
+  // Northwest Auditorium & Festival Stage + Audience Seating Rows (x = -66, z = -26)
   const concertStage = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(16.0, 1.1, 9.2)),
     woodMat
@@ -1205,6 +1650,17 @@ export function buildAcademyEnvironment(
   stageBackdrop.position.set(-66.0, 4.2, -29.8);
   stageBackdrop.castShadow = true;
   rootGroup.add(stageBackdrop);
+
+  // Auditorium Audience Seating Rows at (-66.0, z = -18.5 & -16.2)
+  for (const rowZ of [-18.5, -16.2]) {
+    const audRow = new THREE.Mesh(
+      trackGeo(new THREE.BoxGeometry(10.0, 0.48, 0.85)),
+      woodMat
+    );
+    audRow.position.set(-66.0, 0.24, rowZ);
+    audRow.castShadow = true;
+    rootGroup.add(audRow);
+  }
 
   // --- NORTH DISTRICT: Mountain Crimson Torii Shrine & Outdoor Basketball Courts ---
   const toriiPillarGeo = trackGeo(new THREE.CylinderGeometry(0.28, 0.34, 5.6, 10));
@@ -1228,7 +1684,6 @@ export function buildAcademyEnvironment(
     rootGroup.add(subBeam);
   }
 
-  // Grand Hoshino Mountain Shrine Sanctuary Hall (x = 0, z = -90.2, 18.5m x 8.8m x 10.0m)
   const shrineHall = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(18.5, 8.8, 10.0)),
     creamWallMat
@@ -1248,7 +1703,6 @@ export function buildAcademyEnvironment(
   shrineRoof.castShadow = true;
   rootGroup.add(shrineRoof);
 
-  // Outdoor Basketball Courts at North-West (-24, -60) and North-East (+24, -60)
   for (const bkx of [-24.0, 24.0]) {
     const bCourt = new THREE.Mesh(
       trackGeo(new THREE.BoxGeometry(16.0, 0.12, 24.0)),
@@ -1260,7 +1714,7 @@ export function buildAcademyEnvironment(
   }
 
   // ==========================================================================
-  // 9. DISTANT CITY SKYLINE SILHOUETTES (Pushed out beyond 4X Expanded World)
+  // 9. DISTANT CITY SKYLINE SILHOUETTES
   // ==========================================================================
   const backdropMat = trackMat(
     new THREE.MeshStandardMaterial({
@@ -1309,9 +1763,9 @@ export function buildAcademyEnvironment(
       x: (((i * 73) % 100) / 100 - 0.5) * 44,
       y: 1 + (((i * 37) % 100) / 100) * 11,
       z: -6 + (((i * 53) % 100) / 100) * 42,
-      vx: -0.45 - ((i % 7) * 0.08),
-      vy: -0.55 - ((i % 5) * 0.09),
-      vz: 0.25 + ((i % 6) * 0.06),
+      vx: -0.45 - (i % 7) * 0.08,
+      vy: -0.55 - (i % 5) * 0.09,
+      vz: 0.25 + (i % 6) * 0.06,
       rx: (i * 0.7) % Math.PI,
       ry: (i * 1.3) % Math.PI,
       scale: 0.75 + (i % 5) * 0.12,
@@ -1327,9 +1781,8 @@ export function buildAcademyEnvironment(
   petalInstancedMesh.instanceMatrix.needsUpdate = true;
 
   // ==========================================================================
-  // 11. PHASE 8 REALISTIC WORLD ENHANCEMENTS & VOLUMETRIC SKY WEATHER CLOUDS
+  // 11. REALISTIC WORLD ENHANCEMENTS & VOLUMETRIC SKY WEATHER CLOUDS
   // ==========================================================================
-  // 11A. Manicured Courtyard Hedges along Main Walkways
   const hedgeMat = trackMat(
     new THREE.MeshStandardMaterial({
       color: 0x1f5233,
@@ -1348,35 +1801,7 @@ export function buildAcademyEnvironment(
     }
   }
 
-  // 11B. Framed Open Glass Entrance Doors at School Main Portico (x = +-2.55, z = -9.75)
-  const doorGlassMat = trackMat(
-    new THREE.MeshStandardMaterial({
-      color: 0xbae6fd,
-      emissive: 0x0284c7,
-      emissiveIntensity: 0.25,
-      roughness: 0.15,
-      metalness: 0.4,
-      transparent: true,
-      opacity: 0.65,
-    })
-  );
-  for (const dx of [-2.55, 2.55]) {
-    const doorFrame = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(0.18, 3.6, 1.35)),
-      darkTrimMat
-    );
-    doorFrame.position.set(dx, 1.8, -9.2);
-    rootGroup.add(doorFrame);
-
-    const doorGlass = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(0.08, 3.2, 1.15)),
-      doorGlassMat
-    );
-    doorGlass.position.set(dx, 1.8, -9.2);
-    rootGroup.add(doorGlass);
-  }
-
-  // 11C. Wooden Pergola Beams above West Cafeteria Outdoor Terrace (x = -28, z = 8)
+  // Wooden Pergola Beams above West Cafeteria Outdoor Terrace (x = -28, z = 8)
   const pergolaBeamGeo = trackGeo(new THREE.BoxGeometry(6.8, 0.22, 0.28));
   for (let pz = 2.0; pz <= 14.0; pz += 2.4) {
     const beam = new THREE.Mesh(pergolaBeamGeo, woodMat);
@@ -1385,7 +1810,7 @@ export function buildAcademyEnvironment(
     rootGroup.add(beam);
   }
 
-  // 11D. Railway Tracks & Wooden Sleepers under the Seiran Commuter Train (z = 100.5)
+  // Railway Tracks & Wooden Sleepers under the Hoshino Commuter Train (z = 100.5)
   const railGeo = trackGeo(new THREE.BoxGeometry(96.0, 0.12, 0.14));
   for (const rz of [99.7, 101.3]) {
     const rail = new THREE.Mesh(railGeo, silverDomeMat);
@@ -1399,7 +1824,7 @@ export function buildAcademyEnvironment(
     rootGroup.add(sleeper);
   }
 
-  // 11E. Dynamic Volumetric 3D Sky Cloud Clusters & Celestial Sun/Moon Orb
+  // Dynamic Volumetric 3D Sky Cloud Clusters & Celestial Sun/Moon Orb
   const cloudGroup = new THREE.Group();
   cloudGroup.name = 'SkyWeatherClouds';
   rootGroup.add(cloudGroup);
@@ -1496,6 +1921,7 @@ export function buildAcademyEnvironment(
     cloudGroup,
     cloudMaterial,
     celestialDisc,
+    doorPivots,
     dispose,
   };
 }
