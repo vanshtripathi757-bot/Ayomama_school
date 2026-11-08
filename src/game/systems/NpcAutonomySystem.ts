@@ -26,7 +26,7 @@ export const NPC_OBJECT_ACTIVITIES: NpcObjectActivity[] = [
   { npcId: 'npc_akari', period: 'twilight', objectId: 'east-library-shelf-3', actionId: 'read', label: 'Studying quietly beside the library shelves', target: { x: 18.6, y: 0, z: -19.5 } },
   { npcId: 'npc_daichi', period: 'golden_hour', objectId: 'east-sports-court', actionId: 'practice', label: 'Practising drills on the sports court', target: { x: 25, y: 0, z: 8.5 } },
   { npcId: 'npc_ren', period: 'golden_hour', objectId: 'east-sports-court', actionId: 'practice', label: 'Practising with the athletics club', target: { x: 25, y: 0, z: 8.5 } },
-  { npcId: 'npc_hana', period: 'twilight', objectId: 'student-council-notice-board', actionId: 'read', label: 'Reviewing student council notices', target: { x: 20.6, y: 0, z: -12.2 } },
+  { npcId: 'npc_hana', period: 'twilight', objectId: 'student-council-notice-board', actionId: 'work', label: 'Reviewing student council notices', target: { x: 20.6, y: 0, z: -12.2 } },
   { npcId: 'npc_kaito', period: 'twilight', objectId: 'courtyard-bench-south', actionId: 'sit', label: 'Sitting with classmates after club activities', target: { x: 0, y: 0, z: 17.8 } },
   { npcId: 'npc_sora', period: 'morning', objectId: 'east-aquatics-deck', actionId: 'practice', label: 'Preparing the aquatics club pool deck', target: { x: 55.5, y: 0, z: 18 } },
   { npcId: 'npc_sora', period: 'twilight', objectId: 'research-centre-observatory', actionId: 'read', label: 'Reviewing research notes at the observatory', target: { x: 54, y: 0, z: -26 } },
