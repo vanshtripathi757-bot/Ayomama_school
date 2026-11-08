@@ -320,6 +320,19 @@ test('upper dorm floors keep players inside while ground-floor entrance stays op
   assert.ok(upper.nextState.z < -25.5, 'upper-floor guard rail blocks the open doorway');
 });
 
+test('residential front doors are walkable while house wall panels remain solid', () => {
+  const base: PlayerPhysicsState = {
+    x: -48, y: 0, z: 65.0, vx: 0, vy: 0, vz: 0, yaw: 0,
+    isGrounded: true, coyoteTimer: 0.1, jumpBufferTimer: 0,
+    isSprinting: false, walkPhase: 0, squashY: 1, squashXZ: 1,
+  };
+  const input = { moveX: 0, moveZ: 1, cameraYaw: 0, sprintHeld: false, jumpJustPressed: false, jumpHeld: false };
+  const throughDoor = stepPlayerPhysics(base, input, 0.05);
+  const intoWall = stepPlayerPhysics({ ...base, x: -49.2 }, input, 0.05);
+  assert.ok(throughDoor.nextState.z > base.z, 'center doorway should allow entry');
+  assert.ok(intoWall.nextState.z <= base.z + 0.02, 'front wall panel should block entry');
+});
+
 test('findNearestInteractable and advanceMissionProgress track objectives, chapters, clues, and items', () => {
   const found = findNearestInteractable(-3.2, 15.0);
   assert.ok(found.target);
