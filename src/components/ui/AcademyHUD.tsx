@@ -265,8 +265,6 @@ export function AcademyHUD() {
   const activeChapter = getCurrentStoryChapter(missionProgress.reputationPoints);
   const objectiveState = getPhaseObjectiveState(missionProgress);
   const activeObjective = objectiveState.activeObjective;
-  const discoveredClues = missionProgress.discoveredClues ?? [];
-  const latestClue = discoveredClues.length > 0 ? discoveredClues[discoveredClues.length - 1] : null;
   const playerClass =
     missionProgress.characterCustomization?.academyClass ?? 'Class A';
   const walkMeters = Math.min(20, Math.floor(missionProgress.distanceWalked));
@@ -283,6 +281,7 @@ export function AcademyHUD() {
   const discoveredClues = missionProgress.discoveredClues ?? [
     'Prologue Note: A faded star emblem is carved into the Hoshino Academy main portico.',
   ];
+  const latestClue = discoveredClues[discoveredClues.length - 1] ?? null;
 
   // Determine whether mobile touch controls should be rendered
   const shouldRenderMobileControls =
