@@ -887,6 +887,105 @@ export function buildAcademyEnvironment(
   // ==========================================================================
   rootGroup.add(dormitoryGroup);
 
+  // 4B. THREE ADDITIONAL WALK-IN HOMEROOMS — the academy has exactly Class A, B, C and D.
+  const satelliteClassrooms: Array<{ className: string; x: number; z: number; accent: number }> = [
+    { className: 'Class B', x: -40, z: -18, accent: 0x38bdf8 },
+    { className: 'Class C', x: 40, z: -18, accent: 0xa855f7 },
+    { className: 'Class D', x: 17, z: -57, accent: 0x10b981 },
+  ];
+  const classroomTrimMat = trackMat(new THREE.MeshStandardMaterial({ color: 0x26364b, roughness: 0.62 }));
+  const classroomDeskMat = woodMat;
+  const classroomAccentMats = new Map<number, THREE.MeshStandardMaterial>();
+  for (const room of satelliteClassrooms) {
+    const roomGroup = new THREE.Group();
+    roomGroup.name = `${room.className.replace(' ', '')}WalkInInterior`;
+    roomGroup.userData.roomId = room.className.toLowerCase().replace(' ', '-');
+    roomGroup.position.set(room.x, 0, room.z);
+    const floor = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(15.6, 0.18, 11.6)), interiorFloorMat);
+    floor.position.y = 0.09;
+    floor.receiveShadow = true;
+    roomGroup.add(floor);
+
+    const sideWallGeo = trackGeo(new THREE.BoxGeometry(0.32, 4.2, 11.6));
+    for (const sideX of [-7.64, 7.64]) {
+      const wall = new THREE.Mesh(sideWallGeo, facadeMaterial);
+      wall.position.set(sideX, 2.1, 0);
+      wall.castShadow = true;
+      wall.receiveShadow = true;
+      roomGroup.add(wall);
+    }
+    const backWall = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(15.6, 4.2, 0.32)), facadeMaterial);
+    backWall.position.set(0, 2.1, -5.64);
+    backWall.castShadow = true;
+    roomGroup.add(backWall);
+
+    // Two front wall panels leave a generous five-metre walk-in doorway.
+    const frontPanelGeo = trackGeo(new THREE.BoxGeometry(5.25, 4.2, 0.32));
+    for (const panelX of [-5.18, 5.18]) {
+      const panel = new THREE.Mesh(frontPanelGeo, facadeMaterial);
+      panel.position.set(panelX, 2.1, 5.64);
+      panel.castShadow = true;
+      roomGroup.add(panel);
+    }
+
+    const boardFrame = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(7.2, 1.75, 0.16)), classroomTrimMat);
+    boardFrame.position.set(0, 2.55, -5.38);
+    roomGroup.add(boardFrame);
+    const board = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(6.9, 1.48, 0.08)), chalkboardMat);
+    board.position.set(0, 2.55, -5.27);
+    roomGroup.add(board);
+
+    const teacherDesk = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(3.2, 0.78, 1.15)), classroomDeskMat);
+    teacherDesk.position.set(0, 0.48, -3.65);
+    teacherDesk.castShadow = true;
+    roomGroup.add(teacherDesk);
+
+    const accentMat = trackMat(new THREE.MeshStandardMaterial({
+      color: room.accent, emissive: room.accent, emissiveIntensity: 0.16, roughness: 0.48,
+    }));
+    classroomAccentMats.set(room.accent, accentMat);
+    const crest = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.9, 0.42, 0.12)), accentMat);
+    crest.position.set(0, 4.35, 5.72);
+    roomGroup.add(crest);
+
+    const deskGeo = trackGeo(new THREE.BoxGeometry(1.55, 0.14, 0.82));
+    const deskLegGeo = trackGeo(new THREE.BoxGeometry(0.12, 0.72, 0.12));
+    const chairGeo = trackGeo(new THREE.BoxGeometry(0.72, 0.14, 0.68));
+    for (const rowZ of [-1.0, 1.5]) {
+      for (const colX of [-4.2, 0, 4.2]) {
+        const desk = new THREE.Group();
+        desk.position.set(colX, 0, rowZ);
+        const top = new THREE.Mesh(deskGeo, classroomDeskMat);
+        top.position.y = 0.86;
+        top.castShadow = true;
+        desk.add(top);
+        for (const lx of [-0.62, 0.62]) {
+          for (const lz of [-0.28, 0.28]) {
+            const leg = new THREE.Mesh(deskLegGeo, classroomTrimMat);
+            leg.position.set(lx, 0.42, lz);
+            desk.add(leg);
+          }
+        }
+        const chair = new THREE.Mesh(chairGeo, classroomTrimMat);
+        chair.position.set(0, 0.48, 1.1);
+        desk.add(chair);
+        roomGroup.add(desk);
+      }
+    }
+
+    // Open ceiling keeps interiors legible from the third-person camera; perimeter beams frame the room.
+    const beamGeo = trackGeo(new THREE.BoxGeometry(15.8, 0.22, 0.28));
+    for (const beamZ of [-5.75, 5.75]) {
+      const beam = new THREE.Mesh(beamGeo, classroomTrimMat);
+      beam.position.set(0, 4.45, beamZ);
+      roomGroup.add(beam);
+    }
+    const sign = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(5.2, 0.78, 0.18)), classroomTrimMat);
+    sign.position.set(0, 3.8, 5.86);
+    roomGroup.add(sign);
+    rootGroup.add(roomGroup);
+  }
+
   // 5. NORTH ATHLETIC RUNNING TRACK & SOCCER FIELD (Behind the Main Wing!)
   // ==========================================================================
   const northTrackSurface = new THREE.Mesh(
