@@ -58,6 +58,7 @@ export async function loadImportedStudentRig(
   pivotAt('rightLeg', scaledSize.x * 0.10, scaledSize.y * 0.43, 0);
   pivotAt('torso', 0, scaledSize.y * 0.54, 0);
 
+  const torsoBaseY = segmentPivots.torso.position.y;
   const meshes: THREE.Mesh[] = [];
   root.traverse((object) => {
     if ((object as THREE.Mesh).isMesh) meshes.push(object as THREE.Mesh);
@@ -107,7 +108,7 @@ export async function loadImportedStudentRig(
     segmentPivots.rightLeg.rotation.x = gait * 0.48;
     segmentPivots.head.rotation.x = Math.sin(time * 1.7) * 0.025;
     segmentPivots.head.rotation.y = Math.sin(time * 0.7) * 0.045;
-    segmentPivots.torso.position.y = scaledSize.y * 0.54 + (moving ? Math.abs(gait) * 0.012 : Math.sin(time * 1.8) * 0.004);
+    segmentPivots.torso.position.y = torsoBaseY + (moving ? Math.abs(gait) * 0.012 / scale : Math.sin(time * 1.8) * 0.004 / scale);
     segmentPivots.torso.rotation.z = moving ? gait * 0.025 : Math.sin(time * 0.9) * 0.012;
   };
 
