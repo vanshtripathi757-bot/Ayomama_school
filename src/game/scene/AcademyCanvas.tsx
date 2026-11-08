@@ -1028,6 +1028,9 @@ export function AcademyCanvas() {
       for (const npc of npcRigs) {
         npc.rig.dispose();
       }
+      for (const student of classroomCrowd) {
+        student.rig.dispose();
+      }
       for (const disposeLandmark of landmarkDisposers) {
         disposeLandmark();
       }
