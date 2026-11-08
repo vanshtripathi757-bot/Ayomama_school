@@ -674,7 +674,7 @@ export function AcademyHUD() {
                 type="button"
                 data-testid="exit-interaction-btn"
                 onClick={() => exitObjectInteraction()}
-                className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-[#0a1428]/90 hover:bg-rose-950/90 border border-amber-400/70 shadow-lg flex items-center gap-2 transition-colors cursor-pointer"
+                className="pointer-events-auto min-h-[44px] max-w-[min(92vw,420px)] px-3 py-2 rounded-xl bg-[#071225]/95 hover:bg-rose-950/90 border border-amber-300/70 shadow-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
               >
                 <span className="px-1.5 py-0.5 rounded-full bg-amber-500 text-[10px] font-mono font-bold text-slate-950">
                   {activeObjectInteraction.posture === 'study'
@@ -708,20 +708,23 @@ export function AcademyHUD() {
                 type="button"
                 data-testid="contextual-interaction-btn"
                 onClick={() => triggerContextualInteraction()}
-                className="pointer-events-auto px-3.5 py-1.5 rounded-full bg-[#0a1224]/88 hover:bg-[#142242]/95 border border-emerald-400/70 shadow-lg flex items-center gap-2 transition-colors cursor-pointer"
+                className="pointer-events-auto min-h-[48px] max-w-[min(92vw,420px)] px-4 py-2 rounded-xl bg-[#071225]/95 hover:bg-[#122447] border border-emerald-300/75 shadow-xl flex items-center justify-center gap-3 transition-colors cursor-pointer"
               >
-                <span className="px-1.5 py-0.5 rounded-full bg-emerald-600 text-[10px] font-mono font-bold text-white">
-                  {contextualPrompt.icon} [E]
+                <span className="shrink-0 rounded-lg bg-emerald-500 px-2.5 py-1.5 text-[11px] font-mono font-extrabold text-slate-950">
+                  {contextualPrompt.icon} · E
                 </span>
-                <span
-                  data-testid="interaction-prompt-banner"
-                  className="text-xs font-bold text-emerald-200"
-                >
-                  {contextualPrompt.actionVerb}
+                <span className="min-w-0 text-left">
+                  <span
+                    data-testid="interaction-prompt-banner"
+                    className="block text-xs font-extrabold uppercase tracking-wide text-emerald-200"
+                  >
+                    {contextualPrompt.sourceKind === 'npc' ? 'Talk' : contextualPrompt.actionVerb}
+                  </span>
+                  <span className="block truncate text-[11px] font-medium text-slate-100">
+                    {contextualPrompt.label}
+                  </span>
                 </span>
-                <span className="text-[11px] font-medium text-slate-200 truncate max-w-[190px]">
-                  · {contextualPrompt.label}
-                </span>
+                <span className="shrink-0 text-[10px] font-bold text-slate-400">TAP</span>
               </button>
             </div>
           )}
