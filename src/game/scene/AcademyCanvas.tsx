@@ -554,8 +554,11 @@ export function AcademyCanvas() {
             const req = sharedInputBridge.teleportRequest;
             sharedInputBridge.teleportRequest = null;
             playerState.x = req.x;
-            playerState.y = 0;
+            playerState.y = req.y ?? 0;
             playerState.z = req.z;
+            playerState.isGrounded = true;
+            playerState.coyoteTimer = 0.1;
+            playerState.jumpBufferTimer = 0;
             playerState.vx = 0;
             playerState.vy = 0;
             playerState.vz = 0;
