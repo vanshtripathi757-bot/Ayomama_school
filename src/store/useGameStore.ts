@@ -644,6 +644,11 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     returnToMainMenu: async () => {
       audioManager.playCancel();
+      if (get().isRidingTrain) {
+        sharedInputBridge.playerY = 0;
+        sharedInputBridge.playerZ = 98.0;
+        sharedInputBridge.disembarkTrainRequest = false;
+      }
       syncBodyDataset('title');
       set({
         isRidingTrain: false,
