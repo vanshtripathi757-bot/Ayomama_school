@@ -84,6 +84,8 @@ export function AcademyHUD() {
 
   // Custom typed message state for NPC chat
   const [customMessageInput, setCustomMessageInput] = useState('');
+  const [autoNpcVoiceEnabled, setAutoNpcVoiceEnabled] = useState(false);
+  const lastAutoSpokenMessageId = useRef<string | null>(null);
   const [readingBookId, setReadingBookId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
@@ -313,17 +315,42 @@ export function AcademyHUD() {
   };
 
   const speakLatestNpcMessage = () => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (typeof window === 'undefined' || !('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') return;
     const latestNpcMessage = [...(activeDialogue?.messages ?? [])]
       .reverse()
       .find((message) => message.sender === 'npc');
     if (!latestNpcMessage) return;
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(latestNpcMessage.text);
-    utterance.lang = /[\\u0900-\\u097F]/.test(latestNpcMessage.text) ? 'hi-IN' : 'en-IN';
+    const language = /[\\u0900-\\u097F]/.test(latestNpcMessage.text) ? 'hi-IN' : 'en-IN';
+    utterance.lang = language;
     utterance.rate = 0.96;
+    utterance.pitch = 1.02;
+    const availableVoices = window.speechSynthesis.getVoices();
+    utterance.voice = availableVoices.find((voice) => voice.lang.toLowerCase() === language.toLowerCase())
+      ?? availableVoices.find((voice) => voice.lang.toLowerCase().startsWith(language.slice(0, 2)))
+      ?? null;
     window.speechSynthesis.speak(utterance);
   };
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    if (!activeDialogue) {
+      window.speechSynthesis.cancel();
+      lastAutoSpokenMessageId.current = null;
+      return;
+    }
+    if (!autoNpcVoiceEnabled) {
+      window.speechSynthesis.cancel();
+      return;
+    }
+    const latestNpcMessage = [...activeDialogue.messages]
+      .reverse()
+      .find((message) => message.sender === 'npc');
+    if (!latestNpcMessage || latestNpcMessage.id === lastAutoSpokenMessageId.current) return;
+    lastAutoSpokenMessageId.current = latestNpcMessage.id;
+    speakLatestNpcMessage();
+  }, [autoNpcVoiceEnabled, activeDialogue?.messages.length, activeDialogue?.target.id]);
 
   const dialogueInteractable = activeDialogue?.target ?? null;
   const currentDialogueLine =
@@ -1057,6 +1084,16 @@ export function AcademyHUD() {
                 </span>
               </div>
 
+              <button
+                type="button"
+                data-testid="dialogue-auto-voice-btn"
+                aria-pressed={autoNpcVoiceEnabled}
+                onClick={() => setAutoNpcVoiceEnabled((enabled) => !enabled)}
+                disabled={!('speechSynthesis' in window)}
+                className={`px-2 py-0.5 rounded ${autoNpcVoiceEnabled ? 'bg-emerald-700/90 hover:bg-emerald-600' : 'bg-slate-700/80 hover:bg-slate-600'} disabled:opacity-40 text-[11px] font-semibold text-white cursor-pointer shrink-0`}
+              >
+                Auto {autoNpcVoiceEnabled ? 'On' : 'Off'}
+              </button>
               <button
                 type="button"
                 data-testid="dialogue-speak-btn"
