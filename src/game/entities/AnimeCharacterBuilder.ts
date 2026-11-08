@@ -26,6 +26,8 @@ export interface CharacterActorRig {
   armbandGroup?: THREE.Group;
   headphonesGroup?: THREE.Group;
   heldBookGroup?: THREE.Group;
+  heldClipboardGroup?: THREE.Group;
+  heldSportsBallGroup?: THREE.Group;
   dispose: () => void;
 }
 
@@ -410,6 +412,37 @@ export function createAnimeCharacterRig(
   heldBookGroup.rotation.set(-0.18, 0, -0.12);
   rightArmPivot.add(heldBookGroup);
 
+  // Teaching / administration prop: a clipboard with paper and a metal clip.
+  const heldClipboardGroup = new THREE.Group();
+  heldClipboardGroup.visible = false;
+  const clipboardMat = trackM(new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.62 }));
+  const paperMat = trackM(new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.9 }));
+  const clipboardBoard = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.3, 0.4, 0.035)), clipboardMat);
+  heldClipboardGroup.add(clipboardBoard);
+  const clipboardPaper = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.26, 0.34, 0.012)), paperMat);
+  clipboardPaper.position.z = 0.024;
+  heldClipboardGroup.add(clipboardPaper);
+  const clipboardClip = new THREE.Mesh(trackG(new THREE.BoxGeometry(0.09, 0.035, 0.025)), trackM(new THREE.MeshStandardMaterial({ color: 0xcbd5e1, metalness: 0.78, roughness: 0.28 })));
+  clipboardClip.position.set(0, 0.18, 0.035);
+  heldClipboardGroup.add(clipboardClip);
+  heldClipboardGroup.position.set(0.035, -0.63, 0.12);
+  heldClipboardGroup.rotation.set(-0.12, 0, -0.08);
+  rightArmPivot.add(heldClipboardGroup);
+
+  // Sports-club prop: a compact ball held near the right hand during practice routines.
+  const heldSportsBallGroup = new THREE.Group();
+  heldSportsBallGroup.visible = false;
+  const ballMat = trackM(new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.58 }));
+  const ball = new THREE.Mesh(trackG(new THREE.SphereGeometry(0.19, 12, 10)), ballMat);
+  ball.castShadow = true;
+  heldSportsBallGroup.add(ball);
+  const ballStripeMat = trackM(new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.5 }));
+  const ballStripe = new THREE.Mesh(trackG(new THREE.TorusGeometry(0.192, 0.018, 6, 18)), ballStripeMat);
+  ballStripe.rotation.y = Math.PI / 2;
+  heldSportsBallGroup.add(ballStripe);
+  heldSportsBallGroup.position.set(0.035, -0.63, 0.14);
+  rightArmPivot.add(heldSportsBallGroup);
+
   bodyScaleGroup.add(rightArmPivot);
 
   // 6. Head, Anime Hair Crown, Side Locks, Bangs & Detailed Anime Eyes
@@ -620,6 +653,8 @@ export function createAnimeCharacterRig(
     armbandGroup,
     headphonesGroup,
     heldBookGroup,
+    heldClipboardGroup,
+    heldSportsBallGroup,
     dispose: () => {
       geometries.forEach((g) => g.dispose());
       materials.forEach((m) => m.dispose());
