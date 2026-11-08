@@ -1981,6 +1981,26 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'desk_c2_r1', minX: -10.9, maxX: -9.5, minZ: -15.45, maxZ: -13.95 },
   { id: 'desk_c2_r2', minX: -10.9, maxX: -9.5, minZ: -13.25, maxZ: -11.75 },
 
+  // Satellite walk-in homerooms: Class B (-40,-18), Class C (40,-18), Class D (17,-57).
+  ...[
+    { id: 'class-b', x: -40, z: -18 },
+    { id: 'class-c', x: 40, z: -18 },
+    { id: 'class-d', x: 17, z: -57 },
+  ].flatMap((room) => [
+    { id: `${room.id}_west_wall`, minX: room.x - 7.8, maxX: room.x - 7.48, minZ: room.z - 5.8, maxZ: room.z + 5.8 },
+    { id: `${room.id}_east_wall`, minX: room.x + 7.48, maxX: room.x + 7.8, minZ: room.z - 5.8, maxZ: room.z + 5.8 },
+    { id: `${room.id}_back_wall`, minX: room.x - 7.8, maxX: room.x + 7.8, minZ: room.z - 5.8, maxZ: room.z - 5.48 },
+    { id: `${room.id}_front_left`, minX: room.x - 7.8, maxX: room.x - 2.55, minZ: room.z + 5.48, maxZ: room.z + 5.8 },
+    { id: `${room.id}_front_right`, minX: room.x + 2.55, maxX: room.x + 7.8, minZ: room.z + 5.48, maxZ: room.z + 5.8 },
+    { id: `${room.id}_teacher_desk`, minX: room.x - 1.7, maxX: room.x + 1.7, minZ: room.z - 4.35, maxZ: room.z - 2.95 },
+    ...[-4.2, 0, 4.2].flatMap((dx, col) => [-1.0, 1.5].map((dz, row) => ({
+      id: `${room.id}_desk_${col}_${row}`,
+      minX: room.x + dx - 0.9,
+      maxX: room.x + dx + 0.9,
+      minZ: room.z + dz - 0.6,
+      maxZ: room.z + dz + 0.6,
+    }))),
+  ]),
   // Courtyard Benches (Full 3.2m x 0.85m rectangular colliders) & Notice Board
   { id: 'bench_west_box', minX: -6.95, maxX: -6.05, minZ: 8.35, maxZ: 11.65 },
   { id: 'bench_east_box', minX: 6.05, maxX: 6.95, minZ: 8.35, maxZ: 11.65 },
