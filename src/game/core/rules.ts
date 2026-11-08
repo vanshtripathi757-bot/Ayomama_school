@@ -989,6 +989,42 @@ export function createInitialNPCRuntimeStates(
 }
 
 /**
+ * Selects a believable daily routine label for each NPC from the active school period.
+ * Movement still follows each character's authored patrol route; this schedule layer
+ * makes the activity shown to the player respond to the academy timetable.
+ */
+export function getNpcScheduledActivity(
+  npc: CampusInteractable,
+  period: SchoolPeriodId
+): string {
+  const role = `${npc.role} ${npc.currentGoal ?? ''} ${npc.currentActivity ?? ''}`.toLowerCase();
+  const isFaculty = npc.academyClass === 'Faculty';
+  const isTown = npc.academyClass === 'Town';
+
+  if (period === 'homeroom') {
+    if (isFaculty) return 'Teaching or attending morning homeroom';
+    if (isTown) return 'Opening Hoshino town services';
+    return 'Attending morning homeroom and checking class notices';
+  }
+  if (period === 'courtyard_recess') {
+    if (isFaculty) return 'Supervising lunch and courtyard recess';
+    if (isTown) return 'Serving students during lunch break';
+    return 'Taking lunch and socializing around the courtyard';
+  }
+  if (period === 'club_activities') {
+    if (/sport|track|gym|athletic|swim/.test(role)) return 'Training at the sports grounds';
+    if (/archive|library|research|science|computer|robot/.test(role)) return 'Studying and researching in the academy archive';
+    if (/festival|dormitory|culture|event/.test(role)) return 'Preparing the Cultural Festival and dormitory';
+    return 'Attending after-school club activities';
+  }
+  if (isFaculty) return 'Checking classrooms before campus closing';
+  if (isTown) return 'Working in the Hoshino town district';
+  if (/sport|track|gym|athletic|swim/.test(role)) return 'Finishing evening sports practice';
+  if (/archive|library|research|science|computer|robot/.test(role)) return 'Completing evening study and research';
+  return 'Heading to the dormitory or preparing for the evening';
+}
+
+/**
  * Advances autonomous NPC movement and personality-driven behavior across Hoshino Academy.
  * - Physically separates NPCs from the Player body and from other NPC bodies so no character
  *   ever walks through another character.
@@ -1001,7 +1037,8 @@ export function stepAutonomousNPCs(
   playerX: number,
   playerZ: number,
   activeDialogueTargetId: string | null,
-  dt: number
+  dt: number,
+  schoolPeriod: SchoolPeriodId = 'club_activities'
 ): NPCRuntimeState[] {
   const clampedDt = Math.min(Math.max(dt, 0.001), 0.05);
 
@@ -1014,7 +1051,7 @@ export function stepAutonomousNPCs(
     const next: NPCRuntimeState = {
       ...npc,
       greetingAnim: config.greetingAnim ?? 'wave',
-      currentActivity: config.currentActivity ?? npc.currentActivity,
+      currentActivity: getNpcScheduledActivity(config, schoolPeriod),
       emotionalState: config.emotionalState ?? behavior.defaultEmotion,
       talkingWithNpcId: null,
     };
