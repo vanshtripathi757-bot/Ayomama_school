@@ -867,6 +867,55 @@ export function buildAcademyEnvironment(
   dormDesk.castShadow = true;
   dormitoryGroup.add(dormDesk);
 
+  // Three upper residential floors are fully furnished and share the same dormitory footprint.
+  const dormUpperFloorGeo = trackGeo(new THREE.BoxGeometry(18.5, 0.24, 18.5));
+  for (const floorY of [3.8, 7.6, 11.4]) {
+    const upperFloor = new THREE.Mesh(dormUpperFloorGeo, interiorFloorMat);
+    upperFloor.position.set(-45.0, floorY - 0.12, -34.5);
+    upperFloor.receiveShadow = true;
+    dormitoryGroup.add(upperFloor);
+
+    // Upper-floor dorm rooms repeat the resident bed / locker / study furniture layout.
+    for (const bedX of [-50.4, -39.6]) {
+      const bedBase = new THREE.Mesh(dormBedGeo, darkTrimMat);
+      bedBase.position.set(bedX, floorY + 0.42, -36.2);
+      bedBase.castShadow = true;
+      dormitoryGroup.add(bedBase);
+      const mattress = new THREE.Mesh(dormMattressGeo, interiorWallMat);
+      mattress.position.set(bedX, floorY + 0.72, -36.2);
+      dormitoryGroup.add(mattress);
+      const pillow = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(1.15, 0.14, 0.55)), lanternBulbMaterial);
+      pillow.position.set(bedX, floorY + 0.88, -37.32);
+      dormitoryGroup.add(pillow);
+    }
+    for (const lockerX of [-51.2, -48.8, -41.2, -38.8]) {
+      const locker = new THREE.Mesh(dormLockerGeo, darkTrimMat);
+      locker.position.set(lockerX, floorY + 1.25, -29.0);
+      locker.castShadow = true;
+      dormitoryGroup.add(locker);
+    }
+    const studyDesk = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(5.8, 0.82, 1.1)), woodMat);
+    studyDesk.position.set(-45.0, floorY + 0.48, -41.0);
+    studyDesk.castShadow = true;
+    dormitoryGroup.add(studyDesk);
+
+    // Low guard rails mark the open atrium edge; the lift landing remains centered.
+    const rail = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(18.0, 0.12, 0.16)), darkTrimMat);
+    rail.position.set(-45.0, floorY + 1.0, -25.35);
+    dormitoryGroup.add(rail);
+    const liftDoor = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.2, 2.35, 0.12)), darkTrimMat);
+    liftDoor.position.set(-45.0, floorY + 1.2, -26.2);
+    dormitoryGroup.add(liftDoor);
+  }
+
+  // Visible elevator control panel inside the ground-floor lobby.
+  const dormLiftPanel = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.62, 1.15, 0.12)), darkTrimMat);
+  dormLiftPanel.position.set(-42.8, 1.35, -26.1);
+  dormitoryGroup.add(dormLiftPanel);
+  const dormLiftIndicator = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.24, 0.22, 0.04)), lanternBulbMaterial);
+  dormLiftIndicator.position.set(-42.8, 1.62, -26.0);
+  dormitoryGroup.add(dormLiftIndicator);
+
   const dormRoof = new THREE.Mesh(
     trackGeo(new THREE.ConeGeometry(15.2, 4.2, 4)),
     roofMat
