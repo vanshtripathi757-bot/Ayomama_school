@@ -24,6 +24,8 @@ export interface AcademyEnvironmentRefs {
   cloudGroup: THREE.Group;
   cloudMaterial: THREE.MeshStandardMaterial;
   celestialDisc: THREE.Mesh;
+  commuterTrain: THREE.Group;
+  commuterTrainWheels: THREE.Mesh[];
   dispose: () => void;
 }
 
@@ -1427,36 +1429,56 @@ export function buildAcademyEnvironment(
     rootGroup.add(sCol);
   }
 
-  // 4-Car Hoshino Express Commuter Train at Station (z = 100.5)
-  const trainBodyMat = trackMat(
-    new THREE.MeshStandardMaterial({
-      color: 0xf1f5f9,
-      roughness: 0.35,
-      metalness: 0.25,
-    })
-  );
-  for (const carX of [-21.0, -7.0, 7.0, 21.0]) {
-    const carBody = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(13.2, 3.6, 3.2)),
-      trainBodyMat
-    );
-    carBody.position.set(carX, 2.2, 100.5);
+  // Four-car Hoshino Express commuter train: grouped so the whole consist can move as one vehicle.
+  const commuterTrain = new THREE.Group();
+  commuterTrain.name = 'HoshinoExpressCommuterTrain';
+  commuterTrain.position.set(0, 0, 100.5);
+  commuterTrain.userData.route = { minX: -16, maxX: 16, speed: 3.2 };
+  rootGroup.add(commuterTrain);
+  const commuterTrainWheels: THREE.Mesh[] = [];
+  const trainBodyMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0xf1f5f9, roughness: 0.35, metalness: 0.25,
+  }));
+  const trainDarkMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x26364b, roughness: 0.48, metalness: 0.35,
+  }));
+  const trainWheelGeo = trackGeo(new THREE.CylinderGeometry(0.48, 0.48, 0.34, 12));
+  for (const [carIndex, carX] of [-21.0, -7.0, 7.0, 21.0].entries()) {
+    const car = new THREE.Group();
+    car.position.x = carX;
+    car.name = `HoshinoExpressCar-${carIndex + 1}`;
+    commuterTrain.add(car);
+    const carBody = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 3.6, 3.2)), trainBodyMat);
+    carBody.position.y = 2.2;
     carBody.castShadow = true;
-    rootGroup.add(carBody);
-
-    const carStripe = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(13.3, 0.48, 3.26)),
-      konbiniSignMat
-    );
-    carStripe.position.set(carX, 1.9, 100.5);
-    rootGroup.add(carStripe);
-
-    const carWindows = new THREE.Mesh(
-      trackGeo(new THREE.BoxGeometry(11.8, 1.0, 3.28)),
-      lanternBulbMaterial
-    );
-    carWindows.position.set(carX, 2.65, 100.5);
-    rootGroup.add(carWindows);
+    carBody.receiveShadow = true;
+    car.add(carBody);
+    const carStripe = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.3, 0.48, 3.26)), konbiniSignMat);
+    carStripe.position.set(0, 1.9, 0);
+    car.add(carStripe);
+    const carWindows = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(11.8, 1.0, 3.28)), lanternBulbMaterial);
+    carWindows.position.set(0, 2.65, 0);
+    car.add(carWindows);
+    // Side doors and illuminated destination panels.
+    for (const side of [-1, 1]) {
+      const door = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(1.25, 2.25, 0.08)), trainDarkMat);
+      door.position.set(0, 1.8, side * 1.64);
+      car.add(door);
+      const doorGlass = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.82, 1.45, 0.045)), lanternBulbMaterial);
+      doorGlass.position.set(0, 1.98, side * 1.7);
+      car.add(doorGlass);
+      for (const wheelX of [-4.4, 4.4]) {
+        const wheel = new THREE.Mesh(trainWheelGeo, trainDarkMat);
+        wheel.rotation.x = Math.PI / 2;
+        wheel.position.set(wheelX, 0.72, side * 1.55);
+        wheel.castShadow = true;
+        car.add(wheel);
+        commuterTrainWheels.push(wheel);
+      }
+    }
+    const undercarriage = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(10.8, 0.55, 2.6)), trainDarkMat);
+    undercarriage.position.y = 0.75;
+    car.add(undercarriage);
   }
 
   // --- EAST DISTRICT: Hoshino 25m Aquatics Swimming Pool & Grand Research Centre Dome ---
@@ -1846,6 +1868,8 @@ export function buildAcademyEnvironment(
     cloudGroup,
     cloudMaterial,
     celestialDisc,
+    commuterTrain,
+    commuterTrainWheels,
     dispose,
   };
 }
