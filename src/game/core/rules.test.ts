@@ -21,6 +21,7 @@ import {
   getNextSchoolPeriod,
   getNextTimeOfDay,
   getNpcScheduledActivity,
+  getNpcClassCompetitionRanks,
   getSakuraPetalCount,
   getShadowMapSize,
   getSkyWeatherDescription,
@@ -380,6 +381,44 @@ test('stepAutonomousNPCs moves 14 Class A-D/Faculty NPCs with personality behavi
   assert.match(getSkyWeatherDescription('twilight', 30), /Starlit Sky/i);
 });
 
+test('NPC academic progress grows during study periods and class ranks stay class-local', () => {
+  const initial = createInitialNPCRuntimeStates(CAMPUS_INTERACTABLES);
+  const ranks = getNpcClassCompetitionRanks(initial, CAMPUS_INTERACTABLES);
+  assert.ok((ranks['npc_ren'] ?? 0) >= 1);
+  assert.equal(ranks['npc_takeda'], undefined);
+
+  const before = initial.find((npc) => npc.id === 'npc_ren');
+  assert.ok(before);
+  const studying = stepAutonomousNPCs(
+    initial,
+    CAMPUS_INTERACTABLES,
+    999,
+    999,
+    null,
+    0.05,
+    'homeroom'
+  );
+  const afterStudy = studying.find((npc) => npc.id === 'npc_ren');
+  assert.ok(afterStudy);
+  assert.ok((afterStudy.academicProgress ?? 0) > (before.academicProgress ?? 0));
+  assert.ok((afterStudy.classRank ?? 0) >= 1);
+  assert.match(afterStudy.currentActivity ?? '', /Class rank #/i);
+
+  const recess = stepAutonomousNPCs(
+    initial,
+    CAMPUS_INTERACTABLES,
+    999,
+    999,
+    null,
+    0.05,
+    'courtyard_recess'
+  );
+  assert.equal(
+    recess.find((npc) => npc.id === 'npc_ren')?.academicProgress,
+    before.academicProgress
+  );
+});
+
 test('NPC daily activity schedules respond to the active school period', () => {
   const npc = CAMPUS_INTERACTABLES.find((item) => item.id === 'npc_sora');
   const faculty = CAMPUS_INTERACTABLES.find((item) => item.academyClass === 'Faculty');
@@ -483,8 +522,11 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
     0
   );
 
-  // Complete Phase 1 of Story 01
+  // Phase 1 cannot be completed by calling the progression helper alone.
+  // The six sequential world objectives must be validated before rewards/unlocks.
   const afterPhase1 = completeStoryPhaseProgress(baseProgress, allStories[0].id, 1);
+  assert.deepEqual(afterPhase1.completedPhaseKeys ?? [], baseProgress.completedPhaseKeys ?? []);
+  assert.equal(afterPhase1.activePhaseNumber, 1);
   assert.equal(
     isPhaseUnlocked(
       allStories[0].id,
@@ -493,12 +535,11 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
       afterPhase1.completedStoryIds ?? [],
       allStories
     ),
-    true
+    false
   );
-  assert.equal(afterPhase1.activePhaseNumber, 2);
-  assert.ok(
-    (afterPhase1.classPoints?.['Class D'] ?? 0) >
-      (baseProgress.classPoints?.['Class D'] ?? 0)
+  assert.equal(
+    afterPhase1.classPoints?.['Class D'] ?? 0,
+    baseProgress.classPoints?.['Class D'] ?? 0
   );
 
   // Update NPC relationship and memory on interaction

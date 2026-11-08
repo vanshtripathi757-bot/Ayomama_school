@@ -283,6 +283,7 @@ export interface MissionProgressState {
   completedPhaseKeys?: string[]; // format: `${storyId}:phase_${phaseNumber}`
   completedStoryIds?: string[];
   npcRelationships?: Record<string, NPCRelationshipState>;
+  npcAcademicRecords?: Record<string, { academicProgress: number; motivation: number }>;
   customStories?: StoryLibraryItem[];
   // V8.0 Universal Object Interaction & Library State
   borrowedBookIds?: string[];
@@ -404,6 +405,10 @@ export interface NPCRuntimeState {
   talkingWithNpcId?: string | null;
   objectPosture?: 'none' | 'sit' | 'study' | 'read' | 'use_computer' | 'eat';
   usingObjectId?: string | null;
+  /** Runtime-only academic progress used by the autonomous class competition simulation. */
+  academicProgress?: number;
+  motivation?: number;
+  classRank?: number;
 }
 
 export interface AmbientNpcBanter {

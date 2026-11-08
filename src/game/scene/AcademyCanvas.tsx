@@ -27,6 +27,8 @@ import {
   updateCharacterRigAnimation,
 } from '../entities/AnimeCharacterBuilder';
 import { buildAcademyEnvironment } from '../environment/AcademyModels';
+import { loadImportedStudentRig } from '../entities/ImportedStudentRig';
+import type { ImportedStudentRig } from '../entities/ImportedStudentRig';
 import { createProceduralTextureSet } from '../environment/ProceduralTextures';
 import { audioManager } from '../systems/AudioManager';
 import { sharedInputBridge } from '../systems/InputBridge';
@@ -263,6 +265,25 @@ export function AcademyCanvas() {
 
     // Instantiate Campus NPCs & Notice Board Landmark
     let npcStates = createInitialNPCRuntimeStates(CAMPUS_INTERACTABLES);
+    let academicSessionId: number | null = null;
+    let lastAcademicCheckpoint = 0;
+    const checkpointNpcAcademics = () => {
+      const store = useGameStore.getState();
+      if (store.phase !== 'playing') return;
+      const npcAcademicRecords = Object.fromEntries(
+        npcStates.map((npc) => [
+          npc.id,
+          {
+            academicProgress: Number((npc.academicProgress ?? 0).toFixed(3)),
+            motivation: Number((npc.motivation ?? 0).toFixed(3)),
+          },
+        ])
+      );
+      useGameStore.setState({
+        missionProgress: { ...store.missionProgress, npcAcademicRecords },
+      });
+      void useGameStore.getState().saveCurrentSession();
+    };
     const npcRigs: Array<{
       id: string;
       rig: CharacterActorRig;
@@ -305,6 +326,31 @@ export function AcademyCanvas() {
       }
     }
 
+    // Upgrade Aiko's visual actor to the supplied Sketchfab student model when the
+    // asset is present. Keep the existing procedural actor as a safe 404/error fallback.
+    let importedStudentRig: ImportedStudentRig | null = null;
+    let sceneDisposed = false;
+    const aikoFallbackRig = npcRigs.find((entry) => entry.id === 'npc_hana')?.rig;
+    if (aikoFallbackRig) {
+      void loadImportedStudentRig()
+        .then((rig) => {
+          if (sceneDisposed) {
+            rig.dispose();
+            return;
+          }
+          importedStudentRig = rig;
+          rig.root.position.copy(aikoFallbackRig.root.position);
+          rig.root.rotation.y = aikoFallbackRig.root.rotation.y;
+          entitiesGroup.add(rig.root);
+          aikoFallbackRig.root.visible = false;
+        })
+        .catch((error: unknown) => {
+          // Keep the procedural Aiko actor visible if the optional GLB is not installed.
+          aikoFallbackRig.root.visible = true;
+          console.info('Imported student model unavailable; using procedural NPC fallback.', error);
+        });
+    }
+
     // Homeroom visual attendance: populate every class with background classmates.
     // These non-interactive crowd actors are lightweight visual students; named NPCs retain
     // their own autonomous schedules, dialogue, relationships and story progression.
@@ -314,10 +360,12 @@ export function AcademyCanvas() {
       phase: number;
     }> = [];
     const classroomLayouts = [
-      { classId: 'A', color: 0x172554, accent: 0x38bdf8, cols: [-18.2, -14.2, -10.2], rows: [-17.2, -15.0, -12.8], count: 4 },
-      { classId: 'B', color: 0x1e293b, accent: 0x38bdf8, cols: [-23.5, -20.5], rows: [-4.6, -2.2, 0.2], count: 3 },
-      { classId: 'C', color: 0x1e293b, accent: 0xa855f7, cols: [18.9, 21.9], rows: [-4.6, -2.2, 0.2], count: 3 },
-      { classId: 'D', color: 0x1e293b, accent: 0x10b981, cols: [-32.5, -29.5, -26.5], rows: [-17.2, -15.0, -12.8], count: 4 },
+      // Nine seated classmates per room (three columns by three rows) make all four
+      // homerooms read as active classes instead of sparsely populated demo spaces.
+      { classId: 'A', color: 0x172554, accent: 0x38bdf8, cols: [-18.2, -14.2, -10.2], rows: [-17.2, -15.0, -12.8], count: 9 },
+      { classId: 'B', color: 0x1e293b, accent: 0x38bdf8, cols: [-24.5, -20.5, -16.5], rows: [-4.6, -2.2, 0.2], count: 9 },
+      { classId: 'C', color: 0x1e293b, accent: 0xa855f7, cols: [16.5, 20.5, 24.5], rows: [-4.6, -2.2, 0.2], count: 9 },
+      { classId: 'D', color: 0x1e293b, accent: 0x10b981, cols: [-34.0, -30.0, -26.0], rows: [-17.2, -15.0, -12.8], count: 9 },
     ] as const;
     const crowdHair = [0x312e81, 0x7c2d12, 0x0f766e, 0x334155, 0x9d174d, 0x4c1d95];
     let crowdIndex = 0;
@@ -729,6 +777,29 @@ export function AcademyCanvas() {
             activeObjectInteraction?.posture ?? 'none'
           );
 
+          // Restore saved student standings once per play session; checkpoint at most every 30s.
+          // New games have a different session start and therefore reset their academic records.
+          const academicStore = useGameStore.getState();
+          if (academicSessionId !== academicStore.sessionStartTime) {
+            academicSessionId = academicStore.sessionStartTime;
+            const records = academicStore.missionProgress.npcAcademicRecords ?? {};
+            npcStates = npcStates.map((npc) => {
+              const record = records[npc.id];
+              return record
+                ? {
+                    ...npc,
+                    academicProgress: Math.max(0, Math.min(100, record.academicProgress)),
+                    motivation: Math.max(0, Math.min(100, record.motivation)),
+                  }
+                : npc;
+            });
+            lastAcademicCheckpoint = performance.now();
+          }
+          if (performance.now() - lastAcademicCheckpoint >= 30000) {
+            lastAcademicCheckpoint = performance.now();
+            checkpointNpcAcademics();
+          }
+
           // Step autonomous NPC patrols before checking proximity
           npcStates = stepAutonomousNPCs(
             npcStates,
@@ -822,21 +893,26 @@ export function AcademyCanvas() {
           const runtime = npcStates[i];
           if (!runtime) continue;
 
-          npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
-          npcEntry.rig.root.rotation.y = runtime.yaw;
-
-          updateCharacterRigAnimation(
-            npcEntry.rig,
-            runtime.walkPhase,
-            runtime.isMoving,
-            false,
-            1,
-            1,
-            elapsedTotal + i * 1.1,
-            Boolean(runtime.isGreetingPlayer),
-            runtime.greetingAnim,
-            runtime.objectPosture ?? 'none'
-          );
+          if (npcEntry.id === 'npc_hana' && importedStudentRig) {
+            importedStudentRig.root.position.set(runtime.x, runtime.y, runtime.z);
+            importedStudentRig.root.rotation.y = runtime.yaw;
+            importedStudentRig.update(elapsedTotal + i * 1.1, runtime.isMoving, 1, Boolean(runtime.isGreetingPlayer), runtime.greetingAnim, runtime.objectPosture ?? 'none');
+          } else {
+            npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
+            npcEntry.rig.root.rotation.y = runtime.yaw;
+            updateCharacterRigAnimation(
+              npcEntry.rig,
+              runtime.walkPhase,
+              runtime.isMoving,
+              false,
+              1,
+              1,
+              elapsedTotal + i * 1.1,
+              Boolean(runtime.isGreetingPlayer),
+              runtime.greetingAnim,
+              runtime.objectPosture ?? 'none'
+            );
+          }
         }
 
         // Automatic Sky Weather & Time-of-Day Cycle (smoothly transitions every 75 seconds)
@@ -1025,6 +1101,8 @@ export function AcademyCanvas() {
       window.removeEventListener('blur', onBlur);
 
       protagonistRig.dispose();
+      sceneDisposed = true;
+      importedStudentRig?.dispose();
       for (const npc of npcRigs) {
         npc.rig.dispose();
       }
