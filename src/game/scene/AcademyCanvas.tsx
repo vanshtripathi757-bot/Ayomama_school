@@ -393,7 +393,8 @@ export function AcademyCanvas() {
         stateRef.current.activeViewpoint,
         playerState,
         elapsedTotal,
-        0.016
+        0.016,
+        academyEnv.rootGroup
       );
       renderer.render(scene, camera);
     };
@@ -931,7 +932,8 @@ export function AcademyCanvas() {
         activeViewpoint,
         playerState,
         elapsedTotal,
-        dt
+        dt,
+        academyEnv.rootGroup
       );
 
       // Render frame
