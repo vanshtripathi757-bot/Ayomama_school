@@ -87,6 +87,12 @@ export function AcademyHUD() {
   // Custom typed message state for NPC chat
   const [customMessageInput, setCustomMessageInput] = useState('');
   const [autoNpcVoiceEnabled, setAutoNpcVoiceEnabled] = useState(false);
+  const [terminalCommand, setTerminalCommand] = useState('print("Hello, Hoshino!")');
+  const [terminalOutput, setTerminalOutput] = useState('Terminal ready.');
+  const [labObservation, setLabObservation] = useState('');
+  const [labObservationSaved, setLabObservationSaved] = useState(false);
+  const [councilAgendaReviewed, setCouncilAgendaReviewed] = useState(false);
+  const [presentationRehearsed, setPresentationRehearsed] = useState(false);
   const lastAutoSpokenMessageId = useRef<string | null>(null);
   const [readingBookId, setReadingBookId] = useState<string | null>(null);
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
@@ -353,6 +359,19 @@ export function AcademyHUD() {
     lastAutoSpokenMessageId.current = latestNpcMessage.id;
     speakLatestNpcMessage();
   }, [autoNpcVoiceEnabled, activeDialogue?.messages.length, activeDialogue?.target.id]);
+
+  const runComputerLabCommand = () => {
+    const command = terminalCommand.trim();
+    const stringPrint = command.match(/^print\\(\\s*(['"])(.*?)\\1\\s*\\)$/);
+    const numberPrint = command.match(/^print\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)$/);
+    if (stringPrint) {
+      setTerminalOutput(stringPrint[2]);
+    } else if (numberPrint) {
+      setTerminalOutput(numberPrint[1]);
+    } else {
+      setTerminalOutput('Demo terminal supports print("text") and print(number).');
+    }
+  };
 
   const dialogueInteractable = activeDialogue?.target ?? null;
   const currentDialogueLine =
@@ -771,6 +790,59 @@ export function AcademyHUD() {
               <button type="button" onClick={() => { teleportToZone(-45, -30.5, Math.PI); endWorldInteraction(); }} className="flex-1 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white hover:bg-indigo-500">Enter Common Room</button>
               <button type="button" onClick={endWorldInteraction} className="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Close</button>
             </div>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId.startsWith('computer-lab-workstation-') && (
+          <div data-testid="computer-lab-terminal" role="dialog" aria-label="Computer lab terminal" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,480px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-sky-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-sky-300">Hoshino Computer Laboratory</div>
+            <h2 className="mt-1 text-base font-bold text-white">Student Coding Terminal</h2>
+            <p className="mt-2 text-xs text-slate-300">Try the small safe demo interpreter. It supports print with a quoted message or a number; it does not execute arbitrary code.</p>
+            <input value={terminalCommand} onChange={(event) => setTerminalCommand(event.target.value)} aria-label="Terminal command" className="mt-3 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 font-mono text-xs text-emerald-200 outline-none focus:border-sky-400" />
+            <button type="button" onClick={runComputerLabCommand} className="mt-2 rounded-lg bg-sky-700 px-4 py-2 text-xs font-bold text-white hover:bg-sky-600">Run Demo</button>
+            <div className="mt-3 rounded-lg border border-slate-700 bg-black/60 p-3 font-mono text-xs">
+              <div className="text-slate-500">OUTPUT</div>
+              <div className="mt-1 min-h-5 text-emerald-300">{terminalOutput}</div>
+            </div>
+            <button type="button" onClick={endWorldInteraction} className="mt-3 w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Exit Terminal</button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId.startsWith('science-lab-bench-') && (
+          <div data-testid="science-lab-log" role="dialog" aria-label="Science lab observation log" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(92vw,440px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-cyan-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-cyan-300">Hoshino Science Laboratory</div>
+            <h2 className="mt-1 text-base font-bold text-white">Observation Log</h2>
+            <p className="mt-2 text-xs text-slate-300">Record what you notice during this virtual lab activity. Notes are kept in this active session.</p>
+            <textarea value={labObservation} onChange={(event) => { setLabObservation(event.target.value); setLabObservationSaved(false); }} rows={3} placeholder="Write your observation..." className="mt-3 w-full rounded-lg border border-slate-600 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-cyan-400" />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-cyan-200">{labObservationSaved ? 'Observation saved for this session.' : 'Ready to record.'}</span>
+              <button type="button" disabled={!labObservation.trim()} onClick={() => setLabObservationSaved(true)} className="rounded-lg bg-cyan-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-40">Save Note</button>
+            </div>
+            <button type="button" onClick={endWorldInteraction} className="mt-3 w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Exit Lab</button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'student-council-notice-board' && (
+          <div data-testid="student-council-notices" role="dialog" aria-label="Student council notices" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-amber-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">Student Council Office</div>
+            <h2 className="mt-1 text-base font-bold text-white">Council Notice Board</h2>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-300">
+              <li>Class representatives meeting after the afternoon bell.</li>
+              <li>Festival committee proposals are open for review.</li>
+              <li>Library volunteer rota is posted for the week.</li>
+            </ul>
+            <button type="button" onClick={() => setCouncilAgendaReviewed(true)} className="mt-3 w-full rounded-lg bg-amber-700 px-3 py-2 text-xs font-bold text-white">{councilAgendaReviewed ? 'Agenda Reviewed' : 'Mark Agenda Reviewed'}</button>
+            <button type="button" onClick={endWorldInteraction} className="mt-2 w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Close</button>
+          </div>
+        )}
+
+        {phase === 'playing' && activeWorldInteraction?.objectId === 'auditorium-stage-podium' && (
+          <div data-testid="auditorium-presentation-panel" role="dialog" aria-label="Auditorium presentation" className="pointer-events-auto fixed left-1/2 top-1/2 z-30 w-[min(90vw,420px)] -translate-x-1/2 -translate-y-1/2 rounded-xl border border-violet-300/40 bg-[#081326]/97 p-4 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-violet-300">Hoshino Academy Auditorium</div>
+            <h2 className="mt-1 text-base font-bold text-white">Presentation Rehearsal</h2>
+            <p className="mt-2 text-xs text-slate-300">Practice introducing your topic, explaining one key idea and ending with a clear conclusion.</p>
+            <button type="button" onClick={() => setPresentationRehearsed(true)} className="mt-3 w-full rounded-lg bg-violet-700 px-3 py-2 text-xs font-bold text-white">{presentationRehearsed ? 'Rehearsal Completed' : 'Complete Rehearsal'}</button>
+            <button type="button" onClick={endWorldInteraction} className="mt-2 w-full rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white">Exit Stage</button>
           </div>
         )}
 
