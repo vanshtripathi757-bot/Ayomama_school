@@ -1965,6 +1965,11 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   { id: 'lobby_locker_east', minX: 4.4, maxX: 5.3, minZ: -13.6, maxZ: -10.2 },
   { id: 'classroom_podium', minX: -15.4, maxX: -13.0, minZ: -20.2, maxZ: -18.85 },
   { id: 'council_table', minX: 11.4, maxX: 17.0, minZ: -17.2, maxZ: -14.4 },
+  { id: 'council_chair_west', minX: 10.9, maxX: 11.9, minZ: -16.3, maxZ: -15.3 },
+  { id: 'council_chair_east', minX: 16.5, maxX: 17.5, minZ: -16.3, maxZ: -15.3 },
+  { id: 'council_chair_north', minX: 13.7, maxX: 14.7, minZ: -14.3, maxZ: -13.3 },
+  { id: 'council_chair_south', minX: 13.7, maxX: 14.7, minZ: -18.3, maxZ: -17.3 },
+  { id: 'council_notice_board', minX: 19.0, maxX: 22.2, minZ: -11.2, maxZ: -10.8 },
   { id: 'library_bookshelves', minX: 7.8, maxX: 20.6, minZ: -22.2, maxZ: -21.1 },
 
   // ALL 9 Class A Student Desks + Chairs (3 columns: -18.2, -14.2, -10.2 x 3 rows: -17.2, -15.0, -12.8)
