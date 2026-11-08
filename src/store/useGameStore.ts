@@ -1024,7 +1024,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         },
         missionProgress: nextMission,
       });
-      get().notifyObjectiveEvent({ type: 'talk_npc', targetId: active.target.id });
+      // A conversation counts once when it is opened, not once per reply/choice.
     },
 
     sendCustomDialogueMessage: async (playerMessage: string) => {
@@ -1130,7 +1130,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
         },
         missionProgress: nextMission,
       });
-      get().notifyObjectiveEvent({ type: 'talk_npc', targetId: active.target.id });
+      // Sending additional messages in the same chat cannot satisfy later phases.
       void get().saveCurrentSession();
     },
 
