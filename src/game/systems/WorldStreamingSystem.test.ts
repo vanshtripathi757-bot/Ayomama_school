@@ -37,3 +37,9 @@ test('world streaming toggles inferred station assets and tagged regions', () =>
   updateWorldStreaming([world], 34, -27);
   assert.equal(medical.visible, true);
 });
+
+test('expanded academy facilities have streaming budgets', () => {
+  assert.ok(STREAM_REGION_BUDGETS['science-lab']);
+  assert.ok(STREAM_REGION_BUDGETS['computer-lab']);
+  assert.ok(STREAM_REGION_BUDGETS.auditorium);
+});
