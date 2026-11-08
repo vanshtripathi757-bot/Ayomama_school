@@ -10,7 +10,11 @@ test('character rig owns a hidden hand-attached book prop that can be shown for 
     gender: 'male',
   });
   assert.ok(rig.heldBookGroup);
+  assert.ok(rig.heldClipboardGroup);
+  assert.ok(rig.heldSportsBallGroup);
   assert.equal(rig.heldBookGroup?.visible, false);
+  assert.equal(rig.heldClipboardGroup?.visible, false);
+  assert.equal(rig.heldSportsBallGroup?.visible, false);
   assert.equal(rig.heldBookGroup?.parent, rig.rightArmPivot);
   if (rig.heldBookGroup) rig.heldBookGroup.visible = true;
   assert.equal(rig.heldBookGroup?.visible, true);
