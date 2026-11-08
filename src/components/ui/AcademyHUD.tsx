@@ -417,7 +417,7 @@ export function AcademyHUD() {
       </div>
 
       {/* Persistent objective clue: replaces the removed rotating NPC message banner. */}
-      {phase === 'playing' && !activeDialogue && (
+      {phase === 'playing' && (
         <div
           data-testid="active-objective-clue"
           className="pointer-events-none absolute top-14 left-3 z-10 w-[min(72vw,300px)] rounded-xl border border-amber-300/45 bg-[#071225]/90 px-3 py-2.5 text-slate-100 shadow-xl backdrop-blur-sm"
