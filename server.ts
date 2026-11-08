@@ -35,6 +35,10 @@ interface StoryDirectorRequestBody {
   discoveredClues?: string[];
 }
 
+function safeRequestText(value: unknown, maxLength: number, fallback = ''): string {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : fallback;
+}
+
 /**
  * Intelligent contextual reply generator used when GEMINI_API_KEY is not configured
  * or if the upstream call times out, ensuring the NPC always understands and replies
@@ -153,8 +157,22 @@ async function startServer() {
   app.use(express.json({ limit: '1mb' }));
 
   app.post('/api/npc-chat', async (req, res) => {
-    const body = (req.body || {}) as NpcChatRequestBody;
-    const playerMessage = (body.playerMessage || '').trim();
+    const rawBody = (req.body && typeof req.body === 'object' ? req.body : {}) as NpcChatRequestBody;
+    const body: NpcChatRequestBody = {
+      npcId: safeRequestText(rawBody.npcId, 80, 'npc_hana'),
+      npcName: safeRequestText(rawBody.npcName, 80, 'Aiko Hoshino'),
+      npcRole: safeRequestText(rawBody.npcRole, 100, 'Hoshino Academy student'),
+      npcPersona: safeRequestText(rawBody.npcPersona, 400, 'Friendly, observant school student'),
+      schoolPeriod: safeRequestText(rawBody.schoolPeriod, 60, 'Courtyard Recess'),
+      playerMessage: safeRequestText(rawBody.playerMessage, 600),
+      history: Array.isArray(rawBody.history)
+        ? rawBody.history.slice(-6).map((entry) => ({
+            sender: entry?.sender === 'player' ? 'player' as const : 'npc' as const,
+            text: safeRequestText(entry?.text, 300),
+          }))
+        : [],
+    };
+    const playerMessage = body.playerMessage ?? '';
     if (!playerMessage) {
       res.status(400).json({ error: 'Message cannot be empty.' });
       return;
@@ -239,12 +257,19 @@ async function startServer() {
 
   // Section 11 & 14: Gemini AI Story Director Contract
   app.post('/api/story-director', async (req, res) => {
-    const body = (req.body || {}) as StoryDirectorRequestBody;
-    const xp = typeof body.xp === 'number' && body.xp >= 0 ? body.xp : 10;
-    const completedIds = Array.isArray(body.completedStoryPackIds)
-      ? body.completedStoryPackIds
+    const rawBody = (req.body && typeof req.body === 'object' ? req.body : {}) as StoryDirectorRequestBody;
+    const xp = typeof rawBody.xp === 'number' && Number.isFinite(rawBody.xp)
+      ? Math.max(0, Math.min(100000, Math.floor(rawBody.xp)))
+      : 10;
+    const completedIds = Array.isArray(rawBody.completedStoryPackIds)
+      ? rawBody.completedStoryPackIds
+          .filter((value): value is string => typeof value === 'string')
+          .slice(-30)
+          .map((value) => value.slice(0, 100))
       : [];
     const activeChapter = getCurrentStoryChapter(xp);
+    const chapter = safeRequestText(rawBody.chapter, 120, activeChapter.title);
+    const location = safeRequestText(rawBody.location, 100, 'Hoshino Academy Courtyard');
     const deterministicPack = getDeterministicStoryPack(xp, completedIds);
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -268,8 +293,8 @@ async function startServer() {
 
       const systemInstruction = [
         `You are the Narrative Director and Quest Designer for "The School Chronicles" at Hoshino Academy.`,
-        `Current Chapter: ${body.chapter || activeChapter.title}.`,
-        `Player XP: ${xp}. Current Location: ${body.location || 'Hoshino Academy Courtyard'}.`,
+        `Current Chapter: ${chapter}.`,
+        `Player XP: ${xp}. Current Location: ${location}.`,
         `Unlocked Regions: ${activeChapter.unlockedRegions.join(', ')}.`,
         `Generate a safe, age-appropriate, warm, curious school-life story activity pack connected to daily life at Hoshino Academy (Aiko, Ren, Mika, Sensei Takeda) and the forgotten student-led weather-and-starlight research project "Project Hoshikaze".`,
         `Never include violence, horror, crime, or romance pressure. Make the 4-option question fair and educational, with a supportive explanation.`,
@@ -277,7 +302,7 @@ async function startServer() {
 
       const response = await ai.models.generateContent({
         model: 'gemini-3.8-flash',
-        contents: `Create the next Story Director activity pack for ${activeChapter.title} at ${body.location || deterministicPack.location}. Base it around ${deterministicPack.title} or the next step in uncovering Project Hoshikaze.`,
+        contents: `Create the next Story Director activity pack for ${activeChapter.title} at ${location || deterministicPack.location}. Base it around ${deterministicPack.title} or the next step in uncovering Project Hoshikaze.`,
         config: {
           systemInstruction,
           thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
