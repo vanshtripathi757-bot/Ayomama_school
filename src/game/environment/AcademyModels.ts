@@ -455,6 +455,39 @@ export function buildAcademyEnvironment(
   councilTable.castShadow = true;
   interiorGroup.add(councilTable);
 
+  // Student Council office seating and public agenda board.
+  const councilChairSeatGeo = trackGeo(new THREE.BoxGeometry(0.9, 0.16, 0.82));
+  const councilChairBackGeo = trackGeo(new THREE.BoxGeometry(0.9, 0.9, 0.14));
+  for (const [cx, cz, rotY] of [
+    [11.4, -15.8, 0],
+    [17.0, -15.8, 0],
+    [14.2, -13.8, Math.PI / 2],
+    [14.2, -17.8, Math.PI / 2],
+  ] as Array<[number, number, number]>) {
+    const chair = new THREE.Group();
+    chair.position.set(cx, 0, cz);
+    chair.rotation.y = rotY;
+    const seat = new THREE.Mesh(councilChairSeatGeo, darkTrimMat);
+    seat.position.y = 0.52;
+    chair.add(seat);
+    const back = new THREE.Mesh(councilChairBackGeo, darkTrimMat);
+    back.position.set(0, 0.98, -0.34);
+    chair.add(back);
+    interiorGroup.add(chair);
+  }
+  const councilBoardFrame = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(3.0, 1.9, 0.18)),
+    darkTrimMat
+  );
+  councilBoardFrame.position.set(20.6, 2.2, -11.0);
+  interiorGroup.add(councilBoardFrame);
+  const councilBoardSurface = new THREE.Mesh(
+    trackGeo(new THREE.BoxGeometry(2.7, 1.6, 0.08)),
+    chalkboardMat
+  );
+  councilBoardSurface.position.set(20.6, 2.2, -10.88);
+  interiorGroup.add(councilBoardSurface);
+
   // Locked Archive Cabinet & Faded Project Hoshikaze Blueprint Display in East Library
   const archiveCabinet = new THREE.Mesh(
     trackGeo(new THREE.BoxGeometry(1.1, 2.6, 2.4)),
