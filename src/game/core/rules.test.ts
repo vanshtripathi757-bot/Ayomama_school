@@ -483,8 +483,11 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
     0
   );
 
-  // Complete Phase 1 of Story 01
+  // Phase 1 cannot be completed by calling the progression helper alone.
+  // The six sequential world objectives must be validated before rewards/unlocks.
   const afterPhase1 = completeStoryPhaseProgress(baseProgress, allStories[0].id, 1);
+  assert.deepEqual(afterPhase1.completedPhaseKeys ?? [], baseProgress.completedPhaseKeys ?? []);
+  assert.equal(afterPhase1.activePhaseNumber, 1);
   assert.equal(
     isPhaseUnlocked(
       allStories[0].id,
@@ -493,12 +496,11 @@ test('V7.0 Story Library sequential phase unlocking, Class A-D points, and NPC r
       afterPhase1.completedStoryIds ?? [],
       allStories
     ),
-    true
+    false
   );
-  assert.equal(afterPhase1.activePhaseNumber, 2);
-  assert.ok(
-    (afterPhase1.classPoints?.['Class D'] ?? 0) >
-      (baseProgress.classPoints?.['Class D'] ?? 0)
+  assert.equal(
+    afterPhase1.classPoints?.['Class D'] ?? 0,
+    baseProgress.classPoints?.['Class D'] ?? 0
   );
 
   // Update NPC relationship and memory on interaction
