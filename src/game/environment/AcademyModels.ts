@@ -1596,31 +1596,59 @@ export function buildAcademyEnvironment(
   const trainDarkMat = trackMat(new THREE.MeshStandardMaterial({
     color: 0x26364b, roughness: 0.48, metalness: 0.35,
   }));
+  const trainGlassMat = trackMat(new THREE.MeshStandardMaterial({
+    color: 0x9bd5e8, roughness: 0.18, metalness: 0.08,
+    transparent: true, opacity: 0.34, depthWrite: false,
+  }));
   const trainWheelGeo = trackGeo(new THREE.CylinderGeometry(0.48, 0.48, 0.34, 12));
   for (const [carIndex, carX] of [-21.0, -7.0, 7.0, 21.0].entries()) {
     const car = new THREE.Group();
     car.position.x = carX;
     car.name = `HoshinoExpressCar-${carIndex + 1}`;
     commuterTrain.add(car);
-    const carBody = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 3.6, 3.2)), trainBodyMat);
-    carBody.position.y = 2.2;
-    carBody.castShadow = true;
-    carBody.receiveShadow = true;
-    car.add(carBody);
-    const carStripe = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.3, 0.48, 3.26)), konbiniSignMat);
-    carStripe.position.set(0, 1.9, 0);
-    car.add(carStripe);
-    const carWindows = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(11.8, 1.0, 3.28)), lanternBulbMaterial);
-    carWindows.position.set(0, 2.65, 0);
-    car.add(carWindows);
-    // Side doors and illuminated destination panels.
+    // Open passenger cabin: floor, roof and end walls leave transparent side windows for visible riders.
+    const carFloor = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 0.18, 3.2)), trainBodyMat);
+    carFloor.position.y = 0.55;
+    carFloor.receiveShadow = true;
+    car.add(carFloor);
+    const carRoof = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 0.26, 3.2)), trainBodyMat);
+    carRoof.position.y = 3.98;
+    carRoof.castShadow = true;
+    car.add(carRoof);
+    for (const endX of [-6.52, 6.52]) {
+      const endWall = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.16, 3.35, 3.2)), trainBodyMat);
+      endWall.position.set(endX, 2.2, 0);
+      car.add(endWall);
+    }
     for (const side of [-1, 1]) {
+      const lowerWall = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 1.0, 0.14)), trainBodyMat);
+      lowerWall.position.set(0, 1.08, side * 1.55);
+      car.add(lowerWall);
+      const upperWall = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.2, 0.62, 0.14)), trainBodyMat);
+      upperWall.position.set(0, 3.48, side * 1.55);
+      car.add(upperWall);
+      const windows = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(11.8, 1.0, 0.055)), trainGlassMat);
+      windows.position.set(0, 2.35, side * 1.57);
+      car.add(windows);
+      const carStripe = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(13.3, 0.25, 0.08)), konbiniSignMat);
+      carStripe.position.set(0, 1.88, side * 1.63);
+      car.add(carStripe);
+      // Side doors and illuminated glass panels.
       const door = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(1.25, 2.25, 0.08)), trainDarkMat);
       door.position.set(0, 1.8, side * 1.64);
       car.add(door);
-      const doorGlass = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.82, 1.45, 0.045)), lanternBulbMaterial);
+      const doorGlass = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.82, 1.45, 0.045)), trainGlassMat);
       doorGlass.position.set(0, 1.98, side * 1.7);
       car.add(doorGlass);
+      // Paired passenger benches sit beside a clear central aisle.
+      for (const seatX of [-3.4, 3.4]) {
+        const seat = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.6, 0.42, 0.62)), trainDarkMat);
+        seat.position.set(seatX, 1.0, side * 0.92);
+        car.add(seat);
+        const seatBack = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(2.6, 0.78, 0.14)), trainDarkMat);
+        seatBack.position.set(seatX, 1.48, side * 1.18);
+        car.add(seatBack);
+      }
       for (const wheelX of [-4.4, 4.4]) {
         const wheel = new THREE.Mesh(trainWheelGeo, trainDarkMat);
         wheel.rotation.x = Math.PI / 2;
@@ -1630,8 +1658,8 @@ export function buildAcademyEnvironment(
         commuterTrainWheels.push(wheel);
       }
     }
-    const undercarriage = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(10.8, 0.55, 2.6)), trainDarkMat);
-    undercarriage.position.y = 0.75;
+    const undercarriage = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(10.8, 0.38, 2.6)), trainDarkMat);
+    undercarriage.position.y = 0.25;
     car.add(undercarriage);
   }
 
