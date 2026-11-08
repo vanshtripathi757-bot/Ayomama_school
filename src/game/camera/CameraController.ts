@@ -22,8 +22,55 @@ export class AcademyCameraController {
   private followPitch = 0.24; // Slight downward angle over player shoulder
   private targetZoomDist = 4.6;
   private currentZoomDist = 4.6;
-  private readonly MIN_ZOOM_DIST = 1.95;
+  // Keep the third-person camera outside the character capsule at every zoom level.
+  private readonly MIN_ZOOM_DIST = 2.6;
   private readonly MAX_ZOOM_DIST = 6.8;
+  private readonly cameraRaycaster = new THREE.Raycaster();
+  private readonly collisionDirection = new THREE.Vector3();
+  private readonly collisionNormal = new THREE.Vector3();
+
+  /**
+   * Clamp the camera spring arm against actual rendered campus geometry.
+   * The 2D wall clamp alone cannot prevent the camera entering roofs, trees,
+   * lamp posts or large architectural meshes.
+   */
+  private resolveGeometryCollision(
+    anchor: THREE.Vector3,
+    desiredPosition: THREE.Vector3,
+    collisionRoot?: THREE.Object3D
+  ): void {
+    if (!collisionRoot) return;
+
+    this.collisionDirection.subVectors(desiredPosition, anchor);
+    const desiredDistance = this.collisionDirection.length();
+    if (desiredDistance < 0.2) return;
+
+    this.collisionDirection.multiplyScalar(1 / desiredDistance);
+    this.cameraRaycaster.set(anchor, this.collisionDirection);
+    this.cameraRaycaster.near = 0.18;
+    this.cameraRaycaster.far = desiredDistance;
+
+    const hit = this.cameraRaycaster
+      .intersectObject(collisionRoot, true)
+      .find((candidate) => candidate.distance > 0.18 && candidate.distance < desiredDistance - 0.12);
+
+    if (!hit) return;
+
+    if (hit.face) {
+      this.collisionNormal
+        .copy(hit.face.normal)
+        .transformDirection(hit.object.matrixWorld);
+      if (this.collisionNormal.dot(this.collisionDirection) > 0) {
+        this.collisionNormal.negate();
+      }
+      desiredPosition.copy(hit.point).addScaledVector(this.collisionNormal, 0.22);
+    } else {
+      desiredPosition.copy(anchor).addScaledVector(
+        this.collisionDirection,
+        Math.max(1.45, hit.distance - 0.18)
+      );
+    }
+  }
   private orbitYawOffset = 0;
   private orbitPitchOffset = 0;
   private isDragging = false;
@@ -160,7 +207,8 @@ export class AcademyCameraController {
     viewpointId: CameraViewpointId,
     playerState: PlayerPhysicsState,
     elapsedTime: number,
-    dt: number
+    dt: number,
+    collisionRoot?: THREE.Object3D
   ): void {
     if (phase === 'character-creation' || phase === 'character-intro') {
       // Real-time 3D rotatable character preview camera framing protagonist on the right half of screen
@@ -322,6 +370,18 @@ export class AcademyCameraController {
         dampValue(this.currentLook.y, _targetLook.y, lambda, dt),
         dampValue(this.currentLook.z, _targetLook.z, lambda, dt)
       );
+    }
+
+    // Apply collision both before and after damping so the interpolated camera
+    // cannot drift through a wall, ceiling, tree canopy or lamp post.
+    if (phase === 'playing' && cameraMode === 'follow' && collisionRoot) {
+      const anchor = new THREE.Vector3(
+        playerState.x,
+        playerState.y + 1.28,
+        playerState.z
+      );
+      this.resolveGeometryCollision(anchor, _targetPos, collisionRoot);
+      this.resolveGeometryCollision(anchor, this.currentPos, collisionRoot);
     }
 
     camera.position.copy(this.currentPos);
