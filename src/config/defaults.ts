@@ -2033,11 +2033,23 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   // South Hoshino Town District Multi-Story Buildings & Commuter Train at Station
   { id: 'west_town_shop', minX: -34.5, maxX: -17.5, minZ: 51.5, maxZ: 72.5 },
   { id: 'east_town_shop', minX: 17.5, maxX: 34.5, minZ: 51.5, maxZ: 72.5 },
-  // Hoshino residential neighbourhood homes.
-  { id: 'residential_home_west_south', minX: -53.2, maxX: -42.8, minZ: 56.2, maxZ: 65.8 },
-  { id: 'residential_home_east_south', minX: 42.8, maxX: 53.2, minZ: 56.2, maxZ: 65.8 },
-  { id: 'residential_home_west_north', minX: -53.2, maxX: -42.8, minZ: 75.2, maxZ: 84.8 },
-  { id: 'residential_home_east_north', minX: 42.8, maxX: 53.2, minZ: 75.2, maxZ: 84.8 },
+  // Four residential homes have walk-in front doors; collide with walls and furnishings, not the whole house volume.
+  ...[
+    { id: 'home_west_south', x: -48, z: 61 },
+    { id: 'home_east_south', x: 48, z: 61 },
+    { id: 'home_west_north', x: -48, z: 80 },
+    { id: 'home_east_north', x: 48, z: 80 },
+  ].flatMap((home) => [
+    { id: `${home.id}_west_wall`, minX: home.x - 5.0, maxX: home.x - 4.72, minZ: home.z - 4.5, maxZ: home.z + 4.5 },
+    { id: `${home.id}_east_wall`, minX: home.x + 4.72, maxX: home.x + 5.0, minZ: home.z - 4.5, maxZ: home.z + 4.5 },
+    { id: `${home.id}_back_wall`, minX: home.x - 5.0, maxX: home.x + 5.0, minZ: home.z - 4.5, maxZ: home.z - 4.22 },
+    { id: `${home.id}_front_left`, minX: home.x - 5.0, maxX: home.x - 0.85, minZ: home.z + 4.22, maxZ: home.z + 4.5 },
+    { id: `${home.id}_front_right`, minX: home.x + 0.85, maxX: home.x + 5.0, minZ: home.z + 4.22, maxZ: home.z + 4.5 },
+    { id: `${home.id}_sofa`, minX: home.x - 4.0, maxX: home.x - 1.4, minZ: home.z - 2.5, maxZ: home.z - 1.5 },
+    { id: `${home.id}_table`, minX: home.x - 2.95, maxX: home.x - 1.05, minZ: home.z - 0.55, maxZ: home.z + 0.55 },
+    { id: `${home.id}_bed`, minX: home.x + 1.45, maxX: home.x + 3.75, minZ: home.z - 3.7, maxZ: home.z - 0.5 },
+    { id: `${home.id}_desk`, minX: home.x + 1.55, maxX: home.x + 3.45, minZ: home.z + 0.7, maxZ: home.z + 1.5 },
+  ]),
   { id: 'station_train', minX: -28.5, maxX: 28.5, minZ: 98.8, maxZ: 102.6 },
 
   // East Aquatics 25m Swimming Pool Basin (players walk on the surrounding deck without entering deep water)
