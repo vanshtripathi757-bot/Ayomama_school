@@ -21,6 +21,7 @@ import {
   getNextSchoolPeriod,
   getNextTimeOfDay,
   getNpcScheduledActivity,
+  getNpcClassCompetitionRanks,
   getSakuraPetalCount,
   getShadowMapSize,
   getSkyWeatherDescription,
@@ -378,6 +379,44 @@ test('stepAutonomousNPCs moves 14 Class A-D/Faculty NPCs with personality behavi
   assert.match(getSkyWeatherDescription('morning', 10), /Fair Cumulus/i);
   assert.match(getSkyWeatherDescription('golden_hour', 20), /Amber Clouds/i);
   assert.match(getSkyWeatherDescription('twilight', 30), /Starlit Sky/i);
+});
+
+test('NPC academic progress grows during study periods and class ranks stay class-local', () => {
+  const initial = createInitialNPCRuntimeStates(CAMPUS_INTERACTABLES);
+  const ranks = getNpcClassCompetitionRanks(initial, CAMPUS_INTERACTABLES);
+  assert.ok((ranks['npc_ren'] ?? 0) >= 1);
+  assert.equal(ranks['npc_takeda'], undefined);
+
+  const before = initial.find((npc) => npc.id === 'npc_ren');
+  assert.ok(before);
+  const studying = stepAutonomousNPCs(
+    initial,
+    CAMPUS_INTERACTABLES,
+    999,
+    999,
+    null,
+    0.05,
+    'homeroom'
+  );
+  const afterStudy = studying.find((npc) => npc.id === 'npc_ren');
+  assert.ok(afterStudy);
+  assert.ok((afterStudy.academicProgress ?? 0) > (before.academicProgress ?? 0));
+  assert.ok((afterStudy.classRank ?? 0) >= 1);
+  assert.match(afterStudy.currentActivity ?? '', /Class rank #/i);
+
+  const recess = stepAutonomousNPCs(
+    initial,
+    CAMPUS_INTERACTABLES,
+    999,
+    999,
+    null,
+    0.05,
+    'courtyard_recess'
+  );
+  assert.equal(
+    recess.find((npc) => npc.id === 'npc_ren')?.academicProgress,
+    before.academicProgress
+  );
 });
 
 test('NPC daily activity schedules respond to the active school period', () => {
