@@ -697,7 +697,8 @@ export function AcademyCanvas() {
             playerState.x,
             playerState.z,
             activeDialogue?.target.id ?? null,
-            dt
+            dt,
+            useGameStore.getState().schoolPeriod
           );
 
           // Check proximity to live moving Campus NPCs and Notice Board
@@ -739,7 +740,8 @@ export function AcademyCanvas() {
             999,
             999,
             null,
-            dt
+            dt,
+            useGameStore.getState().schoolPeriod
           );
           updateCharacterRigAnimation(
             protagonistRig,
