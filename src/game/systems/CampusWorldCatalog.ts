@@ -23,6 +23,37 @@ export const CAMPUS_WORLD_OBJECTS: WorldInteractableDefinition[] = [
       priority: 2,
     }))
   ),
+  ...[
+    { classId: 'class-b', label: 'Class B', x: -40, z: -18 },
+    { classId: 'class-c', label: 'Class C', x: 40, z: -18 },
+    { classId: 'class-d', label: 'Class D', x: 17, z: -57 },
+  ].flatMap((room) => [
+    ...[-4.2, 0, 4.2].flatMap((dx, col) =>
+      [-1.0, 1.5].map((dz, row) => ({
+        id: `${room.classId}-seat-${col + 1}-${row + 1}`,
+        type: 'seat' as const,
+        displayName: `${room.label} Student Seat ${col + 1}-${row + 1}`,
+        position: point(room.x + dx, 0.5, room.z + dz + 1.1),
+        interactionRange: 2.0,
+        actions: [{ id: 'sit' as const, label: 'Sit' }],
+        anchor: { position: point(room.x + dx, 0, room.z + dz + 1.85), yaw: Math.PI },
+        roomId: room.classId,
+        floorId: 'ground-floor',
+        priority: 2,
+      }))
+    ),
+    {
+      id: `${room.classId}-teacher-desk`,
+      type: 'desk' as const,
+      displayName: `${room.label} Teacher Desk`,
+      position: point(room.x, 0.9, room.z - 3.65),
+      interactionRange: 2.4,
+      actions: [{ id: 'inspect' as const, label: 'Inspect Lesson Notes' }],
+      roomId: room.classId,
+      floorId: 'ground-floor',
+      priority: 2,
+    },
+  ]),
   {
     id: 'class-a-teacher-desk',
     type: 'desk',
