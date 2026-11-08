@@ -24,6 +24,7 @@ import {
   getShadowMapSize,
   getSkyWeatherDescription,
   getStoryCompletionPercentage,
+  getObjectivesForStoryPhase,
   getStudentAcademicRank,
   isInsideSchoolBuilding,
   isPhaseUnlocked,
@@ -563,15 +564,30 @@ test('V8.0 Universal Object Interaction System, Library Book Borrowing/Reading/R
 
 
 
-test('story phase completion rejects invalid, skipped, and repeated phases without rewards', () => {
+test('story phase completion requires every real sequential objective before rewards', () => {
   const initial = structuredClone(INITIAL_MISSION_PROGRESS);
   const invalid = completeStoryPhaseProgress(initial, 'not-a-story', 1);
   assert.equal(invalid, initial);
   const skipped = completeStoryPhaseProgress(initial, 'story_01', 2);
   assert.equal(skipped, initial);
-  const first = completeStoryPhaseProgress(initial, 'story_01', 1);
+
+  // A direct phase-completion call (including a UI click) must not advance the story.
+  const clickOnly = completeStoryPhaseProgress(initial, 'story_01', 1);
+  assert.equal(clickOnly, initial);
+  assert.equal(clickOnly.completedPhaseKeys?.length ?? 0, 0);
+  assert.equal(clickOnly.reputationPoints, initial.reputationPoints);
+
+  // Only the validated objective chain may unlock phase rewards.
+  const requiredObjectives = getObjectivesForStoryPhase('story_01', 1);
+  assert.ok(requiredObjectives.length > 0);
+  const allObjectivesDone = {
+    ...initial,
+    completedObjectiveIds: requiredObjectives.map((objective) => objective.id),
+  };
+  const first = completeStoryPhaseProgress(allObjectivesDone, 'story_01', 1);
   assert.ok(first.completedPhaseKeys?.includes('story_01:phase_1'));
   assert.equal(first.activePhaseNumber, 2);
+
   const repeated = completeStoryPhaseProgress(first, 'story_01', 1);
   assert.equal(repeated, first);
   assert.equal(repeated.reputationPoints, first.reputationPoints);
