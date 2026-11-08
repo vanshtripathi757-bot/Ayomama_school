@@ -362,8 +362,8 @@ export function AcademyHUD() {
 
   const runComputerLabCommand = () => {
     const command = terminalCommand.trim();
-    const stringPrint = command.match(/^print\\(\\s*(['"])(.*?)\\1\\s*\\)$/);
-    const numberPrint = command.match(/^print\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)$/);
+    const stringPrint = command.match(/^print\(\s*(['"])(.*?)\1\s*\)$/);
+    const numberPrint = command.match(/^print\(\s*(-?\d+(?:\.\d+)?)\s*\)$/);
     if (stringPrint) {
       setTerminalOutput(stringPrint[2]);
     } else if (numberPrint) {
