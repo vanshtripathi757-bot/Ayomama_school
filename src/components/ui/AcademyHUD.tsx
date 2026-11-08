@@ -262,6 +262,7 @@ export function AcademyHUD() {
   );
 
   // Live, sequential mission guidance is derived only from validated gameplay objectives.
+  const activeChapter = getCurrentStoryChapter(missionProgress.reputationPoints);
   const objectiveState = getPhaseObjectiveState(missionProgress);
   const activeObjective = objectiveState.activeObjective;
   const discoveredClues = missionProgress.discoveredClues ?? [];
