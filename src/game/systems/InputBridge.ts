@@ -22,7 +22,7 @@ export interface SharedInputState {
   playerYaw: number;
 
   // Phase 4 Quick Zone Teleport request consumed by the 60Hz simulation loop
-  teleportRequest: { x: number; z: number; yaw: number } | null;
+  teleportRequest: { x: number; y: number; z: number; yaw: number } | null;
 }
 
 export const sharedInputBridge: SharedInputState = {
@@ -67,8 +67,8 @@ export function triggerMobileInteract(): void {
   sharedInputBridge.mobileInteractJustPressed = true;
 }
 
-export function requestPlayerTeleport(x: number, z: number, yaw = Math.PI): void {
-  sharedInputBridge.teleportRequest = { x, z, yaw };
+export function requestPlayerTeleport(x: number, z: number, yaw = Math.PI, y = 0): void {
+  sharedInputBridge.teleportRequest = { x, y, z, yaw };
 }
 
 export function resetMobileInputBridge(): void {
