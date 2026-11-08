@@ -2,14 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ATMOSPHERE_PRESETS,
   CAMERA_VIEWPOINTS,
-  NPC_AMBIENT_BANTERS,
   SCHOOL_PERIODS,
-  STORY_CHAPTER_ARC,
 } from '../../config/defaults';
 import {
   getActiveStoryAndPhase,
   getCampusZoneLabel,
-  getCurrentStoryChapter,
+  getPhaseObjectiveState,
   getSkyWeatherDescription,
   getStudentAcademicRank,
 } from '../../game/core/rules';
@@ -80,10 +78,7 @@ export function AcademyHUD() {
   const activeDialogue = useGameStore((s) => s.activeDialogue);
   const missionProgress = useGameStore((s) => s.missionProgress);
   const isSprintingUI = useGameStore((s) => s.isSprintingUI);
-  const activeStoryPack = useGameStore((s) => s.activeStoryPack);
-  const storyModalOpen = useGameStore((s) => s.storyModalOpen);
-  const storyLoading = useGameStore((s) => s.storyLoading);
-  const lastQuizFeedback = useGameStore((s) => s.lastQuizFeedback);
+  const phaseCompletionSummary = useGameStore((s) => s.phaseCompletionSummary);
 
   const setPhase = useGameStore((s) => s.setPhase);
   const setCameraMode = useGameStore((s) => s.setCameraMode);
@@ -97,10 +92,7 @@ export function AcademyHUD() {
   const closeDialogue = useGameStore((s) => s.closeDialogue);
   const claimHonorDiploma = useGameStore((s) => s.claimHonorDiploma);
   const setIsSprintingUI = useGameStore((s) => s.setIsSprintingUI);
-  const setStoryModalOpen = useGameStore((s) => s.setStoryModalOpen);
-  const submitStoryPackAnswer = useGameStore((s) => s.submitStoryPackAnswer);
-  const requestNextStoryDirectorPack = useGameStore((s) => s.requestNextStoryDirectorPack);
-  const openStoryLibrary = useGameStore((s) => s.openStoryLibrary);
+  const closePhaseCompletionModal = useGameStore((s) => s.closePhaseCompletionModal);
 
   // V8.0 Universal Object Interaction State & Actions
   const contextualPrompt = useGameStore((s) => s.contextualPrompt);
@@ -143,17 +135,8 @@ export function AcademyHUD() {
   const [customMessageInput, setCustomMessageInput] = useState('');
   const chatScrollRef = useRef<HTMLDivElement | null>(null);
 
-  // Subtle, tap-to-dismiss Ambient NPC-to-NPC conversation toast
-  const [banterIndex, setBanterIndex] = useState(0);
-  const [banterVisible, setBanterVisible] = useState(true);
   useEffect(() => {
-    if (phase !== 'playing') return;
-    audioManager.startBgm(timeOfDay);
-    const timer = window.setInterval(() => {
-      setBanterIndex((prev) => (prev + 1) % NPC_AMBIENT_BANTERS.length);
-      setBanterVisible(true);
-    }, 14000);
-    return () => window.clearInterval(timer);
+    if (phase === 'playing') audioManager.startBgm(timeOfDay);
   }, [phase, timeOfDay]);
 
   // Auto-scroll chat history when new messages arrive
@@ -269,7 +252,6 @@ export function AcademyHUD() {
   const atmo = ATMOSPHERE_PRESETS[timeOfDay];
   const periodCfg = SCHOOL_PERIODS[schoolPeriod];
   const viewpointList = Object.values(CAMERA_VIEWPOINTS);
-  const currentBanter = NPC_AMBIENT_BANTERS[banterIndex % NPC_AMBIENT_BANTERS.length];
   const currentZoneName = getCampusZoneLabel(
     sharedInputBridge.playerX,
     sharedInputBridge.playerZ
@@ -279,10 +261,11 @@ export function AcademyHUD() {
     Math.floor(missionProgress.distanceWalked * 2)
   );
 
-  // Hoshino Academy Story Chapter & Active Sequential Phase
-  const activeChapter = getCurrentStoryChapter(missionProgress.reputationPoints);
-  const { story: activeStoryObj, phase: activePhaseObj } =
-    getActiveStoryAndPhase(missionProgress);
+  // Live, sequential mission guidance is derived only from validated gameplay objectives.
+  const objectiveState = getPhaseObjectiveState(missionProgress);
+  const activeObjective = objectiveState.activeObjective;
+  const discoveredClues = missionProgress.discoveredClues ?? [];
+  const latestClue = discoveredClues.length > 0 ? discoveredClues[discoveredClues.length - 1] : null;
   const playerClass =
     missionProgress.characterCustomization?.academyClass ?? 'Class A';
   const walkMeters = Math.min(20, Math.floor(missionProgress.distanceWalked));
@@ -383,29 +366,9 @@ export function AcademyHUD() {
 
   return (
     <div className="fixed inset-0 z-10 pointer-events-none flex flex-col justify-between select-none">
-      {/* Top Bar: Clean Left Space + Compact Tap-to-Dismiss NPC Whisper + Single Upper-Right Hub Button */}
-      <div className="w-full px-3 pt-2.5 flex items-start justify-between gap-2">
-        <div className="w-8" />
-
-        {/* Subtle, Single-Line Translucent NPC-to-NPC Whisper (Tap with finger to dismiss!) */}
-        {phase === 'playing' && !activeDialogue && banterVisible && currentBanter && (
-          <div
-            data-testid="ambient-npc-banter-box"
-            onClick={() => setBanterVisible(false)}
-            title="Tap to dismiss"
-            className="pointer-events-auto max-w-xs sm:max-w-md rounded bg-[#080e1c]/48 hover:bg-[#080e1c]/65 border border-slate-400/25 px-2.5 py-1 text-[11px] text-slate-100 flex items-center gap-2 cursor-pointer transition-opacity"
-          >
-            <div className="truncate">
-              <span className="font-semibold text-rose-300">
-                {currentBanter.speakerA.split(' ')[0]}:
-              </span>{' '}
-              <span className="text-slate-200">&ldquo;{currentBanter.lineA}&rdquo;</span>
-            </div>
-            <span className="text-[10px] text-slate-400 shrink-0">✕</span>
-          </div>
-        )}
-
-        {/* Upper-Right Compact Profile + Campus Map + Story Chronicle + Menu Buttons */}
+      {/* Clean top bar: no rotating NPC message banners. */}
+      <div className="w-full px-3 pt-2.5 flex items-start justify-end gap-2">
+        {/* Upper-Right Profile, Campus Map and Menu Buttons */}
         <div className="pointer-events-auto relative flex items-center gap-1.5">
           <button
             type="button"
@@ -413,7 +376,6 @@ export function AcademyHUD() {
             onClick={() => {
               audioManager.playClick();
               setHubOpen(false);
-              setStoryModalOpen(false);
               setActiveModal('profile');
             }}
             className="min-h-[34px] px-2.5 py-1 rounded bg-[#0a101f]/80 hover:bg-[#16223d] border border-sky-400/50 text-xs font-semibold text-sky-200 shadow-lg flex items-center gap-1 transition-colors cursor-pointer"
@@ -427,7 +389,6 @@ export function AcademyHUD() {
             onClick={() => {
               audioManager.playClick();
               setHubOpen(false);
-              setStoryModalOpen(false);
               setActiveModal('none');
               setActiveObjectModal('campus_map');
             }}
@@ -438,27 +399,10 @@ export function AcademyHUD() {
 
           <button
             type="button"
-            data-testid="top-right-story-btn"
-            onClick={() => {
-              audioManager.startBgm(timeOfDay);
-              setHubOpen(false);
-              setStoryModalOpen(!storyModalOpen);
-            }}
-            className="min-h-[34px] px-2.5 py-1 rounded bg-[#0a101f]/80 hover:bg-[#16223d] border border-amber-400/50 text-xs font-semibold text-amber-200 shadow-lg flex items-center gap-1 transition-colors cursor-pointer"
-          >
-            <span>📖 Story</span>
-            <span className="font-mono text-[10px] text-amber-300">
-              P.0{activePhaseObj.phaseNumber}
-            </span>
-          </button>
-
-          <button
-            type="button"
             data-testid="top-right-hub-btn"
             onClick={() => {
               audioManager.playClick();
               audioManager.startBgm(timeOfDay);
-              setStoryModalOpen(false);
               setHubOpen((v) => !v);
             }}
             className="min-h-[34px] px-3 py-1 rounded bg-[#0a101f]/75 hover:bg-[#16223d] border border-indigo-400/45 text-xs font-semibold text-slate-100 shadow-lg flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -470,6 +414,43 @@ export function AcademyHUD() {
           </button>
         </div>
       </div>
+
+      {/* Persistent objective clue: replaces the removed rotating NPC message banner. */}
+      {phase === 'playing' && !activeDialogue && (
+        <div
+          data-testid="active-objective-clue"
+          className="pointer-events-none absolute top-14 left-3 z-10 w-[min(72vw,300px)] rounded-xl border border-amber-300/45 bg-[#071225]/90 px-3 py-2.5 text-slate-100 shadow-xl backdrop-blur-sm"
+          aria-live="polite"
+        >
+          <div className="flex items-center justify-between gap-2 text-[10px] font-mono uppercase tracking-wider text-amber-300">
+            <span>Current Mission · Phase {String(missionProgress.activePhaseNumber ?? 1).padStart(2, '0')}</span>
+            <span>{objectiveState.completedCount}/{objectiveState.totalObjectives}</span>
+          </div>
+          {activeObjective ? (
+            <>
+              <div className="mt-1 text-xs font-bold text-white">{activeObjective.title}</div>
+              <div className="mt-1 text-[11px] leading-snug text-sky-100">CLUE: {activeObjective.shortHint}</div>
+              <div className="mt-1 text-[10px] text-slate-400">Target: {activeObjective.targetName} · {activeObjective.targetLocationName}</div>
+            </>
+          ) : (
+            <div className="mt-1 text-xs font-semibold text-emerald-200">All mission objectives completed.</div>
+          )}
+          {latestClue && <div className="mt-1.5 border-t border-slate-700/70 pt-1 text-[10px] leading-snug text-amber-100/90">ARCHIVE CLUE: {latestClue}</div>}
+        </div>
+      )}
+
+      {phaseCompletionSummary && (
+        <div className="fixed inset-0 z-40 pointer-events-auto flex items-center justify-center bg-[#030713]/85 px-4 py-6">
+          <div data-testid="phase-completion-modal" role="dialog" aria-modal="true" className="w-full max-w-md rounded-xl border border-emerald-400/50 bg-[#091629] p-5 text-slate-100 shadow-2xl">
+            <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-300">Verified Mission Complete</div>
+            <h2 className="mt-2 font-display text-xl font-bold text-white">{phaseCompletionSummary.phaseTitle}</h2>
+            <p className="mt-2 text-sm text-slate-300">All {phaseCompletionSummary.tasksCompletedCount} required objectives were completed in sequence.</p>
+            <p className="mt-3 text-xs text-amber-200">Rewards: +{phaseCompletionSummary.rewardXp} XP · +{phaseCompletionSummary.rewardCp} CP · +{phaseCompletionSummary.rewardPp} PP</p>
+            {phaseCompletionSummary.nextPhaseTitle && <p className="mt-2 text-xs text-sky-200">Next: {phaseCompletionSummary.nextPhaseTitle}</p>}
+            <button type="button" onClick={() => closePhaseCompletionModal(true)} className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-500">Continue</button>
+          </div>
+        </div>
+      )}
 
       {/* Upper-Right Expandable Menu Panel (Cleanly Organized · No Manual Weather or Teleport Cheats) */}
       {hubOpen && (
@@ -734,28 +715,6 @@ export function AcademyHUD() {
           !activeDialogue &&
           activeObjectModal === 'none' && (
             <div className="flex flex-col items-center gap-1 max-w-xs sm:max-w-md">
-              {contextualPrompt.sourceKind === 'npc' &&
-                contextualPrompt.npcTarget?.greetingText && (
-                  <div
-                    data-testid="proximity-greeting-bubble"
-                    onClick={() => triggerContextualInteraction()}
-                    className="pointer-events-auto px-3 py-1 rounded-lg bg-[#081022]/85 border border-amber-300/45 shadow-md text-center cursor-pointer"
-                  >
-                    <div className="text-[10px] font-semibold text-amber-300">
-                      {contextualPrompt.npcTarget.name.split(' ')[0]}
-                      {contextualPrompt.npcTarget.academyClass
-                        ? ` · ${contextualPrompt.npcTarget.academyClass}`
-                        : ''}
-                      {contextualPrompt.npcTarget.personalityType
-                        ? ` · ${contextualPrompt.npcTarget.personalityType}`
-                        : ''}
-                    </div>
-                    <div className="text-[11px] text-slate-100 leading-snug">
-                      &ldquo;{contextualPrompt.npcTarget.greetingText}&rdquo;
-                    </div>
-                  </div>
-                )}
-
               <button
                 type="button"
                 data-testid="contextual-interaction-btn"
@@ -1033,184 +992,6 @@ export function AcademyHUD() {
             </form>
             <div className="text-[10px] text-slate-300/75 text-center mt-1">
               Tap anywhere outside box or press ✕ to close
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hoshino Academy Story Chronicle & AI Story Director Modal (Sections 6, 11 & 14) */}
-      {storyModalOpen && (
-        <div
-          className="fixed inset-0 z-20 pointer-events-auto flex items-center justify-center bg-[#050914]/82 px-3 py-4"
-          onClick={() => setStoryModalOpen(false)}
-        >
-          <div
-            data-testid="story-director-modal"
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="story-director-title"
-            className="w-full max-w-lg max-h-[86vh] overflow-y-auto rounded-xl bg-[#091124]/95 border border-amber-400/45 p-4 shadow-2xl text-slate-100 space-y-3"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-2 border-b border-slate-700/80 pb-2.5">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">
-                  {activeStoryObj.subtitle} · {activePhaseObj.title}
-                </div>
-                <h2
-                  id="story-director-title"
-                  className="font-display text-base sm:text-lg font-bold text-white"
-                >
-                  {activeStoryObj.title} ({activeChapter.title})
-                </h2>
-                <div className="text-[11px] text-indigo-200">
-                  Class: {playerClass} · CP: {missionProgress.cpPoints ?? 50} · PP: {missionProgress.ppPoints ?? 150}
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <button
-                  type="button"
-                  data-testid="open-library-from-modal-btn"
-                  onClick={() => openStoryLibrary()}
-                  className="px-2.5 py-1 rounded bg-indigo-600 hover:bg-indigo-500 text-[11px] font-bold text-white cursor-pointer"
-                >
-                  📚 Story Library
-                </button>
-                <button
-                  type="button"
-                  data-testid="story-modal-close-btn"
-                  onClick={() => setStoryModalOpen(false)}
-                  className="px-2.5 py-1 rounded bg-rose-600/85 hover:bg-rose-500 text-xs font-bold text-white cursor-pointer shrink-0"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            {/* 9-Chapter Continuity Ribbon */}
-            <div className="flex items-center gap-1 overflow-x-auto pb-1">
-              {STORY_CHAPTER_ARC.map((ch) => {
-                const unlocked = missionProgress.reputationPoints >= ch.unlockXp;
-                const isCurrent = ch.index === activeChapter.index;
-                return (
-                  <div
-                    key={ch.code}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono shrink-0 border ${
-                      isCurrent
-                        ? 'bg-amber-500/90 text-slate-950 font-bold border-amber-200'
-                        : unlocked
-                          ? 'bg-indigo-950/80 text-emerald-300 border-emerald-500/40'
-                          : 'bg-slate-900/70 text-slate-500 border-slate-800'
-                    }`}
-                  >
-                    {ch.index === 0 ? 'Prologue' : ch.index === 8 ? 'Epilogue' : `Ch.${ch.index}`}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Active Story Director Activity Pack */}
-            <div className="rounded-lg bg-[#0d1830] border border-indigo-400/35 p-3 space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <span className="px-2 py-0.5 rounded bg-indigo-600/80 text-[10px] font-mono font-bold uppercase text-white">
-                  {activeStoryPack.kind} · {activeStoryPack.location}
-                </span>
-                <span className="text-[10px] font-mono text-amber-300">
-                  +{activeStoryPack.xpReward ?? 25} XP
-                </span>
-              </div>
-              <h3 className="font-display text-sm sm:text-base font-bold text-amber-200">
-                {activeStoryPack.title}
-              </h3>
-              <p className="text-xs text-slate-200 leading-relaxed">
-                {activeStoryPack.storyText}
-              </p>
-
-              {/* 4-Option Quiz / Activity Decision */}
-              <div className="pt-2 border-t border-slate-700/70 space-y-1.5">
-                <div className="text-xs font-semibold text-indigo-200">
-                  ❓ {activeStoryPack.question}
-                </div>
-                <div className="grid grid-cols-1 gap-1.5">
-                  {activeStoryPack.options.map((opt, idx) => {
-                    const isSelected = lastQuizFeedback?.selectedOption === idx;
-                    const isRight = idx === activeStoryPack.correctOption;
-                    return (
-                      <button
-                        key={`${activeStoryPack.id}_opt_${idx}`}
-                        type="button"
-                        data-testid={`story-pack-option-${idx}`}
-                        onClick={() => submitStoryPackAnswer(idx)}
-                        className={`w-full text-left px-3 py-1.5 rounded border text-xs transition-colors cursor-pointer ${
-                          isSelected && lastQuizFeedback?.isCorrect
-                            ? 'bg-emerald-700/85 border-emerald-300 text-white font-semibold'
-                            : isSelected && !lastQuizFeedback?.isCorrect
-                              ? 'bg-amber-900/70 border-amber-400 text-amber-100'
-                              : lastQuizFeedback?.isCorrect && isRight
-                                ? 'bg-emerald-800/70 border-emerald-400 text-white'
-                                : 'bg-[#122040] hover:bg-[#1a2e5a] border-slate-600/70 text-slate-100'
-                        }`}
-                      >
-                        <span className="font-mono text-amber-300 mr-1.5">
-                          {String.fromCharCode(65 + idx)}.
-                        </span>
-                        {opt}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Constructive Feedback Banner */}
-              {lastQuizFeedback && (
-                <div
-                  data-testid="story-quiz-feedback"
-                  className={`p-2.5 rounded border text-xs ${
-                    lastQuizFeedback.isCorrect
-                      ? 'bg-emerald-950/80 border-emerald-400/60 text-emerald-100'
-                      : 'bg-amber-950/80 border-amber-400/60 text-amber-100'
-                  }`}
-                >
-                  <div className="font-bold mb-0.5">
-                    {lastQuizFeedback.isCorrect
-                      ? '✨ Episode Complete! (+XP & Archive Clue Recorded)'
-                      : '💡 Friendly Hint — Try Again Anytime:'}
-                  </div>
-                  <div>{lastQuizFeedback.explanation}</div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10px] font-mono text-slate-400">
-                  Completed Episodes: {(missionProgress.completedStoryPackIds ?? []).length}/9
-                </span>
-                <button
-                  type="button"
-                  data-testid="next-story-pack-btn"
-                  disabled={storyLoading}
-                  onClick={() => {
-                    void requestNextStoryDirectorPack();
-                  }}
-                  className="px-3 py-1.5 rounded bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-bold text-xs cursor-pointer transition-colors"
-                >
-                  {storyLoading ? 'Generating Episode...' : 'Next Story Activity ▸'}
-                </button>
-              </div>
-            </div>
-
-            {/* Project Hoshikaze Discovered Archive Clues */}
-            <div className="rounded-lg bg-[#0b1326] border border-slate-700/80 p-2.5 space-y-1">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300">
-                🔍 Project Hoshikaze Archive Notebook ({discoveredClues.length} Clues)
-              </div>
-              <ul className="space-y-1 max-h-24 overflow-y-auto text-[11px] text-slate-300 pr-1">
-                {discoveredClues.map((clue, i) => (
-                  <li key={i} className="leading-snug">
-                    • {clue}
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
         </div>
