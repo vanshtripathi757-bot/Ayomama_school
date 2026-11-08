@@ -2070,7 +2070,7 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
   ...[
     { id: 'science_lab', x: -70, z: -60, width: 18, depth: 14 },
     { id: 'computer_lab', x: 70, z: -60, width: 18, depth: 14 },
-    { id: 'academy_auditorium', x: 0, z: 57, width: 24, depth: 20 },
+    { id: 'academy_auditorium', x: 0, z: 50, width: 24, depth: 20 },
   ].flatMap((room) => {
     const halfW = room.width / 2;
     const halfD = room.depth / 2;
