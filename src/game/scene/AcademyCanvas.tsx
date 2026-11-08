@@ -788,12 +788,14 @@ export function AcademyCanvas() {
           );
 
           // Check proximity to live moving Campus NPCs and Notice Board
-          const nearest = findNearestInteractable(
-            playerState.x,
-            playerState.z,
-            CAMPUS_INTERACTABLES,
-            npcStates
-          );
+          const nearest = stateRef.current.isRidingTrain
+            ? { target: null }
+            : findNearestInteractable(
+                playerState.x,
+                playerState.z,
+                CAMPUS_INTERACTABLES,
+                npcStates
+              );
           const nearestId = nearest.target?.id ?? null;
           if (nearestId !== nearbyInteractableId) {
             useGameStore.getState().setNearbyInteractable(nearest.target);
@@ -801,7 +803,7 @@ export function AcademyCanvas() {
 
           // Shared world-object targeting: nearest valid object in range, biased toward the player's facing.
           // NPC conversations retain priority so the two contextual prompts never compete.
-          if (nearest.target || isWorldInteracting || activeDialogue) {
+          if (stateRef.current.isRidingTrain || nearest.target || isWorldInteracting || activeDialogue) {
             useGameStore.getState().setNearbyWorldObject(null);
           } else {
             const worldTarget = worldInteractionSystem.findTarget({
