@@ -78,6 +78,11 @@ test('regional facilities expose meaningful player interactions', () => {
   assert.ok(byId.get('station-timetable-board')?.actions.some((action) => action.id === 'view-map'));
 });
 
+test('student council office exposes its agenda table and public notice board', () => {
+  assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === 'student-council-table'));
+  assert.ok(CAMPUS_WORLD_OBJECTS.some((object) => object.id === 'student-council-notice-board'));
+});
+
 test('railway platform exposes a train boarding interaction', () => {
   const boardingPoint = CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'station-platform-boarding-point');
   assert.ok(boardingPoint);
