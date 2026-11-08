@@ -385,6 +385,7 @@ export function AcademyCanvas() {
     let isDisposed = false;
     let lastTime = performance.now();
     let elapsedTotal = 0;
+    let previousTrainX = academyEnv.commuterTrain.position.x;
     let lastStreamCheckX = Number.NaN;
     let lastStreamCheckZ = Number.NaN;
     let scheduledPeriod = stateRef.current.timeOfDay;
@@ -537,6 +538,15 @@ export function AcademyCanvas() {
       // Advance simulation clock when not paused
       if (phase !== 'paused') {
         elapsedTotal += dt;
+
+        // The four-car train travels along the visible rail corridor and reverses smoothly at each end.
+        const nextTrainX = Math.sin(elapsedTotal * 0.12) * 14;
+        const trainDeltaX = nextTrainX - previousTrainX;
+        academyEnv.commuterTrain.position.x = nextTrainX;
+        for (const wheel of academyEnv.commuterTrainWheels) {
+          wheel.rotation.z -= trainDeltaX / 0.48;
+        }
+        previousTrainX = nextTrainX;
 
         if (phase === 'playing') {
           // Consume any requested quick-zone teleport (e.g., Classroom 2-A, Library, North Track)
