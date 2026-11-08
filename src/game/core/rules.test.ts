@@ -14,6 +14,7 @@ import {
   generateSmartNpcReply,
   getAllStories,
   getCampusZoneLabel,
+  getCampusFloorHeight,
   getCurrentStoryChapter,
   getDeterministicStoryPack,
   getLoadingMessageForProgress,
@@ -215,6 +216,14 @@ test('resolveCampusCollisions prevents wall tunneling, clamps camera, and suppor
   assert.equal(getStudentAcademicRank(60).rankTitle, 'Honor Roll Classmate');
   assert.equal(getStudentAcademicRank(120).rankTitle, 'Hoshino Council Scholar');
   assert.equal(getStudentAcademicRank(190).rankTitle, 'Hoshikaze Archive Guardian');
+});
+
+test('dormitory floor support resolves four levels and drops players outside the building', () => {
+  assert.equal(getCampusFloorHeight(-45, -30.5, 0), 0);
+  assert.equal(getCampusFloorHeight(-45, -30.5, 3.8), 3.8);
+  assert.equal(getCampusFloorHeight(-45, -30.5, 7.6), 7.6);
+  assert.equal(getCampusFloorHeight(-45, -30.5, 11.4), 11.4);
+  assert.equal(getCampusFloorHeight(-30, -30.5, 11.4), 0);
 });
 
 test('stepPlayerPhysics moves player, triggers jump, and blocks walking through NPC bodies', () => {
