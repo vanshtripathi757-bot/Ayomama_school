@@ -21,6 +21,9 @@ export const STREAM_REGION_BUDGETS: Record<string, StreamRegionBudget> = {
   'koi-garden': { loadRadius: 58, unloadRadius: 72 },
   festival: { loadRadius: 58, unloadRadius: 72 },
   'mountain-shrine': { loadRadius: 68, unloadRadius: 84 },
+  'science-lab': { loadRadius: 72, unloadRadius: 88 },
+  'computer-lab': { loadRadius: 72, unloadRadius: 88 },
+  auditorium: { loadRadius: 68, unloadRadius: 84 },
 };
 
 export function shouldRegionBeLoaded(
