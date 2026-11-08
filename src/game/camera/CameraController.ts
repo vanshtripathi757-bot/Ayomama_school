@@ -182,7 +182,9 @@ export class AcademyCameraController {
         playerState.x,
         playerState.z,
         rawCamX,
-        rawCamZ
+        rawCamZ,
+        undefined,
+        playerState.y
       );
       const rawCamY = Math.max(1.15, playerState.y + 1.45 + vertOffset);
       const camY = indoor ? Math.min(3.65, rawCamY) : rawCamY;
