@@ -14,7 +14,7 @@ export interface NpcObjectActivity {
   npcId: string;
   period: TimeOfDayPreset;
   objectId: string;
-  actionId: 'read' | 'teach' | 'sit' | 'practice' | 'socialize';
+  actionId: 'read' | 'teach' | 'sit' | 'practice' | 'socialize' | 'work';
   label: string;
   target: Vector3Tuple;
 }
