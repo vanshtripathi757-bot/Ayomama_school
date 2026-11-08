@@ -813,10 +813,17 @@ export function AcademyCanvas() {
           npcEntry.rig.root.position.set(runtime.x, runtime.y, runtime.z);
           npcEntry.rig.root.rotation.y = runtime.yaw;
 
+          const isUsingScheduledObject = Boolean(runtime.usingObjectId);
           if (npcEntry.rig.heldBookGroup) {
-            npcEntry.rig.heldBookGroup.visible = Boolean(
-              runtime.usingObjectId && runtime.activityActionId === 'read'
+            npcEntry.rig.heldBookGroup.visible = isUsingScheduledObject && runtime.activityActionId === 'read';
+          }
+          if (npcEntry.rig.heldClipboardGroup) {
+            npcEntry.rig.heldClipboardGroup.visible = isUsingScheduledObject && (
+              runtime.activityActionId === 'teach' || runtime.activityActionId === 'socialize'
             );
+          }
+          if (npcEntry.rig.heldSportsBallGroup) {
+            npcEntry.rig.heldSportsBallGroup.visible = isUsingScheduledObject && runtime.activityActionId === 'practice';
           }
 
           updateCharacterRigAnimation(
