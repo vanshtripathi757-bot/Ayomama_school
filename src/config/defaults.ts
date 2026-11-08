@@ -2066,6 +2066,43 @@ export const CAMPUS_AABB_COLLIDERS: AABBCollider2D[] = [
 
   // North Mountain Shrine Grand Hall
   { id: 'north_shrine_hall', minX: -9.5, maxX: 9.5, minZ: -95.5, maxZ: -85.0 },
+  // Science and computer labs, plus the auditorium, have open front entrances and furnished interiors.
+  ...[
+    { id: 'science_lab', x: -70, z: -60, width: 18, depth: 14 },
+    { id: 'computer_lab', x: 70, z: -60, width: 18, depth: 14 },
+    { id: 'academy_auditorium', x: 0, z: 57, width: 24, depth: 20 },
+  ].flatMap((room) => {
+    const halfW = room.width / 2;
+    const halfD = room.depth / 2;
+    return [
+      { id: `${room.id}_west_wall`, minX: room.x - halfW, maxX: room.x - halfW + 0.32, minZ: room.z - halfD, maxZ: room.z + halfD },
+      { id: `${room.id}_east_wall`, minX: room.x + halfW - 0.32, maxX: room.x + halfW, minZ: room.z - halfD, maxZ: room.z + halfD },
+      { id: `${room.id}_back_wall`, minX: room.x - halfW, maxX: room.x + halfW, minZ: room.z - halfD, maxZ: room.z - halfD + 0.32 },
+      { id: `${room.id}_front_left`, minX: room.x - halfW, maxX: room.x - 2.5, minZ: room.z + halfD - 0.32, maxZ: room.z + halfD },
+      { id: `${room.id}_front_right`, minX: room.x + 2.5, maxX: room.x + halfW, minZ: room.z + halfD - 0.32, maxZ: room.z + halfD },
+    ];
+  }),
+  ...[-5, 0, 5].map((dx, index) => ({
+    id: `science_lab_bench_${index + 1}`,
+    minX: -70 + dx - 1.9,
+    maxX: -70 + dx + 1.9,
+    minZ: -62.2,
+    maxZ: -60.2,
+  })),
+  ...[-5.2, 0, 5.2].flatMap((dx, col) => [-2.2, 1.8].map((dz, row) => ({
+    id: `computer_lab_desk_${col}_${row}`,
+    minX: 70 + dx - 1.55,
+    maxX: 70 + dx + 1.55,
+    minZ: -60 + dz - 0.75,
+    maxZ: -60 + dz + 0.75,
+  }))),
+  ...[-3.2, 0, 3.2, 6.0].flatMap((dz, row) => [-8, -4, 0, 4, 8].map((dx, col) => ({
+    id: `auditorium_seat_${row}_${col}`,
+    minX: dx - 0.62,
+    maxX: dx + 0.62,
+    minZ: 57 + dz - 0.55,
+    maxZ: 57 + dz + 0.55,
+  }))),
   // Medical room shell with a 6m south entrance kept open.
   { id: 'medical_room_north_wall', minX: 27.0, maxX: 41.0, minZ: -34.0, maxZ: -33.45 },
   { id: 'medical_room_west_wall', minX: 26.9, maxX: 27.45, minZ: -33.75, maxZ: -20.25 },
