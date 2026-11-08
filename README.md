@@ -1,124 +1,139 @@
-# The School Chronicles — 3D School-Life Game Prototype
+# The School Chronicles — 3D Academy Life Game
 
-**The School Chronicles** is a third-person, 3D open-world anime school-life simulation game set at **Seiran High Academy**.
+**The School Chronicles** is a third-person anime school-life game set around Seiran High Academy. It combines a procedural 3D campus, four playable homeroom spaces, NPC routines and conversations, story phases, school facilities, shops, transport and local save persistence.
 
-This repository contains an evolving playable prototype: a procedural Three.js academy campus, character creation, story library and phase selection, NPC proximity conversations, Gemini-backed story/chat API routes, local save persistence, and mobile-oriented controls. Several systems remain prototypes; see the status and limitations below.
+The project is an actively developed game prototype. The automated checks cover TypeScript, deterministic game systems and the production build; device-level visual QA is still required before release.
 
----
+## Current playable systems
 
-## Technology Stack
+- **Four homerooms:** Class A, Class B, Class C and Class D, each with student desks, seating and a teacher area.
+- **Library:** browse, take, read and return books; book inventory is saved with the local game session.
+- **Dormitory:** four furnished levels with elevator floor selection, resident beds, lockers and study desks.
+- **Residential district:** four walk-in furnished houses with sofa, bedroom, desk and mailbox interactions.
+- **Science laboratory:** three virtual lab benches and an observation log.
+- **Computer laboratory:** six workstations with a safe demonstration terminal supporting `print("text")` and `print(number)`; it does not execute arbitrary code.
+- **Auditorium:** stage, podium, audience seating and a presentation-rehearsal interaction.
+- **Student council office:** meeting table, chairs, agenda board and archive cabinet.
+- **Campus services:** medical room check-in, town manga shop and konbini purchases, aquatics deck, observatory, koi garden, festival stage, mountain shrine and sports court.
+- **Railway:** four-car Hoshino Express with transparent passenger cabins, rotating wheels, moving rail travel, boarding and platform disembarking. The ride currently follows a bounded station corridor rather than a city-wide rail network.
+- **NPC autonomy:** daily schedules, object-use targets, reading/teaching/work/practice activity states, simple hand-held props and relationship memory.
+- **NPC voice:** manual Speak and opt-in Auto Voice controls use built-in browser speech synthesis. Voice availability and quality depend on the device's installed voices.
+- **Mission progression:** sequential phase objectives, contextual clues and gated completion.
+- **World interactions:** stable object IDs, proximity/facing checks, contextual prompts, cooldowns and an explicit enter/exit lifecycle.
+- **World visibility management:** region-based visibility toggles with hysteresis.
+- **Mobile graphics profile:** adaptive pixel ratio, shadow and particle budgets with frame-rate throttling.
 
-- **Interface**: React 19 + TypeScript + Tailwind CSS v4
-- **3D Rendering**: Three.js (`WebGLRenderer`, ACES Filmic Tone Mapping, `RoomEnvironment` PMREM reflections, `InstancedMesh` foliage/petals, procedural `CanvasTexture` PBR materials)
-- **State Management**: Zustand (`useGameStore`)
-- **Save Persistence**: IndexedDB (`the_school_chronicles_db`) with `localStorage` fallback
-- **Audio**: Procedural Web Audio API effects, plus optional browser speech synthesis for NPC replies
-- **Build & Packaging**: Vite + Capacitor configuration (`capacitor.config.ts`)
+## Controls
 
----
+### Desktop
+- **W / A / S / D:** move
+- **Shift:** sprint
+- **Space:** jump
+- **E / F / Enter:** interact
+- **Esc / P:** pause or close the active interaction
+- **C:** switch camera mode
 
-## Project Structure
+### Mobile
+- On-screen joystick for movement.
+- On-screen sprint, jump and interact controls.
+- NPC Auto Voice can be enabled from the dialogue panel when browser speech synthesis is available.
+
+## Technology
+
+- React 19, TypeScript and Tailwind CSS v4
+- Three.js for procedural 3D geometry, lighting, materials and rendering
+- Zustand for game state
+- IndexedDB with localStorage fallback for local saves
+- Web Audio API for game audio
+- Browser Speech Synthesis API for optional NPC voice
+- Vite, Express and Capacitor configuration
+
+## Project layout
 
 ```text
-├── public/
-├── src/
-│   ├── app/
-│   │   └── ErrorBoundary.tsx         # Application-level error recovery
-│   ├── components/
-│   │   ├── loading/
-│   │   │   └── LoadingScreen.tsx     # Real-progress initialization screen
-│   │   ├── menu/
-│   │   │   ├── MainMenu.tsx          # Anime school-game title screen & SVG crest
-│   │   │   ├── NewGameModal.tsx      # Session start confirmation dialog
-│   │   │   ├── SettingsModal.tsx     # Functional Graphics, Display, Audio, Camera, Controls
-│   │   │   ├── CreditsModal.tsx      # Credits & Phase 2+ architecture registry overview
-│   │   │   └── ExitModal.tsx         # Exit confirmation & session standby view
-│   │   └── ui/
-│   │       └── AcademyHUD.tsx        # Low-occlusion HUD & collapsible bottom camera/lighting dock
-│   ├── config/
-│   │   └── defaults.ts               # Default settings, viewpoints, atmosphere presets
-│   ├── game/
-│   │   ├── camera/
-│   │   │   └── CameraController.ts   # Exponentially damped spline flyover & orbit camera
-│   │   ├── core/
-│   │   │   ├── rules.ts              # Pure deterministic preset, audio, and save validation logic
-│   │   │   └── rules.test.ts         # Node built-in unit test suite
-│   │   ├── environment/
-│   │   │   ├── ProceduralTextures.ts # Zero-404 procedural CanvasTexture generator
-│   │   │   └── AcademyModels.ts      # Multi-part 3D Seiran High Academy, clock tower, courtyard
-│   │   ├── scene/
-│   │   │   └── AcademyCanvas.tsx     # Isolated WebGL container & render loop
-│   │   └── systems/
-│   │       ├── AudioManager.ts       # Web Audio API synth manager
-│   │       ├── SaveLoadManager.ts    # IndexedDB + LocalStorage save/settings persistence
-│   │       └── ArchitectureRegistry.ts # Integration contracts for Phase 2+ gameplay systems
-│   ├── store/
-│   │   └── useGameStore.ts           # Centralized Zustand store
-│   ├── types/
-│   │   └── game.ts                   # Core TypeScript interfaces
-│   ├── App.tsx
-│   ├── index.css
-│   └── main.tsx
-├── api/\n│   ├── npc-chat.ts                  # Vercel serverless NPC conversation endpoint\n│   └── story-director.ts             # Vercel serverless story generation endpoint\n├── .github/workflows/verify.yml     # TypeScript, unit test and production build CI\n├── server.ts                        # Local Express + Vite development server\n├── capacitor.config.ts
-├── vercel.json
-├── index.html
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
+src/
+  components/
+    menu/                 # Main menu, settings and game flow
+    ui/                   # Academy HUD, dialogue and interaction panels
+  config/
+    defaults.ts           # World data, interactables, colliders and settings
+  game/
+    camera/               # Follow and overview camera
+    core/                 # Player physics, progression rules and tests
+    entities/             # Procedural anime character rigs and props
+    environment/          # Academy, expanded facilities and procedural assets
+    scene/                # Three.js scene and simulation loop
+    systems/              # NPC autonomy, world interactions, shops, books,
+                          # transit, streaming, audio and save/load systems
+  store/
+    useGameStore.ts        # Zustand game state and actions
+  types/
+    game.ts                # Shared game types
+api/
+  npc-chat.ts              # NPC conversation endpoint
+  story-director.ts        # Story generation endpoint
+.github/workflows/
+  verify.yml               # TypeScript, tests and production build
 ```
 
----
+## Local development
 
-## Running Locally
+Install dependencies:
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. **Run unit tests**:
-   ```bash
-   npx --yes tsx --test src/game/core/rules.test.ts
-   ```
+Run the development server:
 
-3. **Start the development server**:
-   ```bash
-   npm run dev
-   ```
-   Open `http://localhost:3000` in your browser. Append `?autostart=1` to jump directly into the active 3D Academy Courtyard session.
+```bash
+npm run dev
+```
 
-4. **Create a production build**:
-   ```bash
-   npm run build
-   ```
+Open `http://localhost:3000`. Use `?autostart=1` to skip the title flow during development.
 
+Run the full automated test suite:
+
+```bash
+npm test
+```
+
+Run the TypeScript check and production build:
+
+```bash
+npm run lint
+npm run build
+```
 
 ## AI API configuration
 
-Set the following variables in Vercel Project Settings → Environment Variables:
+Set these variables in Vercel Project Settings → Environment Variables:
 
-- `GEMINI_API_KEY`: Google AI Studio API key (required for live Gemini responses; without it, deterministic/local fallback responses are used).
-- `GEMINI_MODEL`: optional model override. The current default is `gemini-3.8-flash`.
+- `GEMINI_API_KEY`: required for live Gemini-backed responses; local deterministic fallback responses are used when it is absent.
+- `GEMINI_MODEL`: optional model override.
 
-Never place API keys in frontend code, commit them to Git, or send them in chat. Redeploy after changing environment variables.
+Keep API keys server-side. Never put keys in frontend code or commit them to Git. Redeploy after changing environment variables.
 
-The Vercel functions are exposed at `/api/npc-chat` and `/api/story-director`. The local Express development server also exposes these routes.
+The serverless endpoints are `/api/npc-chat` and `/api/story-director`; the local Express server also exposes these routes.
 
 ## Verification
 
-GitHub Actions runs:
+The GitHub Actions verification workflow runs:
 
 1. `npm install`
-2. `npm run lint` (TypeScript check)
-3. `npm test` (core deterministic logic tests)
-4. `npm run build` (Vite production build)
+2. `npm run lint` — TypeScript check
+3. `npm test` — deterministic system tests
+4. `npm run build` — Vite production build
 
-## Current limitations
+## Known limitations and release checklist
 
-- Saves are browser-local (IndexedDB/localStorage); there is no account-based cloud save or cross-device sync.
-- The API rate limits are in-memory per serverless instance. Add durable shared rate limiting and authenticated player sessions before a public launch.
-- NPC voice uses the device/browser's built-in speech synthesis and depends on available system voices; it is not studio-quality voice acting.
-- NPC movement and relationships are game-side simulations, not a fully autonomous multi-agent world.
-- Some campus buildings and interiors are procedural geometry and still need detailed room layouts, furniture interactions, and playtesting.
-- Story phase unlocks are sequential and duplicate rewards are blocked, but objective-by-objective mission verification is still being expanded.
-- CI confirms type checking, core tests, and the Vite build; it does not replace live browser, mobile-device, or end-to-end Gemini testing.
+- Dormitory floors are reached using the elevator interaction; continuous stair traversal and full multi-level navigation are not implemented.
+- Region streaming currently toggles tagged scene groups by distance. It is not asynchronous asset streaming, occlusion culling or a full LOD system.
+- NPC props and gestures are procedural and limited; there is no full skeletal hand attachment, motion capture or autonomous multi-agent simulation.
+- NPC speech uses the browser/device voice engine, not recorded character voice acting. Some mobile browsers may have limited voice availability.
+- The train ride is a moving passenger experience along the station corridor, not a full network with multiple stations and route schedules.
+- Some interiors use simplified procedural geometry and need further art, collision and interaction polish.
+- Save data is browser-local; there is no account-based cloud save or cross-device synchronization.
+- API rate limiting is in-memory per serverless instance. Durable shared rate limiting and authenticated player sessions are required before a public launch.
+- Automated CI does not replace manual browser testing, real Android-device testing, touch usability checks, thermal/battery profiling or end-to-end AI API testing.
+- The current branch is not merged or production-deployed. Deployment should wait for a complete visual walkthrough and device QA.
