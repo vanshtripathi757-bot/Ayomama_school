@@ -305,6 +305,45 @@ export function AcademyCanvas() {
       }
     }
 
+    // Homeroom visual attendance: populate every class with background classmates.
+    // These non-interactive crowd actors are lightweight visual students; named NPCs retain
+    // their own autonomous schedules, dialogue, relationships and story progression.
+    const classroomCrowd: Array<{
+      rig: CharacterActorRig;
+      homePeriodOnly: boolean;
+      phase: number;
+    }> = [];
+    const classroomLayouts = [
+      { classId: 'A', color: 0x172554, accent: 0x38bdf8, cols: [-18.2, -14.2, -10.2], rows: [-17.2, -15.0, -12.8], count: 4 },
+      { classId: 'B', color: 0x1e293b, accent: 0x38bdf8, cols: [-23.5, -20.5], rows: [-4.6, -2.2, 0.2], count: 3 },
+      { classId: 'C', color: 0x1e293b, accent: 0xa855f7, cols: [18.9, 21.9], rows: [-4.6, -2.2, 0.2], count: 3 },
+      { classId: 'D', color: 0x1e293b, accent: 0x10b981, cols: [-32.5, -29.5, -26.5], rows: [-17.2, -15.0, -12.8], count: 4 },
+    ] as const;
+    const crowdHair = [0x312e81, 0x7c2d12, 0x0f766e, 0x334155, 0x9d174d, 0x4c1d95];
+    let crowdIndex = 0;
+    for (const layout of classroomLayouts) {
+      for (let student = 0; student < layout.count; student++) {
+        const col = student % layout.cols.length;
+        const row = Math.floor(student / layout.cols.length);
+        const x = layout.cols[col];
+        const z = layout.rows[row] + 0.68;
+        const rig = createAnimeCharacterRig({
+          hairColor: crowdHair[crowdIndex % crowdHair.length],
+          blazerColor: layout.color,
+          accentColor: layout.accent,
+          gender: crowdIndex % 2 === 0 ? 'female' : 'male',
+          isProtagonist: false,
+          contactShadowMap: textures.contactShadowMap,
+        });
+        rig.root.position.set(x, 0, z);
+        rig.root.rotation.y = 0;
+        rig.root.visible = false;
+        entitiesGroup.add(rig.root);
+        classroomCrowd.push({ rig, homePeriodOnly: true, phase: crowdIndex * 0.73 });
+        crowdIndex++;
+      }
+    }
+
     // Pre-compile shaders on hardware GPU
     if (!isSoftwareGl) {
       renderer.compile(scene, camera);
@@ -754,6 +793,27 @@ export function AcademyCanvas() {
             phase === 'character-creation' || phase === 'character-intro',
             'wave'
           );
+        }
+
+        // Classroom attendance: show seated classmates only during morning homeroom.
+        // Their staggered idle animation avoids a perfectly frozen, mannequin-like classroom.
+        const isHomeroom = useGameStore.getState().schoolPeriod === 'homeroom';
+        for (const student of classroomCrowd) {
+          student.rig.root.visible = student.homePeriodOnly && isHomeroom;
+          if (student.rig.root.visible) {
+            updateCharacterRigAnimation(
+              student.rig,
+              student.phase,
+              false,
+              false,
+              1,
+              1,
+              elapsedTotal + student.phase,
+              false,
+              'nod',
+              'sit'
+            );
+          }
         }
 
         // Sync 3D transforms and walk-cycle animations for all autonomous Campus NPCs
