@@ -20,6 +20,7 @@ import {
   getNextCameraViewpoint,
   getNextSchoolPeriod,
   getNextTimeOfDay,
+  getNpcScheduledActivity,
   getSakuraPetalCount,
   getShadowMapSize,
   getSkyWeatherDescription,
@@ -384,16 +385,11 @@ test('NPC daily activity schedules respond to the active school period', () => {
   const faculty = CAMPUS_INTERACTABLES.find((item) => item.academyClass === 'Faculty');
   assert.ok(npc);
   assert.ok(faculty);
-  const homeroom = stepAutonomousNPCs(createInitialNPCRuntimeStates(), CAMPUS_INTERACTABLES, 999, 999, null, 0.016, 'homeroom');
-  const recess = stepAutonomousNPCs(createInitialNPCRuntimeStates(), CAMPUS_INTERACTABLES, 999, 999, null, 0.016, 'courtyard_recess');
-  const clubs = stepAutonomousNPCs(createInitialNPCRuntimeStates(), CAMPUS_INTERACTABLES, 999, 999, null, 0.016, 'club_activities');
-  const evening = stepAutonomousNPCs(createInitialNPCRuntimeStates(), CAMPUS_INTERACTABLES, 999, 999, null, 0.016, 'after_school');
-  const findActivity = (states: typeof homeroom, id: string) => states.find((state) => state.id === id)?.currentActivity ?? '';
-  assert.match(findActivity(homeroom, npc.id), /homeroom/i);
-  assert.match(findActivity(recess, npc.id), /lunch|recess/i);
-  assert.match(findActivity(clubs, npc.id), /club|research|training|festival/i);
-  assert.match(findActivity(evening, npc.id), /evening|dormitory|study|practice/i);
-  assert.match(findActivity(homeroom, faculty.id), /homeroom/i);
+  assert.match(getNpcScheduledActivity(npc, 'homeroom'), /homeroom/i);
+  assert.match(getNpcScheduledActivity(npc, 'courtyard_recess'), /lunch|recess/i);
+  assert.match(getNpcScheduledActivity(npc, 'club_activities'), /club|research|training|festival/i);
+  assert.match(getNpcScheduledActivity(npc, 'after_school'), /evening|dormitory|study|practice/i);
+  assert.match(getNpcScheduledActivity(faculty, 'homeroom'), /homeroom/i);
 });
 
 test('generateSmartNpcReply and Story Director helpers validate Hoshino Academy narrative packs', () => {
