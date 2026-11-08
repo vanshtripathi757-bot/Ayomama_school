@@ -40,6 +40,7 @@ test('campus catalog creates a registry with access-controlled archive objects',
 
 test('expanded facility and transport objects expose the expected actions', () => {
   assert.equal(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'dormitory-main-entry')?.actions[0]?.id, 'enter');
+  assert.equal(CAMPUS_WORLD_OBJECTS.filter((object) => object.id.startsWith('dormitory-elevator-')).length, 4);
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'dormitory-bed-west')?.actions.some((action) => action.id === 'rest'));
   assert.ok(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'medical-room-reception')?.actions.some((action) => action.id === 'use'));
   assert.equal(CAMPUS_WORLD_OBJECTS.find((object) => object.id === 'station-ticket-terminal')?.type, 'terminal');
