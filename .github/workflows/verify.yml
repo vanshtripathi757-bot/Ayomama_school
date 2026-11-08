@@ -1,7 +1,7 @@
 name: Verify application
 on:
   push:
-    branches: [main]
+    branches: [main, feature/sequential-mission-engine]
   pull_request:
     branches: [main]
   workflow_dispatch:
