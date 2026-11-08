@@ -902,7 +902,7 @@ export const useGameStore = create<GameStoreState>((set, get) => {
 
     setIsRidingTrain: (riding: boolean) => {
       if (get().isRidingTrain === riding) return;
-      if (!riding) sharedInputBridge.disembarkTrainRequest = true;
+      sharedInputBridge.disembarkTrainRequest = !riding;
       set({ isRidingTrain: riding, cameraMode: riding ? 'follow' : get().cameraMode });
       audioManager.playConfirmChime();
     },
