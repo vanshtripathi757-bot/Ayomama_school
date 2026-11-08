@@ -830,7 +830,17 @@ export function AcademyCanvas() {
                   [academyEnv.rootGroup, expandedFacilities.rootGroup, advancedFacilities.rootGroup],
                   true
                 );
-                return blockers.length > 0;
+                return blockers.some((hit) => {
+                  // Raycaster traversal can still report meshes below a hidden streamed group.
+                  // Ignore any hit with an invisible ancestor so unloaded-looking regions do not
+                  // block interactions from the active region.
+                  let node: THREE.Object3D | null = hit.object;
+                  while (node && node !== scene) {
+                    if (!node.visible) return false;
+                    node = node.parent;
+                  }
+                  return true;
+                });
               },
             });
             useGameStore.getState().setNearbyWorldObject(worldTarget?.object ?? null);
