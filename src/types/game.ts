@@ -404,6 +404,10 @@ export interface NPCRuntimeState {
   talkingWithNpcId?: string | null;
   objectPosture?: 'none' | 'sit' | 'study' | 'read' | 'use_computer' | 'eat';
   usingObjectId?: string | null;
+  /** Runtime-only academic progress used by the autonomous class competition simulation. */
+  academicProgress?: number;
+  motivation?: number;
+  classRank?: number;
 }
 
 export interface AmbientNpcBanter {
